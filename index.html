@@ -561,59 +561,11 @@
                 </div>
             </div>
 
-            <div class="grid grid-2">
-                <div class="recommendation-box">
-                    <div class="recommendation-title">🎯 Current Hedge Recommendation</div>
-                    <div class="recommendation-grid">
-                        <div class="rec-item">
-                            <div class="rec-label">Strategy</div>
-                            <div class="rec-value" id="recStrategy">Zero-Cost Collar</div>
-                        </div>
-                        <div class="rec-item">
-                            <div class="rec-label">Instrument</div>
-                            <div class="rec-value" id="recInstrument">QQQ Options</div>
-                        </div>
-                        <div class="rec-item">
-                            <div class="rec-label">Contracts</div>
-                            <div class="rec-value" id="recContracts">5</div>
-                        </div>
-                        <div class="rec-item">
-                            <div class="rec-label">Cost</div>
-                            <div class="rec-value" id="recCost" style="color: var(--accent-1);">$0</div>
-                        </div>
-                        <div class="rec-item">
-                            <div class="rec-label">Protection</div>
-                            <div class="rec-value" id="recProtection">Floor -7%</div>
-                        </div>
-                        <div class="rec-item">
-                            <div class="rec-label">Upside Cap</div>
-                            <div class="rec-value" id="recCap">+8%</div>
-                        </div>
-                    </div>
-                    <div class="trade-ticket" style="margin-top: 1rem;" id="tradeTicket">
-                        <div class="trade-line">
-                            <span class="trade-action buy">BUY</span>
-                            <span id="tradeBuy">5 QQQ 400 PUT</span>
-                            <span style="color: var(--text-muted);">30-45 DTE</span>
-                        </div>
-                        <div class="trade-line">
-                            <span class="trade-action sell">SELL</span>
-                            <span id="tradeSell">5 QQQ 435 CALL</span>
-                            <span style="color: var(--text-muted);">30-45 DTE</span>
-                        </div>
-                    </div>
-                    <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-dark); border-radius: 8px; font-size: 0.85rem; color: var(--text-muted);" id="recReason">
-                        Recommendation based on: balanced portfolio, moderate beta
-                    </div>
-                </div>
-
+            <div class="grid grid-3">
                 <div class="chart-container">
                     <div class="chart-title">Risk/Return Profile</div>
                     <canvas id="protectionChart"></canvas>
                 </div>
-            </div>
-
-            <div class="grid grid-2" style="margin-top: 1.5rem;">
                 <div class="chart-container">
                     <div class="chart-title">Regime Distribution (2 Years)</div>
                     <canvas id="regimeChart"></canvas>
