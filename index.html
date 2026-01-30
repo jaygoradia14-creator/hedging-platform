@@ -775,24 +775,30 @@
         <section id="options" class="section">
             <div class="section-header">
                 <h1 class="section-title">Options Analytics & Greeks</h1>
-                <p class="section-subtitle">Black-Scholes pricing and sensitivity analysis</p>
+                <p class="section-subtitle">Black-Scholes pricing and sensitivity analysis for your portfolio</p>
             </div>
 
             <div class="grid grid-2" style="margin-bottom: 1.5rem;">
                 <div class="card">
                     <h3 style="margin-bottom: 1rem; color: var(--accent-2);">Option Parameters</h3>
                     <div class="control-group">
-                        <label class="control-label">Underlying Price (SPY)</label>
+                        <label class="control-label">Select Stock from Portfolio</label>
+                        <select id="greeksStockSelect" class="control-input" onchange="selectGreeksStock()" style="font-size: 1rem; padding: 0.6rem;">
+                            <option value="">-- Add stocks to portfolio first --</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Underlying Price (<span id="greeksTickerLabel">--</span>)</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" id="spotPrice" min="400" max="550" value="480" oninput="updateGreeks()">
-                            <span class="slider-value" id="spotPriceValue">$480</span>
+                            <input type="range" class="slider" id="spotPrice" min="10" max="1000" value="100" oninput="updateGreeks()">
+                            <span class="slider-value" id="spotPriceValue">$100</span>
                         </div>
                     </div>
                     <div class="control-group">
                         <label class="control-label">Strike Price</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" id="strikePrice" min="400" max="550" value="456" oninput="updateGreeks()">
-                            <span class="slider-value" id="strikePriceValue">$456</span>
+                            <input type="range" class="slider" id="strikePrice" min="10" max="1000" value="95" oninput="updateGreeks()">
+                            <span class="slider-value" id="strikePriceValue">$95</span>
                         </div>
                     </div>
                     <div class="control-group">
@@ -805,8 +811,8 @@
                     <div class="control-group">
                         <label class="control-label">Implied Volatility</label>
                         <div class="slider-container">
-                            <input type="range" class="slider" id="impliedVol" min="10" max="50" value="18" oninput="updateGreeks()">
-                            <span class="slider-value" id="impliedVolValue">18%</span>
+                            <input type="range" class="slider" id="impliedVol" min="10" max="80" value="25" oninput="updateGreeks()">
+                            <span class="slider-value" id="impliedVolValue">25%</span>
                         </div>
                     </div>
                 </div>
@@ -1434,6 +1440,7 @@
             updateAllDisplays();
             updatePortfolioCharts();
             updateDayChange();
+            updateGreeksStockDropdown();
         }
 
         // ==================== STOCK SEARCH ====================
@@ -1838,6 +1845,82 @@
             const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
             const d2 = d1 - sigma * Math.sqrt(T);
             return K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1);
+        }
+
+        function updateGreeksStockDropdown() {
+            const select = document.getElementById('greeksStockSelect');
+            if (!select) return;
+
+            select.innerHTML = '';
+
+            if (portfolio.length === 0) {
+                select.innerHTML = '<option value="">-- Add stocks to portfolio first --</option>';
+                document.getElementById('greeksTickerLabel').textContent = '--';
+                return;
+            }
+
+            portfolio.forEach((p, index) => {
+                const liveData = livePrices[p.ticker];
+                const price = liveData ? liveData.price : p.price;
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${p.ticker} - $${price.toFixed(2)}`;
+                select.appendChild(option);
+            });
+
+            // Auto-select first stock
+            if (portfolio.length > 0) {
+                select.value = '0';
+                selectGreeksStock();
+            }
+        }
+
+        function selectGreeksStock() {
+            const select = document.getElementById('greeksStockSelect');
+            const index = parseInt(select.value);
+
+            if (isNaN(index) || !portfolio[index]) return;
+
+            const position = portfolio[index];
+            const liveData = livePrices[position.ticker];
+            const price = liveData ? liveData.price : position.price;
+
+            // Update ticker label
+            document.getElementById('greeksTickerLabel').textContent = position.ticker;
+
+            // Calculate slider ranges based on price
+            const minPrice = Math.max(10, Math.floor(price * 0.5));
+            const maxPrice = Math.ceil(price * 1.5);
+            const strikeMin = Math.max(10, Math.floor(price * 0.7));
+            const strikeMax = Math.ceil(price * 1.3);
+            const atmStrike = Math.round(price);
+            const otmPutStrike = Math.round(price * 0.95);
+
+            // Update spot price slider
+            const spotSlider = document.getElementById('spotPrice');
+            spotSlider.min = minPrice;
+            spotSlider.max = maxPrice;
+            spotSlider.value = Math.round(price);
+            document.getElementById('spotPriceValue').textContent = '$' + Math.round(price);
+
+            // Update strike price slider
+            const strikeSlider = document.getElementById('strikePrice');
+            strikeSlider.min = strikeMin;
+            strikeSlider.max = strikeMax;
+            strikeSlider.value = otmPutStrike;
+            document.getElementById('strikePriceValue').textContent = '$' + otmPutStrike;
+
+            // Set IV based on sector (rough estimates)
+            let defaultIV = 25;
+            if (position.sector === 'Technology') defaultIV = 35;
+            else if (position.sector === 'Utilities' || position.sector === 'Consumer') defaultIV = 18;
+            else if (position.sector === 'Financials') defaultIV = 25;
+            else if (position.sector === 'Energy') defaultIV = 35;
+
+            document.getElementById('impliedVol').value = defaultIV;
+            document.getElementById('impliedVolValue').textContent = defaultIV + '%';
+
+            updateGreeks();
         }
 
         function updateGreeks() {
@@ -2551,6 +2634,7 @@
 
         // Initialize
         updateAllDisplays();
+        updateGreeksStockDropdown();
         updateGreeks();
         analyzeStrategy(); // Initialize option strategy analysis
     </script>
