@@ -717,7 +717,8 @@
             <div class="table-container">
                 <div class="table-header">
                     <span>Current Positions</span>
-                    <button class="btn btn-secondary btn-sm" onclick="resetPortfolio()">Reset to Default</button>
+                    <button class="btn btn-secondary btn-sm" onclick="loadDemoPortfolio()">Load Demo Data</button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearPortfolio()" style="background: rgba(255,107,107,0.2); color: var(--accent-3);">Clear All</button>
                 </div>
                 <table>
                     <thead>
@@ -1162,16 +1163,7 @@
 
     <script>
         // ==================== PORTFOLIO DATA ====================
-        let portfolio = [
-            { ticker: 'MSFT', shares: 80, price: 420.00, beta: 1.10, sector: 'Technology' },
-            { ticker: 'AAPL', shares: 100, price: 185.00, beta: 1.20, sector: 'Technology' },
-            { ticker: 'JPM', shares: 50, price: 195.00, beta: 1.15, sector: 'Financials' },
-            { ticker: 'GLD', shares: 50, price: 195.00, beta: 0.10, sector: 'Commodities' },
-            { ticker: 'TLT', shares: 100, price: 92.00, beta: -0.30, sector: 'Bonds' },
-            { ticker: 'PG', shares: 45, price: 165.00, beta: 0.50, sector: 'Consumer' },
-            { ticker: 'XOM', shares: 60, price: 105.00, beta: 0.90, sector: 'Energy' },
-            { ticker: 'JNJ', shares: 40, price: 155.00, beta: 0.70, sector: 'Healthcare' }
-        ];
+        let portfolio = [];
 
         let sectorChart, weightChart, monteCarloChart;
         let livePrices = {}; // Store live price data: { ticker: { price, change, changePercent } }
@@ -1673,7 +1665,7 @@
             }
         }
 
-        function resetPortfolio() {
+        function loadDemoPortfolio() {
             portfolio = [
                 { ticker: 'MSFT', shares: 80, price: 420.00, beta: 1.10, sector: 'Technology' },
                 { ticker: 'AAPL', shares: 100, price: 185.00, beta: 1.20, sector: 'Technology' },
@@ -1686,6 +1678,14 @@
             ];
             livePrices = {};
             renderPortfolio();
+        }
+
+        function clearPortfolio() {
+            if (confirm('Clear all positions from your portfolio?')) {
+                portfolio = [];
+                livePrices = {};
+                renderPortfolio();
+            }
         }
 
         // ==================== LIVE PRICE FETCHING ====================
