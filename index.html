@@ -460,6 +460,19 @@
         }
         .delete-btn:hover { background: var(--accent-3); color: #fff; }
 
+        .sell-btn {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--accent-3);
+            border: 1px solid var(--accent-3);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        .sell-btn:hover { background: var(--accent-3); color: #fff; }
+
         .progress-bar-container {
             width: 100%;
             height: 20px;
@@ -595,7 +608,7 @@
                 </div>
 
                 <div class="chart-container">
-                    <div class="chart-title">Protection Profile</div>
+                    <div class="chart-title">Risk/Return Profile</div>
                     <canvas id="protectionChart"></canvas>
                 </div>
             </div>
@@ -606,15 +619,15 @@
                     <canvas id="regimeChart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Stress Test Results</div>
+                    <div class="chart-title">Scenario Impact Analysis</div>
                     <canvas id="stressChart"></canvas>
                 </div>
             </div>
 
             <div class="alert alert-success" style="margin-top: 1.5rem;">
-                <span class="alert-icon">✓</span>
+                <span class="alert-icon">💡</span>
                 <div>
-                    <strong>Portfolio Protected:</strong> In a GFC-level crash (-45%), your hedged portfolio would lose only ~7%, saving approximately <strong>$38,556</strong>.
+                    <strong>Strategy Tip:</strong> Use the <strong>Stress Testing</strong> section to explore option strategies that match your market outlook and risk tolerance.
                 </div>
             </div>
         </section>
@@ -950,89 +963,138 @@
             </div>
         </section>
 
-        <!-- STRESS TESTING -->
+        <!-- OPTION STRATEGIES & SIMULATION -->
         <section id="stress" class="section">
             <div class="section-header">
-                <h1 class="section-title">Backtesting & Stress Testing</h1>
-                <p class="section-subtitle">Historical performance and scenario analysis</p>
+                <h1 class="section-title">Option Strategies & Simulation</h1>
+                <p class="section-subtitle">Analyze strategies and run Monte Carlo simulations</p>
             </div>
 
             <div class="tabs">
-                <div class="tab active" onclick="showStressTab('scenarios')">Scenario Analysis</div>
-                <div class="tab" onclick="showStressTab('backtest')">Historical Backtest</div>
+                <div class="tab active" onclick="showStressTab('strategies')">Option Strategies</div>
                 <div class="tab" onclick="showStressTab('montecarlo')">Monte Carlo</div>
             </div>
 
-            <!-- Scenarios Tab -->
-            <div id="scenarios-tab">
-                <div class="table-container">
-                    <div class="table-header">Stress Test Results</div>
-                    <table>
-                        <thead>
-                            <tr><th>Scenario</th><th>Duration</th><th>Unhedged</th><th>Hedged</th><th>Savings</th><th>Effectiveness</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><strong>Equity -10%</strong></td><td>5 days</td>
-                                <td style="color: var(--accent-3);">-7.9%</td><td>-7.0%</td>
-                                <td style="color: var(--accent-1);">$882</td><td><span class="tag tag-yellow">11%</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Equity -20%</strong></td><td>15 days</td>
-                                <td style="color: var(--accent-3);">-15.5%</td><td>-7.0%</td>
-                                <td style="color: var(--accent-1);">$8,528</td><td><span class="tag tag-blue">55%</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>Equity -30%</strong></td><td>30 days</td>
-                                <td style="color: var(--accent-3);">-23.2%</td><td>-7.0%</td>
-                                <td style="color: var(--accent-1);">$16,272</td><td><span class="tag tag-green">70%</span></td>
-                            </tr>
-                            <tr>
-                                <td><strong>COVID Crash</strong></td><td>23 days</td>
-                                <td style="color: var(--accent-3);">-28.4%</td><td>-7.0%</td>
-                                <td style="color: var(--accent-1);">$21,569</td><td><span class="tag tag-green">75%</span></td>
-                            </tr>
-                            <tr style="background: rgba(255, 107, 107, 0.1);">
-                                <td><strong>GFC 2008</strong></td><td>250 days</td>
-                                <td style="color: var(--accent-3);">-45.3%</td><td>-7.0%</td>
-                                <td style="color: var(--accent-1);">$38,556</td><td><span class="tag tag-green">85%</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            <!-- Option Strategies Tab -->
+            <div id="strategies-tab">
+                <div class="card" style="margin-bottom: 1.5rem;">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent-2);">Select Option Strategy</h3>
+                    <div style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <label class="control-label">Strategy Type</label>
+                            <select id="strategySelect" class="control-input" onchange="analyzeStrategy()" style="font-size: 1rem; padding: 0.75rem;">
+                                <option value="covered_call">Covered Call</option>
+                                <option value="protective_put">Protective Put</option>
+                                <option value="bull_call_spread">Bull Call Spread</option>
+                                <option value="bear_put_spread">Bear Put Spread</option>
+                                <option value="straddle">Long Straddle</option>
+                                <option value="strangle">Long Strangle</option>
+                                <option value="iron_condor">Iron Condor</option>
+                                <option value="collar">Zero-Cost Collar</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <label class="control-label">Underlying Asset</label>
+                            <select id="strategyAsset" class="control-input" onchange="analyzeStrategy()" style="font-size: 1rem; padding: 0.75rem;">
+                                <option value="SPY">SPY (S&P 500)</option>
+                                <option value="QQQ">QQQ (Nasdaq)</option>
+                                <option value="IWM">IWM (Russell 2000)</option>
+                                <option value="AAPL">AAPL</option>
+                                <option value="MSFT">MSFT</option>
+                                <option value="NVDA">NVDA</option>
+                                <option value="TSLA">TSLA</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 150px;">
+                            <label class="control-label">Market Outlook</label>
+                            <select id="marketOutlook" class="control-input" onchange="analyzeStrategy()" style="font-size: 1rem; padding: 0.75rem;">
+                                <option value="bullish">Bullish</option>
+                                <option value="neutral">Neutral</option>
+                                <option value="bearish">Bearish</option>
+                                <option value="volatile">High Volatility</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-2">
+                    <div class="recommendation-box">
+                        <div class="recommendation-title">🎯 Strategy Analysis</div>
+                        <div id="strategyDescription" style="margin-bottom: 1rem; color: var(--text-muted); line-height: 1.6;">
+                            Select a strategy to see its analysis and recommended action.
+                        </div>
+                        <div class="recommendation-grid">
+                            <div class="rec-item">
+                                <div class="rec-label">Risk Level</div>
+                                <div class="rec-value" id="strategyRisk">--</div>
+                            </div>
+                            <div class="rec-item">
+                                <div class="rec-label">Max Profit</div>
+                                <div class="rec-value" id="strategyMaxProfit" style="color: var(--accent-1);">--</div>
+                            </div>
+                            <div class="rec-item">
+                                <div class="rec-label">Max Loss</div>
+                                <div class="rec-value" id="strategyMaxLoss" style="color: var(--accent-3);">--</div>
+                            </div>
+                            <div class="rec-item">
+                                <div class="rec-label">Break-Even</div>
+                                <div class="rec-value" id="strategyBreakeven">--</div>
+                            </div>
+                            <div class="rec-item">
+                                <div class="rec-label">Best For</div>
+                                <div class="rec-value" id="strategyBestFor">--</div>
+                            </div>
+                            <div class="rec-item">
+                                <div class="rec-label">Suitability</div>
+                                <div class="rec-value" id="strategySuitability">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="recommendation-box" style="border-color: var(--accent-1);">
+                        <div class="recommendation-title" style="color: var(--accent-1);">✅ Recommended Action</div>
+                        <div id="recommendedAction" style="margin-bottom: 1rem; font-size: 1.1rem; font-weight: 600; color: var(--accent-1);">
+                            Analyzing...
+                        </div>
+                        <div class="trade-ticket" id="strategyTradeTicket">
+                            <div class="trade-line">
+                                <span class="trade-action buy">BUY</span>
+                                <span id="strategyBuyLeg">--</span>
+                                <span style="color: var(--text-muted);" id="strategyBuyDTE">30-45 DTE</span>
+                            </div>
+                            <div class="trade-line" id="strategySellLine">
+                                <span class="trade-action sell">SELL</span>
+                                <span id="strategySellLeg">--</span>
+                                <span style="color: var(--text-muted);" id="strategySellDTE">30-45 DTE</span>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-dark); border-radius: 8px; font-size: 0.85rem;" id="strategyReasoning">
+                            <span style="color: var(--accent-4);">💡 Why this action:</span>
+                            <span style="color: var(--text-muted);" id="strategyWhyText">Select options above to get personalized recommendation.</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-2" style="margin-top: 1.5rem;">
                     <div class="chart-container">
-                        <div class="chart-title">Unhedged vs Hedged Returns</div>
-                        <canvas id="stressComparisonChart"></canvas>
+                        <div class="chart-title">Profit/Loss Profile at Expiration</div>
+                        <canvas id="strategyPayoffChart"></canvas>
                     </div>
                     <div class="chart-container">
-                        <div class="chart-title">Hedge Effectiveness</div>
-                        <canvas id="effectivenessChart"></canvas>
+                        <div class="chart-title">Strategy Suitability by Market Condition</div>
+                        <canvas id="strategySuitabilityChart"></canvas>
                     </div>
                 </div>
-            </div>
 
-            <!-- Backtest Tab -->
-            <div id="backtest-tab" style="display: none;">
-                <div class="grid grid-2">
-                    <div class="chart-container">
-                        <div class="chart-title">Cumulative Returns (2 Years)</div>
-                        <canvas id="backtestChart"></canvas>
-                    </div>
-                    <div class="table-container">
-                        <div class="table-header">Performance Metrics</div>
-                        <table>
-                            <thead><tr><th>Metric</th><th>Unhedged</th><th>Hedged</th></tr></thead>
-                            <tbody>
-                                <tr><td>Total Return</td><td>50.2%</td><td>48.4%</td></tr>
-                                <tr><td>Annual Volatility</td><td>11.5%</td><td>11.2%</td></tr>
-                                <tr><td>Sharpe Ratio</td><td>1.84</td><td>1.84</td></tr>
-                                <tr><td>Sortino Ratio</td><td>2.55</td><td style="color: var(--accent-1);">2.81</td></tr>
-                                <tr><td>Max Drawdown</td><td style="color: var(--accent-3);">-10.8%</td><td style="color: var(--accent-1);">-9.1%</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="table-container" style="margin-top: 1.5rem;">
+                    <div class="table-header">Strategy Comparison</div>
+                    <table>
+                        <thead>
+                            <tr><th>Strategy</th><th>Direction</th><th>Risk</th><th>Reward</th><th>Best Market</th><th>Current Fit</th></tr>
+                        </thead>
+                        <tbody id="strategyComparisonTable">
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1422,7 +1484,7 @@
                         <td>$${value.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
                         <td>${weight}%</td>
                         <td>${p.beta.toFixed(2)}</td>
-                        <td><button class="delete-btn" onclick="removePosition(${index})">✕</button></td>
+                        <td><button class="sell-btn" onclick="sellPosition(${index})">Sell</button></td>
                     </tr>
                 `;
             });
@@ -1599,6 +1661,18 @@
         function removePosition(index) {
             portfolio.splice(index, 1);
             renderPortfolio();
+        }
+
+        function sellPosition(index) {
+            const position = portfolio[index];
+            const liveData = livePrices[position.ticker];
+            const currentPrice = liveData ? liveData.price : position.price;
+            const value = (position.shares * currentPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
+
+            if (confirm(`Sell ${position.shares} shares of ${position.ticker}?\n\nCurrent Value: $${value}\n\nThis will remove the position from your portfolio.`)) {
+                portfolio.splice(index, 1);
+                renderPortfolio();
+            }
         }
 
         function resetPortfolio() {
@@ -1821,6 +1895,379 @@
             document.getElementById('moneyness').textContent = (K < S ? Math.abs(moneyness).toFixed(0) + '% OTM' : Math.abs(moneyness).toFixed(0) + '% ITM');
         }
 
+        // ==================== OPTION STRATEGY ANALYSIS ====================
+        const STRATEGY_DATA = {
+            covered_call: {
+                name: 'Covered Call',
+                description: 'Own 100 shares and sell a call option. Generate income from premiums while holding stock. Limited upside but reduces cost basis.',
+                direction: 'Neutral to Bullish',
+                risk: 'Low',
+                maxProfit: 'Premium + (Strike - Stock Price)',
+                maxLoss: 'Stock Price - Premium (if stock goes to $0)',
+                bestFor: 'Income generation, slight bullish view',
+                legs: 2,
+                bullish: 4, neutral: 5, bearish: 2, volatile: 1
+            },
+            protective_put: {
+                name: 'Protective Put',
+                description: 'Own 100 shares and buy a put option for insurance. Protects against downside while keeping unlimited upside.',
+                direction: 'Bullish (with protection)',
+                risk: 'Low',
+                maxProfit: 'Unlimited',
+                maxLoss: 'Stock Price - Strike + Premium',
+                bestFor: 'Portfolio protection, bullish with safety',
+                legs: 2,
+                bullish: 5, neutral: 2, bearish: 3, volatile: 4
+            },
+            bull_call_spread: {
+                name: 'Bull Call Spread',
+                description: 'Buy a call at lower strike, sell a call at higher strike. Profit if stock rises moderately. Limited risk and reward.',
+                direction: 'Bullish',
+                risk: 'Medium',
+                maxProfit: 'High Strike - Low Strike - Net Premium',
+                maxLoss: 'Net Premium Paid',
+                bestFor: 'Moderate bullish view, defined risk',
+                legs: 2,
+                bullish: 5, neutral: 2, bearish: 1, volatile: 2
+            },
+            bear_put_spread: {
+                name: 'Bear Put Spread',
+                description: 'Buy a put at higher strike, sell a put at lower strike. Profit if stock falls moderately. Limited risk and reward.',
+                direction: 'Bearish',
+                risk: 'Medium',
+                maxProfit: 'High Strike - Low Strike - Net Premium',
+                maxLoss: 'Net Premium Paid',
+                bestFor: 'Moderate bearish view, defined risk',
+                legs: 2,
+                bullish: 1, neutral: 2, bearish: 5, volatile: 2
+            },
+            straddle: {
+                name: 'Long Straddle',
+                description: 'Buy both a call and put at the same strike (ATM). Profit from large moves in either direction.',
+                direction: 'Neutral (expecting big move)',
+                risk: 'High',
+                maxProfit: 'Unlimited',
+                maxLoss: 'Total Premium Paid',
+                bestFor: 'Earnings, events, high volatility expected',
+                legs: 2,
+                bullish: 3, neutral: 1, bearish: 3, volatile: 5
+            },
+            strangle: {
+                name: 'Long Strangle',
+                description: 'Buy OTM call and OTM put. Cheaper than straddle but needs larger move to profit.',
+                direction: 'Neutral (expecting big move)',
+                risk: 'High',
+                maxProfit: 'Unlimited',
+                maxLoss: 'Total Premium Paid',
+                bestFor: 'Cheaper volatility play, big move expected',
+                legs: 2,
+                bullish: 3, neutral: 1, bearish: 3, volatile: 5
+            },
+            iron_condor: {
+                name: 'Iron Condor',
+                description: 'Sell OTM call spread and OTM put spread. Profit if stock stays in a range. Popular income strategy.',
+                direction: 'Neutral (range-bound)',
+                risk: 'Medium',
+                maxProfit: 'Net Premium Received',
+                maxLoss: 'Width of Spread - Premium',
+                bestFor: 'Low volatility, sideways markets',
+                legs: 4,
+                bullish: 2, neutral: 5, bearish: 2, volatile: 1
+            },
+            collar: {
+                name: 'Zero-Cost Collar',
+                description: 'Own stock, buy OTM put, sell OTM call. Protects downside while capping upside. Often zero cost.',
+                direction: 'Neutral to Bullish',
+                risk: 'Low',
+                maxProfit: 'Call Strike - Stock Price',
+                maxLoss: 'Stock Price - Put Strike',
+                bestFor: 'Downside protection at no cost',
+                legs: 3,
+                bullish: 3, neutral: 4, bearish: 3, volatile: 2
+            }
+        };
+
+        const ASSET_PRICES = {
+            SPY: 585, QQQ: 505, IWM: 225, AAPL: 185, MSFT: 420, NVDA: 875, TSLA: 245
+        };
+
+        let strategyPayoffChart = null;
+        let strategySuitabilityChart = null;
+
+        function analyzeStrategy() {
+            const strategyKey = document.getElementById('strategySelect').value;
+            const asset = document.getElementById('strategyAsset').value;
+            const outlook = document.getElementById('marketOutlook').value;
+            const strategy = STRATEGY_DATA[strategyKey];
+            const price = ASSET_PRICES[asset] || 100;
+
+            // Update description
+            document.getElementById('strategyDescription').textContent = strategy.description;
+            document.getElementById('strategyRisk').textContent = strategy.risk;
+            document.getElementById('strategyRisk').style.color = strategy.risk === 'Low' ? 'var(--accent-1)' :
+                (strategy.risk === 'Medium' ? 'var(--accent-4)' : 'var(--accent-3)');
+            document.getElementById('strategyMaxProfit').textContent = strategy.maxProfit;
+            document.getElementById('strategyMaxLoss').textContent = strategy.maxLoss;
+            document.getElementById('strategyBestFor').textContent = strategy.bestFor;
+
+            // Calculate suitability score
+            const suitabilityScore = strategy[outlook];
+            const suitabilityText = suitabilityScore >= 4 ? 'Excellent' : (suitabilityScore >= 3 ? 'Good' : (suitabilityScore >= 2 ? 'Fair' : 'Poor'));
+            const suitabilityColor = suitabilityScore >= 4 ? 'var(--accent-1)' : (suitabilityScore >= 3 ? 'var(--accent-2)' : (suitabilityScore >= 2 ? 'var(--accent-4)' : 'var(--accent-3)'));
+            document.getElementById('strategySuitability').textContent = `${suitabilityText} (${suitabilityScore}/5)`;
+            document.getElementById('strategySuitability').style.color = suitabilityColor;
+
+            // Calculate strikes and breakeven
+            const atmStrike = Math.round(price / 5) * 5;
+            const otmCallStrike = atmStrike + 10;
+            const otmPutStrike = atmStrike - 10;
+            const farOtmCallStrike = atmStrike + 20;
+            const farOtmPutStrike = atmStrike - 20;
+
+            // Estimate premium (simplified)
+            const basePremium = price * 0.02; // ~2% of stock price for ATM monthly
+
+            let breakevenText = '';
+            let buyLeg = '';
+            let sellLeg = '';
+            let showSellLine = true;
+
+            switch(strategyKey) {
+                case 'covered_call':
+                    breakevenText = `$${(price - basePremium * 0.4).toFixed(0)}`;
+                    buyLeg = `100 ${asset} shares @ $${price}`;
+                    sellLeg = `1 ${asset} ${otmCallStrike} CALL`;
+                    break;
+                case 'protective_put':
+                    breakevenText = `$${(price + basePremium).toFixed(0)}`;
+                    buyLeg = `1 ${asset} ${otmPutStrike} PUT`;
+                    sellLeg = '';
+                    showSellLine = false;
+                    break;
+                case 'bull_call_spread':
+                    breakevenText = `$${atmStrike} + premium`;
+                    buyLeg = `1 ${asset} ${atmStrike} CALL`;
+                    sellLeg = `1 ${asset} ${otmCallStrike} CALL`;
+                    break;
+                case 'bear_put_spread':
+                    breakevenText = `$${atmStrike} - premium`;
+                    buyLeg = `1 ${asset} ${atmStrike} PUT`;
+                    sellLeg = `1 ${asset} ${otmPutStrike} PUT`;
+                    break;
+                case 'straddle':
+                    breakevenText = `$${(atmStrike - basePremium*2).toFixed(0)} / $${(atmStrike + basePremium*2).toFixed(0)}`;
+                    buyLeg = `1 ${asset} ${atmStrike} CALL`;
+                    sellLeg = `1 ${asset} ${atmStrike} PUT`;
+                    document.getElementById('strategySellLine').querySelector('.trade-action').textContent = 'BUY';
+                    document.getElementById('strategySellLine').querySelector('.trade-action').classList.remove('sell');
+                    document.getElementById('strategySellLine').querySelector('.trade-action').classList.add('buy');
+                    break;
+                case 'strangle':
+                    breakevenText = `$${(otmPutStrike - basePremium).toFixed(0)} / $${(otmCallStrike + basePremium).toFixed(0)}`;
+                    buyLeg = `1 ${asset} ${otmCallStrike} CALL`;
+                    sellLeg = `1 ${asset} ${otmPutStrike} PUT`;
+                    document.getElementById('strategySellLine').querySelector('.trade-action').textContent = 'BUY';
+                    document.getElementById('strategySellLine').querySelector('.trade-action').classList.remove('sell');
+                    document.getElementById('strategySellLine').querySelector('.trade-action').classList.add('buy');
+                    break;
+                case 'iron_condor':
+                    breakevenText = `$${otmPutStrike} to $${otmCallStrike}`;
+                    buyLeg = `Sell ${otmPutStrike}/${farOtmPutStrike} PUT spread`;
+                    sellLeg = `Sell ${otmCallStrike}/${farOtmCallStrike} CALL spread`;
+                    break;
+                case 'collar':
+                    breakevenText = `$${otmPutStrike} to $${otmCallStrike}`;
+                    buyLeg = `1 ${asset} ${otmPutStrike} PUT`;
+                    sellLeg = `1 ${asset} ${otmCallStrike} CALL`;
+                    break;
+            }
+
+            // Reset sell line styling for non-straddle/strangle
+            if (strategyKey !== 'straddle' && strategyKey !== 'strangle') {
+                const sellAction = document.getElementById('strategySellLine').querySelector('.trade-action');
+                sellAction.textContent = 'SELL';
+                sellAction.classList.remove('buy');
+                sellAction.classList.add('sell');
+            }
+
+            document.getElementById('strategyBreakeven').textContent = breakevenText;
+            document.getElementById('strategyBuyLeg').textContent = buyLeg;
+            document.getElementById('strategySellLeg').textContent = sellLeg;
+            document.getElementById('strategySellLine').style.display = showSellLine ? 'flex' : 'none';
+
+            // Generate recommendation
+            let recommendationText = '';
+            let reasoningText = '';
+
+            if (suitabilityScore >= 4) {
+                recommendationText = `Execute ${strategy.name} Now`;
+                reasoningText = `This strategy is well-suited for your ${outlook} outlook. ${strategy.name} offers ${strategy.risk.toLowerCase()} risk with ${strategy.direction.toLowerCase()} positioning.`;
+            } else if (suitabilityScore >= 3) {
+                recommendationText = `Consider ${strategy.name}`;
+                reasoningText = `Decent fit for ${outlook} outlook, but there may be better alternatives. ${strategy.bestFor}.`;
+            } else {
+                const betterStrategies = Object.entries(STRATEGY_DATA)
+                    .filter(([k, v]) => v[outlook] >= 4)
+                    .map(([k, v]) => v.name)
+                    .slice(0, 2);
+                recommendationText = `Consider Alternatives`;
+                reasoningText = `${strategy.name} is not optimal for ${outlook} conditions. Better options: ${betterStrategies.join(', ')}.`;
+            }
+
+            document.getElementById('recommendedAction').textContent = recommendationText;
+            document.getElementById('recommendedAction').style.color = suitabilityScore >= 4 ? 'var(--accent-1)' :
+                (suitabilityScore >= 3 ? 'var(--accent-4)' : 'var(--accent-3)');
+            document.getElementById('strategyWhyText').textContent = reasoningText;
+
+            // Update charts
+            updateStrategyPayoffChart(strategyKey, price);
+            updateStrategySuitabilityChart();
+            updateStrategyComparisonTable(outlook);
+        }
+
+        function updateStrategyPayoffChart(strategyKey, price) {
+            const ctx = document.getElementById('strategyPayoffChart');
+            if (!ctx) return;
+
+            const atmStrike = Math.round(price / 5) * 5;
+            const range = price * 0.3;
+            const prices = [];
+            const payoffs = [];
+
+            for (let p = price - range; p <= price + range; p += range / 20) {
+                prices.push(p.toFixed(0));
+                let payoff = 0;
+
+                switch(strategyKey) {
+                    case 'covered_call':
+                        // Long stock + short call
+                        payoff = (p - price) - Math.max(0, p - (atmStrike + 10)) + price * 0.015;
+                        break;
+                    case 'protective_put':
+                        // Long stock + long put
+                        payoff = (p - price) + Math.max(0, (atmStrike - 10) - p) - price * 0.02;
+                        break;
+                    case 'bull_call_spread':
+                        payoff = Math.max(0, p - atmStrike) - Math.max(0, p - (atmStrike + 10)) - price * 0.01;
+                        break;
+                    case 'bear_put_spread':
+                        payoff = Math.max(0, atmStrike - p) - Math.max(0, (atmStrike - 10) - p) - price * 0.01;
+                        break;
+                    case 'straddle':
+                        payoff = Math.max(0, p - atmStrike) + Math.max(0, atmStrike - p) - price * 0.04;
+                        break;
+                    case 'strangle':
+                        payoff = Math.max(0, p - (atmStrike + 10)) + Math.max(0, (atmStrike - 10) - p) - price * 0.025;
+                        break;
+                    case 'iron_condor':
+                        const putSpread = Math.max(0, (atmStrike - 10) - p) - Math.max(0, (atmStrike - 20) - p);
+                        const callSpread = Math.max(0, p - (atmStrike + 10)) - Math.max(0, p - (atmStrike + 20));
+                        payoff = price * 0.015 - putSpread - callSpread;
+                        break;
+                    case 'collar':
+                        payoff = Math.min(atmStrike + 10 - price, Math.max((atmStrike - 10) - price, p - price));
+                        break;
+                }
+                payoffs.push(payoff);
+            }
+
+            if (strategyPayoffChart) strategyPayoffChart.destroy();
+
+            strategyPayoffChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: prices,
+                    datasets: [{
+                        label: 'P/L at Expiration',
+                        data: payoffs,
+                        borderColor: '#00d4aa',
+                        backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#8888a0' } }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Stock Price at Expiration', color: '#8888a0' },
+                            ticks: { color: '#8888a0' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        },
+                        y: {
+                            title: { display: true, text: 'Profit/Loss ($)', color: '#8888a0' },
+                            ticks: { color: '#8888a0' },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStrategySuitabilityChart() {
+            const ctx = document.getElementById('strategySuitabilityChart');
+            if (!ctx) return;
+
+            const strategyKey = document.getElementById('strategySelect').value;
+            const strategy = STRATEGY_DATA[strategyKey];
+
+            if (strategySuitabilityChart) strategySuitabilityChart.destroy();
+
+            strategySuitabilityChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Bullish', 'Neutral', 'Bearish', 'High Volatility'],
+                    datasets: [{
+                        label: 'Suitability Score',
+                        data: [strategy.bullish, strategy.neutral, strategy.bearish, strategy.volatile],
+                        backgroundColor: ['#00d4aa', '#0099ff', '#ff6b6b', '#a855f7']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: {
+                            min: 0, max: 5,
+                            ticks: { color: '#8888a0', stepSize: 1 },
+                            grid: { color: 'rgba(255,255,255,0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateStrategyComparisonTable(outlook) {
+            const tbody = document.getElementById('strategyComparisonTable');
+            if (!tbody) return;
+
+            tbody.innerHTML = Object.entries(STRATEGY_DATA)
+                .sort((a, b) => b[1][outlook] - a[1][outlook])
+                .map(([key, s]) => {
+                    const score = s[outlook];
+                    const tagClass = score >= 4 ? 'tag-green' : (score >= 3 ? 'tag-blue' : (score >= 2 ? 'tag-yellow' : 'tag-red'));
+                    const fit = score >= 4 ? 'Excellent' : (score >= 3 ? 'Good' : (score >= 2 ? 'Fair' : 'Poor'));
+                    return `
+                        <tr>
+                            <td><strong>${s.name}</strong></td>
+                            <td>${s.direction}</td>
+                            <td>${s.risk}</td>
+                            <td>${s.maxProfit.split(' ')[0]}</td>
+                            <td>${s.bestFor.split(',')[0]}</td>
+                            <td><span class="tag ${tagClass}">${fit}</span></td>
+                        </tr>
+                    `;
+                }).join('');
+        }
+
         // ==================== MONTE CARLO ====================
         function runMonteCarlo() {
             const nSim = parseInt(document.getElementById('mcSimulations').value);
@@ -1989,29 +2436,23 @@
         Chart.defaults.color = '#8888a0';
         Chart.defaults.borderColor = '#2a2a3a';
 
-        // Protection Chart
+        // Protection Chart - Portfolio risk/return profile
         new Chart(document.getElementById('protectionChart'), {
             type: 'line',
             data: {
-                labels: ['-30%', '-25%', '-20%', '-15%', '-10%', '-5%', '0%', '+5%', '+10%', '+15%'],
+                labels: ['-30%', '-20%', '-10%', '0%', '+10%', '+20%', '+30%'],
                 datasets: [{
-                    label: 'Unhedged',
-                    data: [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15],
-                    borderColor: '#ff6b6b',
-                    borderDash: [5, 5],
-                    tension: 0.1,
-                    fill: false
-                }, {
-                    label: 'Hedged (Collar)',
-                    data: [-7, -7, -7, -7, -7, -5, 0, 5, 8, 8],
-                    borderColor: '#00d4aa',
-                    tension: 0.1,
-                    fill: false
+                    label: 'Expected Portfolio Return',
+                    data: [-24, -16, -8, 0, 8, 17, 26],
+                    borderColor: '#0099ff',
+                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    tension: 0.3,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
-                plugins: { legend: { position: 'top' } },
+                plugins: { legend: { display: false } },
                 scales: {
                     y: { title: { display: true, text: 'Portfolio Return (%)' } },
                     x: { title: { display: true, text: 'Market Return' } }
@@ -2029,22 +2470,23 @@
             options: { responsive: true, plugins: { legend: { position: 'right' } } }
         });
 
-        // Stress Chart
+        // Stress Chart - Portfolio impact by market scenario
         new Chart(document.getElementById('stressChart'), {
             type: 'bar',
             data: {
-                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
+                labels: ['Mild Correction', 'Bear Market', 'Severe Crash', 'Black Swan'],
                 datasets: [{
-                    label: 'Unhedged',
-                    data: [-7.9, -15.5, -23.2, -28.4, -45.3],
-                    backgroundColor: '#ff6b6b'
-                }, {
-                    label: 'Hedged',
-                    data: [-7.0, -7.0, -7.0, -7.0, -7.0],
-                    backgroundColor: '#00d4aa'
+                    label: 'Portfolio Impact',
+                    data: [-8, -18, -28, -40],
+                    backgroundColor: ['#ffd93d', '#ff9f43', '#ff6b6b', '#ee5253'],
+                    borderRadius: 6
                 }]
             },
-            options: { responsive: true, scales: { y: { title: { display: true, text: 'Return (%)' } } } }
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { y: { title: { display: true, text: 'Estimated Loss (%)' } } }
+            }
         });
 
         // Regime Timeline
@@ -2130,51 +2572,10 @@
             options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { max: 1 } } }
         });
 
-        // Stress Comparison
-        new Chart(document.getElementById('stressComparisonChart'), {
-            type: 'bar',
-            data: {
-                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
-                datasets: [
-                    { label: 'Unhedged', data: [-7.9, -15.5, -23.2, -28.4, -45.3], backgroundColor: '#ff6b6b' },
-                    { label: 'Hedged', data: [-7.0, -7.0, -7.0, -7.0, -7.0], backgroundColor: '#00d4aa' }
-                ]
-            },
-            options: { responsive: true }
-        });
-
-        // Effectiveness Chart
-        new Chart(document.getElementById('effectivenessChart'), {
-            type: 'radar',
-            data: {
-                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
-                datasets: [{
-                    label: 'Effectiveness %',
-                    data: [11, 55, 70, 75, 85],
-                    backgroundColor: 'rgba(0, 212, 170, 0.2)',
-                    borderColor: '#00d4aa',
-                    pointBackgroundColor: '#00d4aa'
-                }]
-            },
-            options: { responsive: true, scales: { r: { beginAtZero: true, max: 100 } } }
-        });
-
-        // Backtest Chart
-        new Chart(document.getElementById('backtestChart'), {
-            type: 'line',
-            data: {
-                labels: ['Jan 24', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan 25', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan 26'],
-                datasets: [
-                    { label: 'Unhedged', data: [100, 105, 110, 108, 115, 120, 125, 130, 128, 138, 142, 148, 150], borderColor: '#ff6b6b', tension: 0.4, fill: false },
-                    { label: 'Hedged', data: [100, 104, 108, 107, 113, 117, 122, 126, 125, 134, 138, 144, 148], borderColor: '#00d4aa', tension: 0.4, fill: false }
-                ]
-            },
-            options: { responsive: true }
-        });
-
         // Initialize
         updateAllDisplays();
         updateGreeks();
+        analyzeStrategy(); // Initialize option strategy analysis
     </script>
 </body>
 </html>
