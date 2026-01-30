@@ -1657,12 +1657,39 @@
             const position = portfolio[index];
             const liveData = livePrices[position.ticker];
             const currentPrice = liveData ? liveData.price : position.price;
-            const value = (position.shares * currentPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
+            const totalValue = (position.shares * currentPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
 
-            if (confirm(`Sell ${position.shares} shares of ${position.ticker}?\n\nCurrent Value: $${value}\n\nThis will remove the position from your portfolio.`)) {
-                portfolio.splice(index, 1);
-                renderPortfolio();
+            const sharesToSell = prompt(
+                `Sell ${position.ticker}\n\nYou own: ${position.shares} shares\nCurrent Price: $${currentPrice.toFixed(2)}\nTotal Value: $${totalValue}\n\nEnter number of shares to sell:`,
+                position.shares
+            );
+
+            if (sharesToSell === null) return; // User cancelled
+
+            const sellQty = parseInt(sharesToSell);
+
+            if (isNaN(sellQty) || sellQty <= 0) {
+                alert('Please enter a valid number of shares.');
+                return;
             }
+
+            if (sellQty > position.shares) {
+                alert(`You only own ${position.shares} shares of ${position.ticker}.`);
+                return;
+            }
+
+            const sellValue = (sellQty * currentPrice).toLocaleString(undefined, {maximumFractionDigits: 2});
+
+            if (sellQty === position.shares) {
+                // Selling all shares - remove position
+                portfolio.splice(index, 1);
+            } else {
+                // Partial sell - reduce shares
+                portfolio[index].shares -= sellQty;
+            }
+
+            renderPortfolio();
+            alert(`Sold ${sellQty} shares of ${position.ticker} for $${sellValue}`);
         }
 
         function loadDemoPortfolio() {
