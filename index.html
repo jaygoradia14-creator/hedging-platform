@@ -1117,97 +1117,99 @@
         // ==================== SECTOR MAPPING ====================
         const SECTOR_MAP = {
             // Technology
-            AAPL: 'Technology', MSFT: 'Technology', GOOGL: 'Technology', GOOG: 'Technology', META: 'Technology',
-            AMZN: 'Technology', NVDA: 'Technology', AMD: 'Technology', INTC: 'Technology', CRM: 'Technology',
-            ADBE: 'Technology', ORCL: 'Technology', CSCO: 'Technology', IBM: 'Technology', AVGO: 'Technology',
-            QCOM: 'Technology', TXN: 'Technology', NOW: 'Technology', SHOP: 'Technology', SQ: 'Technology',
-            PYPL: 'Technology', NFLX: 'Technology', UBER: 'Technology', LYFT: 'Technology', SNAP: 'Technology',
-            TWLO: 'Technology', ZM: 'Technology', DOCU: 'Technology', NET: 'Technology', CRWD: 'Technology',
-            PANW: 'Technology', ZS: 'Technology', DDOG: 'Technology', MDB: 'Technology', SNOW: 'Technology',
-            PLTR: 'Technology', TSLA: 'Technology', RIVN: 'Technology', LCID: 'Technology', QQQ: 'Technology',
+            'AAPL': 'Technology', 'MSFT': 'Technology', 'GOOGL': 'Technology', 'GOOG': 'Technology', 'META': 'Technology',
+            'AMZN': 'Technology', 'NVDA': 'Technology', 'AMD': 'Technology', 'INTC': 'Technology', 'CRM': 'Technology',
+            'ADBE': 'Technology', 'ORCL': 'Technology', 'CSCO': 'Technology', 'IBM': 'Technology', 'AVGO': 'Technology',
+            'QCOM': 'Technology', 'TXN': 'Technology', 'NOW': 'Technology', 'SHOP': 'Technology', 'SQ': 'Technology',
+            'PYPL': 'Technology', 'NFLX': 'Technology', 'UBER': 'Technology', 'LYFT': 'Technology', 'SNAP': 'Technology',
+            'TWLO': 'Technology', 'ZM': 'Technology', 'DOCU': 'Technology', 'NET': 'Technology', 'CRWD': 'Technology',
+            'PANW': 'Technology', 'ZS': 'Technology', 'DDOG': 'Technology', 'MDB': 'Technology', 'SNOW': 'Technology',
+            'PLTR': 'Technology', 'TSLA': 'Technology', 'RIVN': 'Technology', 'LCID': 'Technology', 'QQQ': 'Technology',
 
             // Financials
-            JPM: 'Financials', BAC: 'Financials', WFC: 'Financials', C: 'Financials', GS: 'Financials',
-            MS: 'Financials', BLK: 'Financials', SCHW: 'Financials', AXP: 'Financials', V: 'Financials',
-            MA: 'Financials', COF: 'Financials', USB: 'Financials', PNC: 'Financials', TFC: 'Financials',
-            BK: 'Financials', STT: 'Financials', SPGI: 'Financials', ICE: 'Financials', CME: 'Financials',
-            MCO: 'Financials', MSCI: 'Financials', AON: 'Financials', MMC: 'Financials', MET: 'Financials',
-            PRU: 'Financials', AIG: 'Financials', ALL: 'Financials', TRV: 'Financials', XLF: 'Financials',
+            'JPM': 'Financials', 'BAC': 'Financials', 'WFC': 'Financials', 'C': 'Financials', 'GS': 'Financials',
+            'MS': 'Financials', 'BLK': 'Financials', 'SCHW': 'Financials', 'AXP': 'Financials', 'V': 'Financials',
+            'MA': 'Financials', 'COF': 'Financials', 'USB': 'Financials', 'PNC': 'Financials', 'TFC': 'Financials',
+            'BK': 'Financials', 'STT': 'Financials', 'SPGI': 'Financials', 'ICE': 'Financials', 'CME': 'Financials',
+            'MCO': 'Financials', 'MSCI': 'Financials', 'AON': 'Financials', 'MMC': 'Financials', 'MET': 'Financials',
+            'PRU': 'Financials', 'AIG': 'Financials', 'ALL': 'Financials', 'TRV': 'Financials', 'XLF': 'Financials',
 
             // Healthcare
-            JNJ: 'Healthcare', UNH: 'Healthcare', PFE: 'Healthcare', MRK: 'Healthcare', ABBV: 'Healthcare',
-            LLY: 'Healthcare', TMO: 'Healthcare', ABT: 'Healthcare', DHR: 'Healthcare', BMY: 'Healthcare',
-            AMGN: 'Healthcare', GILD: 'Healthcare', ISRG: 'Healthcare', CVS: 'Healthcare', CI: 'Healthcare',
-            HUM: 'Healthcare', MCK: 'Healthcare', CAH: 'Healthcare', ABC: 'Healthcare', MRNA: 'Healthcare',
-            REGN: 'Healthcare', VRTX: 'Healthcare', BIIB: 'Healthcare', ZTS: 'Healthcare', SYK: 'Healthcare',
-            BDX: 'Healthcare', MDT: 'Healthcare', BSX: 'Healthcare', EW: 'Healthcare', XLV: 'Healthcare',
+            'JNJ': 'Healthcare', 'UNH': 'Healthcare', 'PFE': 'Healthcare', 'MRK': 'Healthcare', 'ABBV': 'Healthcare',
+            'LLY': 'Healthcare', 'TMO': 'Healthcare', 'ABT': 'Healthcare', 'DHR': 'Healthcare', 'BMY': 'Healthcare',
+            'AMGN': 'Healthcare', 'GILD': 'Healthcare', 'ISRG': 'Healthcare', 'CVS': 'Healthcare', 'CI': 'Healthcare',
+            'HUM': 'Healthcare', 'MCK': 'Healthcare', 'CAH': 'Healthcare', 'ABC': 'Healthcare', 'MRNA': 'Healthcare',
+            'REGN': 'Healthcare', 'VRTX': 'Healthcare', 'BIIB': 'Healthcare', 'ZTS': 'Healthcare', 'SYK': 'Healthcare',
+            'BDX': 'Healthcare', 'MDT': 'Healthcare', 'BSX': 'Healthcare', 'EW': 'Healthcare', 'XLV': 'Healthcare',
 
             // Energy
-            XOM: 'Energy', CVX: 'Energy', COP: 'Energy', EOG: 'Energy', SLB: 'Energy',
-            PXD: 'Energy', MPC: 'Energy', VLO: 'Energy', PSX: 'Energy', OXY: 'Energy',
-            HAL: 'Energy', BKR: 'Energy', KMI: 'Energy', WMB: 'Energy', OKE: 'Energy',
-            DVN: 'Energy', FANG: 'Energy', HES: 'Energy', APA: 'Energy', XLE: 'Energy',
+            'XOM': 'Energy', 'CVX': 'Energy', 'COP': 'Energy', 'EOG': 'Energy', 'SLB': 'Energy',
+            'PXD': 'Energy', 'MPC': 'Energy', 'VLO': 'Energy', 'PSX': 'Energy', 'OXY': 'Energy',
+            'HAL': 'Energy', 'BKR': 'Energy', 'KMI': 'Energy', 'WMB': 'Energy', 'OKE': 'Energy',
+            'DVN': 'Energy', 'FANG': 'Energy', 'HES': 'Energy', 'APA': 'Energy', 'XLE': 'Energy',
 
             // Consumer (Discretionary + Staples)
-            WMT: 'Consumer', COST: 'Consumer', HD: 'Consumer', LOW: 'Consumer', TGT: 'Consumer',
-            MCD: 'Consumer', SBUX: 'Consumer', NKE: 'Consumer', DIS: 'Consumer', CMCSA: 'Consumer',
-            PG: 'Consumer', KO: 'Consumer', PEP: 'Consumer', PM: 'Consumer', MO: 'Consumer',
-            CL: 'Consumer', EL: 'Consumer', KMB: 'Consumer', GIS: 'Consumer', K: 'Consumer',
-            MDLZ: 'Consumer', HSY: 'Consumer', SYY: 'Consumer', KR: 'Consumer', DG: 'Consumer',
-            DLTR: 'Consumer', ROST: 'Consumer', TJX: 'Consumer', LULU: 'Consumer', GPS: 'Consumer',
-            F: 'Consumer', GM: 'Consumer', ABNB: 'Consumer', BKNG: 'Consumer', MAR: 'Consumer',
-            HLT: 'Consumer', XLY: 'Consumer', XLP: 'Consumer',
+            'WMT': 'Consumer', 'COST': 'Consumer', 'HD': 'Consumer', 'LOW': 'Consumer', 'TGT': 'Consumer',
+            'MCD': 'Consumer', 'SBUX': 'Consumer', 'NKE': 'Consumer', 'DIS': 'Consumer', 'CMCSA': 'Consumer',
+            'PG': 'Consumer', 'KO': 'Consumer', 'PEP': 'Consumer', 'PM': 'Consumer', 'MO': 'Consumer',
+            'CL': 'Consumer', 'EL': 'Consumer', 'KMB': 'Consumer', 'GIS': 'Consumer', 'K': 'Consumer',
+            'MDLZ': 'Consumer', 'HSY': 'Consumer', 'SYY': 'Consumer', 'KR': 'Consumer', 'DG': 'Consumer',
+            'DLTR': 'Consumer', 'ROST': 'Consumer', 'TJX': 'Consumer', 'LULU': 'Consumer', 'GPS': 'Consumer',
+            'F': 'Consumer', 'GM': 'Consumer', 'ABNB': 'Consumer', 'BKNG': 'Consumer', 'MAR': 'Consumer',
+            'HLT': 'Consumer', 'XLY': 'Consumer', 'XLP': 'Consumer',
 
             // Industrials
-            CAT: 'Industrials', DE: 'Industrials', BA: 'Industrials', RTX: 'Industrials', LMT: 'Industrials',
-            GD: 'Industrials', NOC: 'Industrials', HON: 'Industrials', MMM: 'Industrials', GE: 'Industrials',
-            UPS: 'Industrials', FDX: 'Industrials', UNP: 'Industrials', CSX: 'Industrials', NSC: 'Industrials',
-            WM: 'Industrials', RSG: 'Industrials', EMR: 'Industrials', ETN: 'Industrials', ITW: 'Industrials',
-            PH: 'Industrials', ROK: 'Industrials', CMI: 'Industrials', PCAR: 'Industrials', XLI: 'Industrials',
+            'CAT': 'Industrials', 'DE': 'Industrials', 'BA': 'Industrials', 'RTX': 'Industrials', 'LMT': 'Industrials',
+            'GD': 'Industrials', 'NOC': 'Industrials', 'HON': 'Industrials', 'MMM': 'Industrials', 'GE': 'Industrials',
+            'UPS': 'Industrials', 'FDX': 'Industrials', 'UNP': 'Industrials', 'CSX': 'Industrials', 'NSC': 'Industrials',
+            'WM': 'Industrials', 'RSG': 'Industrials', 'EMR': 'Industrials', 'ETN': 'Industrials', 'ITW': 'Industrials',
+            'PH': 'Industrials', 'ROK': 'Industrials', 'CMI': 'Industrials', 'PCAR': 'Industrials', 'XLI': 'Industrials',
 
             // Utilities
-            NEE: 'Utilities', DUK: 'Utilities', SO: 'Utilities', D: 'Utilities', AEP: 'Utilities',
-            EXC: 'Utilities', SRE: 'Utilities', XEL: 'Utilities', PEG: 'Utilities', ED: 'Utilities',
-            WEC: 'Utilities', ES: 'Utilities', AWK: 'Utilities', XLU: 'Utilities',
+            'NEE': 'Utilities', 'DUK': 'Utilities', 'SO': 'Utilities', 'D': 'Utilities', 'AEP': 'Utilities',
+            'EXC': 'Utilities', 'SRE': 'Utilities', 'XEL': 'Utilities', 'PEG': 'Utilities', 'ED': 'Utilities',
+            'WEC': 'Utilities', 'ES': 'Utilities', 'AWK': 'Utilities', 'XLU': 'Utilities',
 
             // Real Estate
-            AMT: 'Real Estate', PLD: 'Real Estate', CCI: 'Real Estate', EQIX: 'Real Estate', PSA: 'Real Estate',
-            SPG: 'Real Estate', O: 'Real Estate', WELL: 'Real Estate', AVB: 'Real Estate', EQR: 'Real Estate',
-            DLR: 'Real Estate', VTR: 'Real Estate', ARE: 'Real Estate', XLRE: 'Real Estate',
+            'AMT': 'Real Estate', 'PLD': 'Real Estate', 'CCI': 'Real Estate', 'EQIX': 'Real Estate', 'PSA': 'Real Estate',
+            'SPG': 'Real Estate', 'O': 'Real Estate', 'WELL': 'Real Estate', 'AVB': 'Real Estate', 'EQR': 'Real Estate',
+            'DLR': 'Real Estate', 'VTR': 'Real Estate', 'ARE': 'Real Estate', 'XLRE': 'Real Estate',
 
             // Communications
-            T: 'Communications', VZ: 'Communications', TMUS: 'Communications', CHTR: 'Communications',
-            ATVI: 'Communications', EA: 'Communications', TTWO: 'Communications', WBD: 'Communications',
-            PARA: 'Communications', FOX: 'Communications', FOXA: 'Communications', XLC: 'Communications',
+            'T': 'Communications', 'VZ': 'Communications', 'TMUS': 'Communications', 'CHTR': 'Communications',
+            'ATVI': 'Communications', 'EA': 'Communications', 'TTWO': 'Communications', 'WBD': 'Communications',
+            'PARA': 'Communications', 'FOX': 'Communications', 'FOXA': 'Communications', 'XLC': 'Communications',
 
             // Materials
-            LIN: 'Materials', APD: 'Materials', SHW: 'Materials', ECL: 'Materials', DD: 'Materials',
-            DOW: 'Materials', NEM: 'Materials', FCX: 'Materials', NUE: 'Materials', VMC: 'Materials',
-            MLM: 'Materials', ALB: 'Materials', XLB: 'Materials',
+            'LIN': 'Materials', 'APD': 'Materials', 'SHW': 'Materials', 'ECL': 'Materials', 'DD': 'Materials',
+            'DOW': 'Materials', 'NEM': 'Materials', 'FCX': 'Materials', 'NUE': 'Materials', 'VMC': 'Materials',
+            'MLM': 'Materials', 'ALB': 'Materials', 'XLB': 'Materials',
 
             // Bonds/Fixed Income ETFs
-            TLT: 'Bonds', IEF: 'Bonds', SHY: 'Bonds', BND: 'Bonds', AGG: 'Bonds',
-            LQD: 'Bonds', HYG: 'Bonds', JNK: 'Bonds', TIP: 'Bonds', GOVT: 'Bonds',
-            VCIT: 'Bonds', VCSH: 'Bonds', MUB: 'Bonds', EMB: 'Bonds',
+            'TLT': 'Bonds', 'IEF': 'Bonds', 'SHY': 'Bonds', 'BND': 'Bonds', 'AGG': 'Bonds',
+            'LQD': 'Bonds', 'HYG': 'Bonds', 'JNK': 'Bonds', 'TIP': 'Bonds', 'GOVT': 'Bonds',
+            'VCIT': 'Bonds', 'VCSH': 'Bonds', 'MUB': 'Bonds', 'EMB': 'Bonds',
 
             // Commodities
-            GLD: 'Commodities', SLV: 'Commodities', IAU: 'Commodities', GDX: 'Commodities', GDXJ: 'Commodities',
-            USO: 'Commodities', UNG: 'Commodities', DBA: 'Commodities', DBC: 'Commodities', PDBC: 'Commodities',
-            GOLD: 'Commodities', NEM: 'Commodities', VALE: 'Commodities', BHP: 'Commodities', RIO: 'Commodities',
+            'GLD': 'Commodities', 'SLV': 'Commodities', 'IAU': 'Commodities', 'GDX': 'Commodities', 'GDXJ': 'Commodities',
+            'USO': 'Commodities', 'UNG': 'Commodities', 'DBA': 'Commodities', 'DBC': 'Commodities', 'PDBC': 'Commodities',
+            'GOLD': 'Commodities', 'NEM': 'Commodities', 'VALE': 'Commodities', 'BHP': 'Commodities', 'RIO': 'Commodities',
 
             // Index ETFs
-            SPY: 'Index', IVV: 'Index', VOO: 'Index', VTI: 'Index', IWM: 'Index',
-            DIA: 'Index', VEA: 'Index', VWO: 'Index', EFA: 'Index', EEM: 'Index',
-            IEMG: 'Index', VIG: 'Index', SCHD: 'Index', VYM: 'Index', DVY: 'Index',
+            'SPY': 'Index', 'IVV': 'Index', 'VOO': 'Index', 'VTI': 'Index', 'IWM': 'Index',
+            'DIA': 'Index', 'VEA': 'Index', 'VWO': 'Index', 'EFA': 'Index', 'EEM': 'Index',
+            'IEMG': 'Index', 'VIG': 'Index', 'SCHD': 'Index', 'VYM': 'Index', 'DVY': 'Index',
 
             // Crypto-related
-            COIN: 'Crypto', MSTR: 'Crypto', MARA: 'Crypto', RIOT: 'Crypto', BITO: 'Crypto',
+            'COIN': 'Crypto', 'MSTR': 'Crypto', 'MARA': 'Crypto', 'RIOT': 'Crypto', 'BITO': 'Crypto',
         };
 
         function getSector(ticker) {
             // Clean the ticker - remove exchange suffix (.US, .L, etc) and extra characters
             const cleanTicker = ticker.toUpperCase().split('.')[0].split('-')[0].replace(/[^A-Z]/g, '');
-            return SECTOR_MAP[cleanTicker] || 'Other';
+            const sector = SECTOR_MAP[cleanTicker] || 'Other';
+            console.log(`getSector: ticker="${ticker}" → cleanTicker="${cleanTicker}" → sector="${sector}"`);
+            return sector;
         }
 
         // ==================== NAVIGATION ====================
