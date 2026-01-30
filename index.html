@@ -114,8 +114,41 @@
         @media (max-width: 768px) {
             .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
             .section { padding: 1rem; }
-            .nav-links { display: none; }
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: rgba(10, 10, 15, 0.98);
+                flex-direction: column;
+                padding: 1rem;
+                border-bottom: 1px solid var(--border);
+                gap: 0.5rem;
+            }
+            .nav-links.show { display: flex; }
+            .nav-link { width: 100%; text-align: center; padding: 1rem; }
+            .hamburger { display: flex; }
         }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px;
+            height: 3px;
+            background: var(--text);
+            border-radius: 3px;
+            transition: all 0.3s;
+        }
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
 
         .card {
             background: var(--bg-card);
@@ -466,7 +499,12 @@
 <body>
     <nav class="navbar">
         <div class="logo">🛡️ Hedging Platform</div>
-        <div class="nav-links">
+        <div class="hamburger" onclick="toggleMobileMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <div class="nav-links" id="navLinks">
             <a class="nav-link active" onclick="showSection('overview')">Overview</a>
             <a class="nav-link" onclick="showSection('portfolio')">Portfolio</a>
             <a class="nav-link" onclick="showSection('regime')">Regime</a>
@@ -1080,11 +1118,20 @@
         let livePrices = {}; // Store live price data: { ticker: { price, change, changePercent } }
 
         // ==================== NAVIGATION ====================
+        function toggleMobileMenu() {
+            document.getElementById('navLinks').classList.toggle('show');
+            document.querySelector('.hamburger').classList.toggle('active');
+        }
+
         function showSection(sectionId) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(sectionId).classList.add('active');
             event.target.classList.add('active');
+
+            // Close mobile menu after selection
+            document.getElementById('navLinks').classList.remove('show');
+            document.querySelector('.hamburger').classList.remove('active');
 
             if (sectionId === 'portfolio') {
                 renderPortfolio();
