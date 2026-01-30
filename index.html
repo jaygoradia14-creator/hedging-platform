@@ -111,26 +111,6 @@
         @media (max-width: 1200px) {
             .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
         }
-        @media (max-width: 768px) {
-            .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
-            .section { padding: 1rem; }
-            .nav-links {
-                display: none;
-                position: absolute;
-                top: 70px;
-                left: 0;
-                right: 0;
-                background: rgba(10, 10, 15, 0.98);
-                flex-direction: column;
-                padding: 1rem;
-                border-bottom: 1px solid var(--border);
-                gap: 0.5rem;
-            }
-            .nav-links.show { display: flex; }
-            .nav-link { width: 100%; text-align: center; padding: 1rem; }
-            .hamburger { display: flex; }
-        }
-
         .hamburger {
             display: none;
             flex-direction: column;
@@ -149,6 +129,26 @@
         .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(6px, 6px); }
         .hamburger.active span:nth-child(2) { opacity: 0; }
         .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+            .section { padding: 1rem; }
+            .hamburger { display: flex !important; }
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: rgba(10, 10, 15, 0.98);
+                flex-direction: column;
+                padding: 1rem;
+                border-bottom: 1px solid var(--border);
+                gap: 0.5rem;
+            }
+            .nav-links.show { display: flex !important; }
+            .nav-link { width: 100%; text-align: center; padding: 1rem; }
+        }
 
         .card {
             background: var(--bg-card);
