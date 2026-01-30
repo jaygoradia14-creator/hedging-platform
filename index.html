@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hedging Platform | Multi-Asset Options Hedging</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0a0a0f;
+            --bg-card: #12121a;
+            --bg-hover: #1a1a25;
+            --border: #2a2a3a;
+            --text: #e8e8f0;
+            --text-muted: #8888a0;
+            --accent-1: #00d4aa;
+            --accent-2: #0099ff;
+            --accent-3: #ff6b6b;
+            --accent-4: #ffd93d;
+            --accent-5: #a855f7;
+            --gradient-1: linear-gradient(135deg, #00d4aa, #0099ff);
+            --gradient-2: linear-gradient(135deg, #ff6b6b, #ffd93d);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            background: rgba(10, 10, 15, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-links { display: flex; gap: 0.5rem; }
+
+        .nav-link {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--bg-card);
+            color: var(--text);
+        }
+
+        .nav-link.active {
+            background: var(--gradient-1);
+            color: #000;
+        }
+
+        .main { padding-top: 70px; min-height: 100vh; }
+
+        .section {
+            display: none;
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-header { margin-bottom: 2rem; }
+        .section-title { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .section-subtitle { color: var(--text-muted); font-size: 1rem; }
+
+        .grid { display: grid; gap: 1.5rem; }
+        .grid-2 { grid-template-columns: repeat(2, 1fr); }
+        .grid-3 { grid-template-columns: repeat(3, 1fr); }
+        .grid-4 { grid-template-columns: repeat(4, 1fr); }
+        .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+        @media (max-width: 1200px) {
+            .grid-4, .grid-5 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .grid-2, .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; }
+            .section { padding: 1rem; }
+            .nav-links { display: none; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+        }
+
+        .card:hover {
+            border-color: var(--accent-1);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .card-change { font-size: 0.85rem; display: flex; align-items: center; gap: 0.25rem; }
+        .card-change.positive { color: var(--accent-1); }
+        .card-change.negative { color: var(--accent-3); }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value { font-size: 1.5rem; font-weight: 700; }
+        .metric-value.green { color: var(--accent-1); }
+        .metric-value.red { color: var(--accent-3); }
+        .metric-value.blue { color: var(--accent-2); }
+        .metric-value.yellow { color: var(--accent-4); }
+
+        .chart-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            height: 100%;
+        }
+
+        .chart-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
+
+        .table-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            background: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        tr:hover { background: var(--bg-hover); }
+        tr:last-child td { border-bottom: none; }
+
+        .tag {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tag-green { background: rgba(0, 212, 170, 0.15); color: var(--accent-1); }
+        .tag-red { background: rgba(255, 107, 107, 0.15); color: var(--accent-3); }
+        .tag-blue { background: rgba(0, 153, 255, 0.15); color: var(--accent-2); }
+        .tag-yellow { background: rgba(255, 217, 61, 0.15); color: var(--accent-4); }
+
+        .recommendation-box {
+            background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(0, 153, 255, 0.1));
+            border: 2px solid var(--accent-1);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .recommendation-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-1);
+            margin-bottom: 1rem;
+        }
+
+        .recommendation-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .rec-item { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; }
+        .rec-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; }
+        .rec-value { font-size: 1.1rem; font-weight: 600; }
+
+        .trade-ticket {
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .trade-line { padding: 0.5rem 0; display: flex; gap: 1rem; }
+        .trade-action { font-weight: 700; min-width: 50px; }
+        .trade-action.buy { color: var(--accent-1); }
+        .trade-action.sell { color: var(--accent-3); }
+
+        .alert {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .alert-success { background: rgba(0, 212, 170, 0.1); border: 1px solid var(--accent-1); }
+        .alert-warning { background: rgba(255, 217, 61, 0.1); border: 1px solid var(--accent-4); }
+        .alert-icon { font-size: 1.5rem; }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+        .tab:hover { background: var(--bg-card); color: var(--text); }
+        .tab.active { background: var(--gradient-1); color: #000; }
+
+        .control-group { margin-bottom: 1rem; }
+        .control-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+
+        .control-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1rem;
+        }
+        .control-input:focus { outline: none; border-color: var(--accent-1); }
+
+        .slider-container { display: flex; align-items: center; gap: 1rem; }
+
+        .slider {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-1);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .slider-value { min-width: 60px; text-align: right; font-weight: 600; }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-size: 0.9rem;
+        }
+        .btn-primary { background: var(--gradient-1); color: #000; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3); }
+        .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: var(--accent-3); color: #fff; }
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        /* Portfolio Editor Styles */
+        .stock-form {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 0.8fr 0.8fr 0.8fr 1fr auto;
+            gap: 0.75rem;
+            align-items: end;
+            margin-bottom: 1rem;
+        }
+
+        .stock-form input, .stock-form select {
+            padding: 0.6rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .search-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .search-dropdown.show { display: block; }
+
+        .search-item {
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+
+        .search-item:hover { background: var(--bg-hover); }
+
+        .search-item:last-child { border-bottom: none; }
+
+        .search-item .ticker {
+            font-weight: 700;
+            color: var(--accent-1);
+            margin-right: 0.5rem;
+        }
+
+        .search-item .name {
+            color: var(--text);
+            font-size: 0.9rem;
+        }
+
+        .search-item .type {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .delete-btn {
+            background: rgba(255, 107, 107, 0.2);
+            color: var(--accent-3);
+            border: none;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .delete-btn:hover { background: var(--accent-3); color: #fff; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background: var(--bg-dark);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0.5rem 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--gradient-1);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .monte-carlo-paths {
+            position: relative;
+        }
+
+        .simulation-status {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            .stock-form {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🛡️ Hedging Platform</div>
+        <div class="nav-links">
+            <a class="nav-link active" onclick="showSection('overview')">Overview</a>
+            <a class="nav-link" onclick="showSection('portfolio')">Portfolio</a>
+            <a class="nav-link" onclick="showSection('regime')">Regime</a>
+            <a class="nav-link" onclick="showSection('options')">Options</a>
+            <a class="nav-link" onclick="showSection('optimizer')">Optimizer</a>
+            <a class="nav-link" onclick="showSection('stress')">Stress Test</a>
+        </div>
+    </nav>
+
+    <main class="main">
+        <!-- OVERVIEW -->
+        <section id="overview" class="section active">
+            <div class="section-header">
+                <h1 class="section-title">Portfolio Hedging Dashboard</h1>
+                <p class="section-subtitle">Real-time correlation-aware hedging intelligence</p>
+            </div>
+
+            <div class="grid grid-5" style="margin-bottom: 1.5rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Portfolio Value</div>
+                    <div class="metric-value" id="totalPortfolioValue">$100,725</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Current Regime</div>
+                    <div class="metric-value blue">Normal</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Portfolio Beta</div>
+                    <div class="metric-value" id="portfolioBeta">0.82</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Avg Correlation</div>
+                    <div class="metric-value green">0.37</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Positions</div>
+                    <div class="metric-value" id="positionCount">8</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="recommendation-box">
+                    <div class="recommendation-title">🎯 Current Hedge Recommendation</div>
+                    <div class="recommendation-grid">
+                        <div class="rec-item">
+                            <div class="rec-label">Strategy</div>
+                            <div class="rec-value">Zero-Cost Collar</div>
+                        </div>
+                        <div class="rec-item">
+                            <div class="rec-label">Instrument</div>
+                            <div class="rec-value">QQQ Options</div>
+                        </div>
+                        <div class="rec-item">
+                            <div class="rec-label">Contracts</div>
+                            <div class="rec-value" id="recContracts">5</div>
+                        </div>
+                        <div class="rec-item">
+                            <div class="rec-label">Cost</div>
+                            <div class="rec-value" style="color: var(--accent-1);">$0</div>
+                        </div>
+                        <div class="rec-item">
+                            <div class="rec-label">Protection</div>
+                            <div class="rec-value">Floor -7%</div>
+                        </div>
+                        <div class="rec-item">
+                            <div class="rec-label">Upside Cap</div>
+                            <div class="rec-value">+8%</div>
+                        </div>
+                    </div>
+                    <div class="trade-ticket" style="margin-top: 1rem;">
+                        <div class="trade-line">
+                            <span class="trade-action buy">BUY</span>
+                            <span>5 QQQ 400 PUT</span>
+                            <span style="color: var(--text-muted);">30-45 DTE</span>
+                        </div>
+                        <div class="trade-line">
+                            <span class="trade-action sell">SELL</span>
+                            <span>5 QQQ 435 CALL</span>
+                            <span style="color: var(--text-muted);">30-45 DTE</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-title">Protection Profile</div>
+                    <canvas id="protectionChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-2" style="margin-top: 1.5rem;">
+                <div class="chart-container">
+                    <div class="chart-title">Regime Distribution (2 Years)</div>
+                    <canvas id="regimeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Stress Test Results</div>
+                    <canvas id="stressChart"></canvas>
+                </div>
+            </div>
+
+            <div class="alert alert-success" style="margin-top: 1.5rem;">
+                <span class="alert-icon">✓</span>
+                <div>
+                    <strong>Portfolio Protected:</strong> In a GFC-level crash (-45%), your hedged portfolio would lose only ~7%, saving approximately <strong>$38,556</strong>.
+                </div>
+            </div>
+        </section>
+
+        <!-- PORTFOLIO EDITOR -->
+        <section id="portfolio" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Portfolio Manager</h1>
+                <p class="section-subtitle">Add, edit, or remove positions from your portfolio</p>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom: 1.5rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Value</div>
+                    <div class="metric-value green" id="portfolioTotalValue">$100,725</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Portfolio Beta</div>
+                    <div class="metric-value" id="portfolioBetaDisplay">0.82</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Positions</div>
+                    <div class="metric-value" id="portfolioPositionCount">8</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Day Change</div>
+                    <div class="metric-value" id="portfolioDayChange">--</div>
+                </div>
+            </div>
+
+            <!-- Live Price Fetcher -->
+            <div class="card" style="margin-bottom: 1.5rem; border-color: var(--accent-2);">
+                <h3 style="margin-bottom: 1rem; color: var(--accent-2);">📡 Live Stock Prices</h3>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="fetchLivePrices()" id="fetchPricesBtn" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+                        🔄 Fetch Live Prices
+                    </button>
+                    <button class="btn btn-secondary" onclick="useDemoData()" style="background: var(--accent-4); color: #000;" title="Test with simulated prices">
+                        Demo Data
+                    </button>
+                    <span id="priceStatus" style="font-size: 0.85rem; color: var(--text-muted);">
+                        Click to fetch real-time prices from Yahoo Finance
+                    </span>
+                </div>
+                <div id="lastUpdated" style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted); display: none;">
+                    Last updated: <span id="lastUpdatedTime">--</span>
+                </div>
+            </div>
+
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h3 style="margin-bottom: 1rem; color: var(--accent-1);">➕ Add New Position</h3>
+                <div class="stock-form">
+                    <div style="position: relative; min-width: 200px;">
+                        <label class="control-label">Search Stock (Name or Ticker)</label>
+                        <input type="text" id="stockSearch" placeholder="e.g. Apple or AAPL" autocomplete="off" oninput="searchStock(this.value)">
+                        <div id="searchResults" class="search-dropdown"></div>
+                        <input type="hidden" id="newTicker">
+                    </div>
+                    <div>
+                        <label class="control-label">Selected</label>
+                        <div id="selectedStock" style="padding: 0.6rem; background: var(--bg-dark); border-radius: 6px; min-height: 38px; display: flex; align-items: center; color: var(--text-muted);">Type to search...</div>
+                    </div>
+                    <div>
+                        <label class="control-label">Shares</label>
+                        <input type="number" id="newShares" placeholder="100" min="1">
+                    </div>
+                    <div>
+                        <label class="control-label">Price ($)</label>
+                        <input type="number" id="newPrice" placeholder="Auto-filled" min="0" step="0.01">
+                    </div>
+                    <div>
+                        <label class="control-label">Beta</label>
+                        <input type="number" id="newBeta" placeholder="1.0" min="-2" max="3" step="0.1" value="1.0">
+                    </div>
+                    <div>
+                        <label class="control-label">Sector</label>
+                        <select id="newSector">
+                            <option value="Technology">Technology</option>
+                            <option value="Financials">Financials</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Energy">Energy</option>
+                            <option value="Consumer">Consumer</option>
+                            <option value="Industrials">Industrials</option>
+                            <option value="Bonds">Bonds</option>
+                            <option value="Commodities">Commodities</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="control-label">&nbsp;</label>
+                        <button class="btn btn-primary" onclick="addPosition()">Add</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <span>Current Positions</span>
+                    <button class="btn btn-secondary btn-sm" onclick="resetPortfolio()">Reset to Default</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticker</th>
+                            <th>Sector</th>
+                            <th>Shares</th>
+                            <th>Entry Price</th>
+                            <th>Live Price</th>
+                            <th>Change</th>
+                            <th>Value</th>
+                            <th>Weight</th>
+                            <th>Beta</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolioTable">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="grid grid-2" style="margin-top: 1.5rem;">
+                <div class="chart-container">
+                    <div class="chart-title">Sector Allocation</div>
+                    <canvas id="sectorChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Position Weights</div>
+                    <canvas id="weightChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- REGIME ANALYSIS -->
+        <section id="regime" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Regime-Aware Correlation Analysis</h1>
+                <p class="section-subtitle">Understanding market regimes and correlation dynamics</p>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom: 1.5rem;">
+                <div class="card">
+                    <div class="card-title">Current Regime</div>
+                    <div class="card-value" style="color: var(--accent-2);">Normal</div>
+                    <div class="card-change positive">Standard hedging appropriate</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Portfolio Volatility</div>
+                    <div class="card-value">14.5%</div>
+                    <div class="card-change positive">↓ Below average</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Avg Correlation</div>
+                    <div class="card-value" style="color: var(--accent-1);">0.37</div>
+                    <div class="card-change positive">Diversification working</div>
+                </div>
+                <div class="card">
+                    <div class="card-title">Diversification Ratio</div>
+                    <div class="card-value" style="color: var(--accent-1);">1.44</div>
+                    <div class="card-change positive">&gt;1 = benefit exists</div>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="chart-container">
+                    <div class="chart-title">Regime Timeline</div>
+                    <canvas id="regimeTimelineChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Correlation Over Time</div>
+                    <canvas id="correlationTimeChart"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-2" style="margin-top: 1.5rem;">
+                <div class="table-container">
+                    <div class="table-header">Normal Correlations</div>
+                    <table>
+                        <thead><tr><th>Pair</th><th>Correlation</th><th>Interpretation</th></tr></thead>
+                        <tbody>
+                            <tr><td>SPY-TLT</td><td><span class="tag tag-green">0.08</span></td><td>Low - good diversifier</td></tr>
+                            <tr><td>SPY-GLD</td><td><span class="tag tag-green">0.09</span></td><td>Low - good diversifier</td></tr>
+                            <tr><td>SPY-QQQ</td><td><span class="tag tag-red">0.95</span></td><td>High - no diversification</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-container">
+                    <div class="table-header">Tail Correlations (Stress)</div>
+                    <table>
+                        <thead><tr><th>Pair</th><th>Correlation</th><th>Interpretation</th></tr></thead>
+                        <tbody>
+                            <tr><td>SPY-TLT</td><td><span class="tag tag-green">-0.23</span></td><td>Negative = hedge works!</td></tr>
+                            <tr><td>SPY-GLD</td><td><span class="tag tag-green">-0.24</span></td><td>Negative = hedge works!</td></tr>
+                            <tr><td>SPY-QQQ</td><td><span class="tag tag-red">0.97</span></td><td>Even higher in stress</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- OPTIONS ANALYTICS -->
+        <section id="options" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Options Analytics & Greeks</h1>
+                <p class="section-subtitle">Black-Scholes pricing and sensitivity analysis</p>
+            </div>
+
+            <div class="grid grid-2" style="margin-bottom: 1.5rem;">
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent-2);">Option Parameters</h3>
+                    <div class="control-group">
+                        <label class="control-label">Underlying Price (SPY)</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="spotPrice" min="400" max="550" value="480" oninput="updateGreeks()">
+                            <span class="slider-value" id="spotPriceValue">$480</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Strike Price</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="strikePrice" min="400" max="550" value="456" oninput="updateGreeks()">
+                            <span class="slider-value" id="strikePriceValue">$456</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Days to Expiry</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="daysToExpiry" min="7" max="90" value="30" oninput="updateGreeks()">
+                            <span class="slider-value" id="daysToExpiryValue">30</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label class="control-label">Implied Volatility</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="impliedVol" min="10" max="50" value="18" oninput="updateGreeks()">
+                            <span class="slider-value" id="impliedVolValue">18%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: 1rem; color: var(--accent-1);">Option Price & Greeks</h3>
+                    <div class="grid grid-3" style="gap: 1rem;">
+                        <div class="metric-card">
+                            <div class="metric-label">Put Price</div>
+                            <div class="metric-value green" id="putPrice">$1.74</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Delta</div>
+                            <div class="metric-value" id="delta">-0.136</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Gamma</div>
+                            <div class="metric-value" id="gamma">0.0088</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Theta</div>
+                            <div class="metric-value red" id="theta">-$0.08</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Vega</div>
+                            <div class="metric-value" id="vega">$0.30</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Moneyness</div>
+                            <div class="metric-value blue" id="moneyness">5% OTM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-2">
+                <div class="chart-container">
+                    <div class="chart-title">Put Payoff at Expiry</div>
+                    <canvas id="payoffChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Delta vs. Underlying Price</div>
+                    <canvas id="deltaChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- HEDGE OPTIMIZER -->
+        <section id="optimizer" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Dynamic Hedge Optimizer</h1>
+                <p class="section-subtitle">Portfolio-aware hedging recommendations</p>
+            </div>
+
+            <div class="grid grid-4" style="margin-bottom: 1.5rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Value</div>
+                    <div class="metric-value" id="optTotalValue">$100,725</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Portfolio Beta</div>
+                    <div class="metric-value" id="optBeta">0.82</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Positions</div>
+                    <div class="metric-value" id="optPositions">8</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Tech Concentration</div>
+                    <div class="metric-value yellow" id="optTechConc">52%</div>
+                </div>
+            </div>
+
+            <div class="recommendation-box">
+                <div class="recommendation-title">🎯 Optimized Recommendation</div>
+                <div class="recommendation-grid">
+                    <div class="rec-item">
+                        <div class="rec-label">Strategy</div>
+                        <div class="rec-value">Zero-Cost Collar</div>
+                    </div>
+                    <div class="rec-item">
+                        <div class="rec-label">Instrument</div>
+                        <div class="rec-value">QQQ Options</div>
+                    </div>
+                    <div class="rec-item">
+                        <div class="rec-label">Hedge Ratio</div>
+                        <div class="rec-value">82.1%</div>
+                    </div>
+                    <div class="rec-item">
+                        <div class="rec-label">Notional</div>
+                        <div class="rec-value" id="optNotional">$82,731</div>
+                    </div>
+                    <div class="rec-item">
+                        <div class="rec-label">Contracts</div>
+                        <div class="rec-value" id="optContracts">5</div>
+                    </div>
+                    <div class="rec-item">
+                        <div class="rec-label">Annual Cost</div>
+                        <div class="rec-value" style="color: var(--accent-1);">$0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 1.5rem;">
+                <div class="chart-title">Strategy Suitability Scores</div>
+                <canvas id="strategyScoresChart"></canvas>
+            </div>
+        </section>
+
+        <!-- STRESS TESTING -->
+        <section id="stress" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Backtesting & Stress Testing</h1>
+                <p class="section-subtitle">Historical performance and scenario analysis</p>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" onclick="showStressTab('scenarios')">Scenario Analysis</div>
+                <div class="tab" onclick="showStressTab('backtest')">Historical Backtest</div>
+                <div class="tab" onclick="showStressTab('montecarlo')">Monte Carlo</div>
+            </div>
+
+            <!-- Scenarios Tab -->
+            <div id="scenarios-tab">
+                <div class="table-container">
+                    <div class="table-header">Stress Test Results</div>
+                    <table>
+                        <thead>
+                            <tr><th>Scenario</th><th>Duration</th><th>Unhedged</th><th>Hedged</th><th>Savings</th><th>Effectiveness</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Equity -10%</strong></td><td>5 days</td>
+                                <td style="color: var(--accent-3);">-7.9%</td><td>-7.0%</td>
+                                <td style="color: var(--accent-1);">$882</td><td><span class="tag tag-yellow">11%</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Equity -20%</strong></td><td>15 days</td>
+                                <td style="color: var(--accent-3);">-15.5%</td><td>-7.0%</td>
+                                <td style="color: var(--accent-1);">$8,528</td><td><span class="tag tag-blue">55%</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Equity -30%</strong></td><td>30 days</td>
+                                <td style="color: var(--accent-3);">-23.2%</td><td>-7.0%</td>
+                                <td style="color: var(--accent-1);">$16,272</td><td><span class="tag tag-green">70%</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>COVID Crash</strong></td><td>23 days</td>
+                                <td style="color: var(--accent-3);">-28.4%</td><td>-7.0%</td>
+                                <td style="color: var(--accent-1);">$21,569</td><td><span class="tag tag-green">75%</span></td>
+                            </tr>
+                            <tr style="background: rgba(255, 107, 107, 0.1);">
+                                <td><strong>GFC 2008</strong></td><td>250 days</td>
+                                <td style="color: var(--accent-3);">-45.3%</td><td>-7.0%</td>
+                                <td style="color: var(--accent-1);">$38,556</td><td><span class="tag tag-green">85%</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="grid grid-2" style="margin-top: 1.5rem;">
+                    <div class="chart-container">
+                        <div class="chart-title">Unhedged vs Hedged Returns</div>
+                        <canvas id="stressComparisonChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Hedge Effectiveness</div>
+                        <canvas id="effectivenessChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backtest Tab -->
+            <div id="backtest-tab" style="display: none;">
+                <div class="grid grid-2">
+                    <div class="chart-container">
+                        <div class="chart-title">Cumulative Returns (2 Years)</div>
+                        <canvas id="backtestChart"></canvas>
+                    </div>
+                    <div class="table-container">
+                        <div class="table-header">Performance Metrics</div>
+                        <table>
+                            <thead><tr><th>Metric</th><th>Unhedged</th><th>Hedged</th></tr></thead>
+                            <tbody>
+                                <tr><td>Total Return</td><td>50.2%</td><td>48.4%</td></tr>
+                                <tr><td>Annual Volatility</td><td>11.5%</td><td>11.2%</td></tr>
+                                <tr><td>Sharpe Ratio</td><td>1.84</td><td>1.84</td></tr>
+                                <tr><td>Sortino Ratio</td><td>2.55</td><td style="color: var(--accent-1);">2.81</td></tr>
+                                <tr><td>Max Drawdown</td><td style="color: var(--accent-3);">-10.8%</td><td style="color: var(--accent-1);">-9.1%</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monte Carlo Tab -->
+            <div id="montecarlo-tab" style="display: none;">
+                <div class="grid grid-2">
+                    <div class="card">
+                        <h3 style="margin-bottom: 1rem;">Simulation Parameters</h3>
+                        <div class="control-group">
+                            <label class="control-label">Number of Simulations</label>
+                            <input type="number" class="control-input" id="mcSimulations" value="1000" min="100" max="10000">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Time Horizon (days)</label>
+                            <input type="number" class="control-input" id="mcDays" value="63" min="21" max="252">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Expected Annual Return (%)</label>
+                            <input type="number" class="control-input" id="mcReturn" value="8" step="0.5">
+                        </div>
+                        <div class="control-group">
+                            <label class="control-label">Annual Volatility (%)</label>
+                            <input type="number" class="control-input" id="mcVol" value="20" min="5" max="50">
+                        </div>
+                        <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="runMonteCarlo()">
+                            Run Simulation
+                        </button>
+                        <div class="progress-bar-container" id="mcProgressContainer" style="display: none; margin-top: 1rem;">
+                            <div class="progress-bar-fill" id="mcProgress" style="width: 0%;">0%</div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">Simulation Results</div>
+                        <canvas id="monteCarloChart"></canvas>
+                        <div class="simulation-status" id="mcStatus">Click "Run Simulation" to generate paths</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-4" style="margin-top: 1.5rem;">
+                    <div class="metric-card">
+                        <div class="metric-label">Median Return</div>
+                        <div class="metric-value green" id="mcMedian">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">5th Percentile</div>
+                        <div class="metric-value red" id="mc5th">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">P(Loss)</div>
+                        <div class="metric-value yellow" id="mcPLoss">--</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">P(Loss > 15%)</div>
+                        <div class="metric-value" id="mcPSevere">--</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p><strong>Multi-Asset Hedging Platform</strong> | Built with DRIVER Framework</p>
+        <p>Jay Goradia | January 2026</p>
+    </footer>
+
+    <script>
+        // ==================== PORTFOLIO DATA ====================
+        let portfolio = [
+            { ticker: 'MSFT', shares: 80, price: 420.00, beta: 1.10, sector: 'Technology' },
+            { ticker: 'AAPL', shares: 100, price: 185.00, beta: 1.20, sector: 'Technology' },
+            { ticker: 'JPM', shares: 50, price: 195.00, beta: 1.15, sector: 'Financials' },
+            { ticker: 'GLD', shares: 50, price: 195.00, beta: 0.10, sector: 'Commodities' },
+            { ticker: 'TLT', shares: 100, price: 92.00, beta: -0.30, sector: 'Bonds' },
+            { ticker: 'PG', shares: 45, price: 165.00, beta: 0.50, sector: 'Consumer' },
+            { ticker: 'XOM', shares: 60, price: 105.00, beta: 0.90, sector: 'Energy' },
+            { ticker: 'JNJ', shares: 40, price: 155.00, beta: 0.70, sector: 'Healthcare' }
+        ];
+
+        let sectorChart, weightChart, monteCarloChart;
+        let livePrices = {}; // Store live price data: { ticker: { price, change, changePercent } }
+
+        // ==================== NAVIGATION ====================
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById(sectionId).classList.add('active');
+            event.target.classList.add('active');
+
+            if (sectionId === 'portfolio') {
+                renderPortfolio();
+            }
+        }
+
+        function showStressTab(tabId) {
+            document.querySelectorAll('[id$="-tab"]').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId + '-tab').style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        // ==================== PORTFOLIO FUNCTIONS ====================
+        function calculatePortfolioMetrics() {
+            let totalValue = 0;
+            let betaExposure = 0;
+            let sectorTotals = {};
+
+            portfolio.forEach(p => {
+                const value = p.shares * p.price;
+                totalValue += value;
+                betaExposure += value * p.beta;
+                sectorTotals[p.sector] = (sectorTotals[p.sector] || 0) + value;
+            });
+
+            const portfolioBeta = totalValue > 0 ? betaExposure / totalValue : 0;
+            const techConcentration = ((sectorTotals['Technology'] || 0) / totalValue * 100).toFixed(0);
+
+            return { totalValue, portfolioBeta, sectorTotals, techConcentration };
+        }
+
+        function updateAllDisplays() {
+            const metrics = calculatePortfolioMetrics();
+
+            // Update all displays
+            const displays = [
+                'totalPortfolioValue', 'portfolioTotalValue', 'optTotalValue'
+            ];
+            displays.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = '$' + metrics.totalValue.toLocaleString(undefined, {maximumFractionDigits: 0});
+            });
+
+            const betaDisplays = ['portfolioBeta', 'portfolioBetaDisplay', 'optBeta'];
+            betaDisplays.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = metrics.portfolioBeta.toFixed(2);
+            });
+
+            const countDisplays = ['positionCount', 'portfolioPositionCount', 'optPositions'];
+            countDisplays.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = portfolio.length;
+            });
+
+            const techEl = document.getElementById('optTechConc');
+            if (techEl) techEl.textContent = metrics.techConcentration + '%';
+
+            const notionalEl = document.getElementById('optNotional');
+            if (notionalEl) notionalEl.textContent = '$' + Math.round(metrics.totalValue * 0.821).toLocaleString();
+
+            const contractsEl = document.getElementById('optContracts');
+            if (contractsEl) contractsEl.textContent = Math.max(1, Math.round(metrics.totalValue / 20000));
+
+            const recContractsEl = document.getElementById('recContracts');
+            if (recContractsEl) recContractsEl.textContent = Math.max(1, Math.round(metrics.totalValue / 20000));
+        }
+
+        function renderPortfolio() {
+            const metrics = calculatePortfolioMetrics();
+            const tbody = document.getElementById('portfolioTable');
+            tbody.innerHTML = '';
+
+            portfolio.forEach((p, index) => {
+                const liveData = livePrices[p.ticker];
+                const currentPrice = liveData ? liveData.price : p.price;
+                const value = p.shares * currentPrice;
+                const weight = (value / metrics.totalValue * 100).toFixed(1);
+
+                // Calculate change
+                let changeDisplay = '--';
+                let changeClass = '';
+                if (liveData) {
+                    const change = liveData.changePercent;
+                    changeClass = change >= 0 ? 'positive' : 'negative';
+                    changeDisplay = `<span class="${changeClass}">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</span>`;
+                }
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${p.ticker}</strong></td>
+                        <td>${p.sector}</td>
+                        <td>${p.shares}</td>
+                        <td>$${p.price.toFixed(2)}</td>
+                        <td class="live-price" data-ticker="${p.ticker}">${liveData ? '$' + currentPrice.toFixed(2) : '<span style="color: var(--text-muted);">--</span>'}</td>
+                        <td class="price-change" data-ticker="${p.ticker}">${changeDisplay}</td>
+                        <td>$${value.toLocaleString(undefined, {maximumFractionDigits: 0})}</td>
+                        <td>${weight}%</td>
+                        <td>${p.beta.toFixed(2)}</td>
+                        <td><button class="delete-btn" onclick="removePosition(${index})">✕</button></td>
+                    </tr>
+                `;
+            });
+
+            updateAllDisplays();
+            updatePortfolioCharts();
+            updateDayChange();
+        }
+
+        // ==================== STOCK SEARCH ====================
+        let searchTimeout = null;
+        let selectedStockData = null;
+
+        async function searchStock(query) {
+            clearTimeout(searchTimeout);
+            const dropdown = document.getElementById('searchResults');
+
+            if (query.length < 1) {
+                dropdown.classList.remove('show');
+                return;
+            }
+
+            searchTimeout = setTimeout(async () => {
+                dropdown.innerHTML = '<div class="search-item" style="color: var(--text-muted);">Searching...</div>';
+                dropdown.classList.add('show');
+
+                // Try multiple proxies for Yahoo Finance search
+                const proxies = [
+                    (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                    (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                    (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+                ];
+
+                let results = [];
+                const yahooUrl = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=10&newsCount=0`;
+
+                for (const proxyFn of proxies) {
+                    if (results.length > 0) break;
+                    try {
+                        const response = await fetch(proxyFn(yahooUrl));
+                        const text = await response.text();
+                        let data;
+                        try {
+                            const parsed = JSON.parse(text);
+                            data = parsed.contents ? JSON.parse(parsed.contents) : parsed;
+                        } catch (e) {
+                            data = JSON.parse(text);
+                        }
+
+                        if (data.quotes) {
+                            results = data.quotes
+                                .filter(q => q.quoteType === 'EQUITY' || q.quoteType === 'ETF')
+                                .slice(0, 8)
+                                .map(q => ({
+                                    symbol: q.symbol,
+                                    name: q.shortname || q.longname || q.symbol,
+                                    type: q.quoteType,
+                                    exchange: q.exchange
+                                }));
+                        }
+                    } catch (error) {
+                        console.log('Proxy failed, trying next...');
+                    }
+                }
+
+                if (results.length > 0) {
+                    dropdown.innerHTML = results.map(r => `
+                        <div class="search-item" onclick="selectStock('${r.symbol}', '${r.name.replace(/'/g, "\\'")}', '${r.type}')">
+                            <span class="ticker">${r.symbol}</span>
+                            <span class="name">${r.name}</span>
+                            <div class="type">${r.type} · ${r.exchange || 'US'}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    dropdown.innerHTML = '<div class="search-item" style="color: var(--text-muted);">No results. Try typing a ticker like AAPL, MSFT, or GOOGL</div>';
+                }
+                dropdown.classList.add('show');
+            }, 400);
+        }
+
+        async function selectStock(symbol, name, type) {
+            document.getElementById('searchResults').classList.remove('show');
+            document.getElementById('stockSearch').value = '';
+            document.getElementById('newTicker').value = symbol;
+            document.getElementById('selectedStock').innerHTML = `<span style="color: var(--accent-1); font-weight: 600;">${symbol}</span> - ${name} <span style="color: var(--accent-2); font-size: 0.8rem;">(fetching price...)</span>`;
+            selectedStockData = { symbol, name, type };
+
+            // Fetch current price from Yahoo Finance
+            const proxies = [
+                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+            ];
+
+            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+            let priceFound = false;
+
+            for (const proxyFn of proxies) {
+                if (priceFound) break;
+                try {
+                    const response = await fetch(proxyFn(yahooUrl));
+                    const text = await response.text();
+                    let data;
+                    try {
+                        const parsed = JSON.parse(text);
+                        data = parsed.contents ? JSON.parse(parsed.contents) : parsed;
+                    } catch (e) {
+                        data = JSON.parse(text);
+                    }
+
+                    if (data.chart?.result?.[0]?.meta) {
+                        const price = data.chart.result[0].meta.regularMarketPrice || data.chart.result[0].meta.previousClose;
+                        if (price > 0) {
+                            document.getElementById('newPrice').value = price.toFixed(2);
+                            document.getElementById('selectedStock').innerHTML = `<span style="color: var(--accent-1); font-weight: 600;">${symbol}</span> - ${name} <span style="color: var(--accent-1);">@ $${price.toFixed(2)}</span>`;
+                            priceFound = true;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Price fetch failed, trying next proxy...');
+                }
+            }
+
+            if (!priceFound) {
+                document.getElementById('selectedStock').innerHTML = `<span style="color: var(--accent-1); font-weight: 600;">${symbol}</span> - ${name} <span style="color: var(--text-muted);">(enter price manually)</span>`;
+            }
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#stockSearch') && !e.target.closest('#searchResults')) {
+                document.getElementById('searchResults')?.classList.remove('show');
+            }
+        });
+
+        function addPosition() {
+            const ticker = document.getElementById('newTicker').value.toUpperCase().trim();
+            const shares = parseFloat(document.getElementById('newShares').value);
+            const price = parseFloat(document.getElementById('newPrice').value);
+            const beta = parseFloat(document.getElementById('newBeta').value);
+            const sector = document.getElementById('newSector').value;
+
+            if (!ticker || !shares || !price) {
+                alert('Please search and select a stock, then enter shares. Price is auto-filled.');
+                return;
+            }
+
+            portfolio.push({ ticker, shares, price, beta: beta || 1.0, sector });
+
+            // Clear form
+            document.getElementById('newTicker').value = '';
+            document.getElementById('stockSearch').value = '';
+            document.getElementById('selectedStock').innerHTML = '<span style="color: var(--text-muted);">Type to search...</span>';
+            document.getElementById('newShares').value = '';
+            document.getElementById('newPrice').value = '';
+            document.getElementById('newBeta').value = '1.0';
+            selectedStockData = null;
+
+            renderPortfolio();
+        }
+
+        function removePosition(index) {
+            portfolio.splice(index, 1);
+            renderPortfolio();
+        }
+
+        function resetPortfolio() {
+            portfolio = [
+                { ticker: 'MSFT', shares: 80, price: 420.00, beta: 1.10, sector: 'Technology' },
+                { ticker: 'AAPL', shares: 100, price: 185.00, beta: 1.20, sector: 'Technology' },
+                { ticker: 'JPM', shares: 50, price: 195.00, beta: 1.15, sector: 'Financials' },
+                { ticker: 'GLD', shares: 50, price: 195.00, beta: 0.10, sector: 'Commodities' },
+                { ticker: 'TLT', shares: 100, price: 92.00, beta: -0.30, sector: 'Bonds' },
+                { ticker: 'PG', shares: 45, price: 165.00, beta: 0.50, sector: 'Consumer' },
+                { ticker: 'XOM', shares: 60, price: 105.00, beta: 0.90, sector: 'Energy' },
+                { ticker: 'JNJ', shares: 40, price: 155.00, beta: 0.70, sector: 'Healthcare' }
+            ];
+            livePrices = {};
+            renderPortfolio();
+        }
+
+        // ==================== LIVE PRICE FETCHING ====================
+        async function fetchLivePrices() {
+            const btn = document.getElementById('fetchPricesBtn');
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Fetching...';
+            document.getElementById('priceStatus').innerHTML = '<span style="color: var(--accent-2);">Fetching via Yahoo Finance...</span>';
+
+            let successCount = 0, errorCount = 0;
+
+            // Multiple proxy options for reliability
+            const proxies = [
+                (url) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+                (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+            ];
+
+            for (const p of portfolio) {
+                let fetched = false;
+                for (const proxyFn of proxies) {
+                    if (fetched) break;
+                    try {
+                        const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${p.ticker}?interval=1d&range=1d`;
+                        const proxyUrl = proxyFn(yahooUrl);
+                        const response = await fetch(proxyUrl, { timeout: 5000 });
+                        let data;
+
+                        const text = await response.text();
+                        try {
+                            const parsed = JSON.parse(text);
+                            // AllOrigins wraps in contents
+                            data = parsed.contents ? JSON.parse(parsed.contents) : parsed;
+                        } catch (e) {
+                            data = JSON.parse(text);
+                        }
+
+                        if (data.chart?.result?.[0]) {
+                            const meta = data.chart.result[0].meta;
+                            const currentPrice = meta.regularMarketPrice || meta.previousClose;
+                            const prevClose = meta.chartPreviousClose || meta.previousClose;
+                            livePrices[p.ticker] = {
+                                price: currentPrice,
+                                change: currentPrice - prevClose,
+                                changePercent: ((currentPrice - prevClose) / prevClose) * 100,
+                                prevClose: prevClose
+                            };
+                            successCount++;
+                            fetched = true;
+                        }
+                    } catch (error) {
+                        console.log(`Proxy failed for ${p.ticker}:`, error.message);
+                    }
+                }
+                if (!fetched) errorCount++;
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                // Update progress
+                const progress = Math.round((successCount + errorCount) / portfolio.length * 100);
+                document.getElementById('priceStatus').innerHTML = `<span style="color: var(--accent-2);">Fetching... ${progress}% (${successCount} loaded)</span>`;
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '🔄 Fetch Live Prices';
+            document.getElementById('lastUpdated').style.display = 'block';
+            document.getElementById('lastUpdatedTime').textContent = new Date().toLocaleTimeString();
+
+            if (successCount === 0) {
+                document.getElementById('priceStatus').innerHTML = `<span style="color: var(--accent-3);">Could not fetch prices. Try Demo Data or check your internet connection.</span>`;
+            } else {
+                document.getElementById('priceStatus').innerHTML = `<span style="color: var(--accent-1);">✓ Updated ${successCount}/${portfolio.length} prices from Yahoo Finance</span>`;
+            }
+            renderPortfolio();
+        }
+
+        // Demo mode - simulate live prices for testing
+        function useDemoData() {
+            const changes = { 'MSFT': 1.2, 'AAPL': -0.8, 'JPM': 0.5, 'GLD': 0.3, 'TLT': -0.2, 'PG': 0.4, 'XOM': -0.6, 'JNJ': 0.2 };
+            portfolio.forEach(p => {
+                const changePercent = changes[p.ticker] || (Math.random() * 4 - 2);
+                const change = p.price * (changePercent / 100);
+                livePrices[p.ticker] = {
+                    price: p.price + change,
+                    change: change,
+                    changePercent: changePercent,
+                    prevClose: p.price
+                };
+            });
+            document.getElementById('lastUpdated').style.display = 'block';
+            document.getElementById('lastUpdatedTime').textContent = new Date().toLocaleTimeString() + ' (Demo)';
+            document.getElementById('priceStatus').innerHTML = '<span style="color: var(--accent-4);">Using demo data - prices are simulated</span>';
+            renderPortfolio();
+        }
+
+        function updateDayChange() {
+            let totalDayChange = 0, hasLivePrices = false;
+            portfolio.forEach(p => {
+                if (livePrices[p.ticker]) {
+                    hasLivePrices = true;
+                    totalDayChange += p.shares * livePrices[p.ticker].change;
+                }
+            });
+            const el = document.getElementById('portfolioDayChange');
+            if (el) {
+                if (hasLivePrices) {
+                    el.textContent = (totalDayChange >= 0 ? '+$' : '-$') + Math.abs(totalDayChange).toLocaleString(undefined, {maximumFractionDigits: 0});
+                    el.className = 'metric-value ' + (totalDayChange >= 0 ? 'green' : 'red');
+                } else { el.textContent = '--'; el.className = 'metric-value'; }
+            }
+        }
+
+        function updatePortfolioCharts() {
+            const metrics = calculatePortfolioMetrics();
+
+            // Sector Chart
+            const sectorLabels = Object.keys(metrics.sectorTotals);
+            const sectorValues = Object.values(metrics.sectorTotals);
+            const colors = ['#00d4aa', '#0099ff', '#ff6b6b', '#ffd93d', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
+
+            if (sectorChart) sectorChart.destroy();
+            sectorChart = new Chart(document.getElementById('sectorChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: sectorLabels,
+                    datasets: [{ data: sectorValues, backgroundColor: colors, borderWidth: 0 }]
+                },
+                options: { responsive: true, plugins: { legend: { position: 'right' } } }
+            });
+
+            // Weight Chart
+            const tickers = portfolio.map(p => p.ticker);
+            const weights = portfolio.map(p => (p.shares * p.price / metrics.totalValue * 100).toFixed(1));
+
+            if (weightChart) weightChart.destroy();
+            weightChart = new Chart(document.getElementById('weightChart'), {
+                type: 'bar',
+                data: {
+                    labels: tickers,
+                    datasets: [{
+                        label: 'Weight %',
+                        data: weights,
+                        backgroundColor: '#0099ff',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // ==================== BLACK-SCHOLES ====================
+        function normalCDF(x) {
+            const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741;
+            const a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+            const sign = x < 0 ? -1 : 1;
+            x = Math.abs(x) / Math.sqrt(2);
+            const t = 1.0 / (1.0 + p * x);
+            const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+            return 0.5 * (1.0 + sign * y);
+        }
+
+        function normalPDF(x) {
+            return Math.exp(-0.5 * x * x) / Math.sqrt(2 * Math.PI);
+        }
+
+        function blackScholes(S, K, T, r, sigma) {
+            if (T <= 0) return Math.max(K - S, 0);
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            const d2 = d1 - sigma * Math.sqrt(T);
+            return K * Math.exp(-r * T) * normalCDF(-d2) - S * normalCDF(-d1);
+        }
+
+        function updateGreeks() {
+            const S = parseFloat(document.getElementById('spotPrice').value);
+            const K = parseFloat(document.getElementById('strikePrice').value);
+            const T = parseFloat(document.getElementById('daysToExpiry').value) / 365;
+            const sigma = parseFloat(document.getElementById('impliedVol').value) / 100;
+            const r = 0.05;
+
+            document.getElementById('spotPriceValue').textContent = '$' + S;
+            document.getElementById('strikePriceValue').textContent = '$' + K;
+            document.getElementById('daysToExpiryValue').textContent = document.getElementById('daysToExpiry').value;
+            document.getElementById('impliedVolValue').textContent = document.getElementById('impliedVol').value + '%';
+
+            const price = blackScholes(S, K, T, r, sigma);
+
+            const d1 = (Math.log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * Math.sqrt(T));
+            const d2 = d1 - sigma * Math.sqrt(T);
+
+            const delta = normalCDF(d1) - 1;
+            const gamma = normalPDF(d1) / (S * sigma * Math.sqrt(T));
+            const theta = (-(S * normalPDF(d1) * sigma) / (2 * Math.sqrt(T)) + r * K * Math.exp(-r * T) * normalCDF(-d2)) / 365;
+            const vega = S * Math.sqrt(T) * normalPDF(d1) / 100;
+
+            document.getElementById('putPrice').textContent = '$' + price.toFixed(2);
+            document.getElementById('delta').textContent = delta.toFixed(3);
+            document.getElementById('gamma').textContent = gamma.toFixed(4);
+            document.getElementById('theta').textContent = '-$' + Math.abs(theta).toFixed(2);
+            document.getElementById('vega').textContent = '$' + vega.toFixed(2);
+
+            const moneyness = ((S - K) / S * 100);
+            document.getElementById('moneyness').textContent = (K < S ? Math.abs(moneyness).toFixed(0) + '% OTM' : Math.abs(moneyness).toFixed(0) + '% ITM');
+        }
+
+        // ==================== MONTE CARLO ====================
+        function runMonteCarlo() {
+            const nSim = parseInt(document.getElementById('mcSimulations').value);
+            const nDays = parseInt(document.getElementById('mcDays').value);
+            const annReturn = parseFloat(document.getElementById('mcReturn').value) / 100;
+            const annVol = parseFloat(document.getElementById('mcVol').value) / 100;
+
+            const dailyReturn = annReturn / 252;
+            const dailyVol = annVol / Math.sqrt(252);
+
+            document.getElementById('mcProgressContainer').style.display = 'block';
+            document.getElementById('mcStatus').style.display = 'none';
+
+            // Run simulation in chunks to allow UI updates
+            const paths = [];
+            const finalValues = [];
+            let completed = 0;
+
+            function runBatch() {
+                const batchSize = Math.min(100, nSim - completed);
+
+                for (let i = 0; i < batchSize; i++) {
+                    const path = [100];
+                    for (let d = 1; d <= nDays; d++) {
+                        const randomReturn = dailyReturn + dailyVol * gaussianRandom();
+                        path.push(path[d-1] * (1 + randomReturn));
+                    }
+                    paths.push(path);
+                    finalValues.push(path[path.length - 1]);
+                }
+
+                completed += batchSize;
+                const progress = Math.round(completed / nSim * 100);
+                document.getElementById('mcProgress').style.width = progress + '%';
+                document.getElementById('mcProgress').textContent = progress + '%';
+
+                if (completed < nSim) {
+                    setTimeout(runBatch, 10);
+                } else {
+                    displayMonteCarloResults(paths, finalValues, nDays);
+                }
+            }
+
+            runBatch();
+        }
+
+        function gaussianRandom() {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+        }
+
+        function percentile(arr, p) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const idx = Math.ceil(p / 100 * sorted.length) - 1;
+            return sorted[Math.max(0, idx)];
+        }
+
+        function displayMonteCarloResults(paths, finalValues, nDays) {
+            // Calculate percentiles at each time step
+            const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
+
+            for (let d = 0; d <= nDays; d++) {
+                const dayValues = paths.map(p => p[d]);
+                p5.push(percentile(dayValues, 5));
+                p25.push(percentile(dayValues, 25));
+                p50.push(percentile(dayValues, 50));
+                p75.push(percentile(dayValues, 75));
+                p95.push(percentile(dayValues, 95));
+            }
+
+            const labels = Array.from({length: nDays + 1}, (_, i) => i);
+
+            if (monteCarloChart) monteCarloChart.destroy();
+
+            monteCarloChart = new Chart(document.getElementById('monteCarloChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '95th Percentile',
+                            data: p95,
+                            borderColor: '#00d4aa',
+                            backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                            fill: '+1',
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: '75th Percentile',
+                            data: p75,
+                            borderColor: '#0099ff',
+                            backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                            fill: '+1',
+                            borderDash: [3, 3],
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Median',
+                            data: p50,
+                            borderColor: '#ffd93d',
+                            borderWidth: 3,
+                            fill: false,
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: '25th Percentile',
+                            data: p25,
+                            borderColor: '#0099ff',
+                            backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                            fill: '+1',
+                            borderDash: [3, 3],
+                            pointRadius: 0,
+                            tension: 0.4
+                        },
+                        {
+                            label: '5th Percentile',
+                            data: p5,
+                            borderColor: '#ff6b6b',
+                            fill: false,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'top' }
+                    },
+                    scales: {
+                        y: { title: { display: true, text: 'Portfolio Value (indexed to 100)' } },
+                        x: { title: { display: true, text: 'Days' } }
+                    }
+                }
+            });
+
+            // Update metrics
+            const medianReturn = (percentile(finalValues, 50) - 100);
+            const p5Return = (percentile(finalValues, 5) - 100);
+            const pLoss = finalValues.filter(v => v < 100).length / finalValues.length * 100;
+            const pSevere = finalValues.filter(v => v < 85).length / finalValues.length * 100;
+
+            document.getElementById('mcMedian').textContent = (medianReturn >= 0 ? '+' : '') + medianReturn.toFixed(1) + '%';
+            document.getElementById('mcMedian').className = 'metric-value ' + (medianReturn >= 0 ? 'green' : 'red');
+
+            document.getElementById('mc5th').textContent = p5Return.toFixed(1) + '%';
+            document.getElementById('mc5th').className = 'metric-value red';
+
+            document.getElementById('mcPLoss').textContent = pLoss.toFixed(0) + '%';
+            document.getElementById('mcPLoss').className = 'metric-value ' + (pLoss < 40 ? 'yellow' : 'red');
+
+            document.getElementById('mcPSevere').textContent = pSevere.toFixed(1) + '%';
+            document.getElementById('mcPSevere').className = 'metric-value ' + (pSevere < 10 ? 'green' : 'red');
+
+            document.getElementById('mcProgressContainer').style.display = 'none';
+        }
+
+        // ==================== INITIALIZE CHARTS ====================
+        Chart.defaults.color = '#8888a0';
+        Chart.defaults.borderColor = '#2a2a3a';
+
+        // Protection Chart
+        new Chart(document.getElementById('protectionChart'), {
+            type: 'line',
+            data: {
+                labels: ['-30%', '-25%', '-20%', '-15%', '-10%', '-5%', '0%', '+5%', '+10%', '+15%'],
+                datasets: [{
+                    label: 'Unhedged',
+                    data: [-30, -25, -20, -15, -10, -5, 0, 5, 10, 15],
+                    borderColor: '#ff6b6b',
+                    borderDash: [5, 5],
+                    tension: 0.1,
+                    fill: false
+                }, {
+                    label: 'Hedged (Collar)',
+                    data: [-7, -7, -7, -7, -7, -5, 0, 5, 8, 8],
+                    borderColor: '#00d4aa',
+                    tension: 0.1,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { title: { display: true, text: 'Portfolio Return (%)' } },
+                    x: { title: { display: true, text: 'Market Return' } }
+                }
+            }
+        });
+
+        // Regime Chart
+        new Chart(document.getElementById('regimeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Normal', 'Low Vol', 'High Vol', 'Crisis'],
+                datasets: [{ data: [49.8, 25.1, 20.1, 5.0], backgroundColor: ['#0099ff', '#00d4aa', '#ffd93d', '#ff6b6b'], borderWidth: 0 }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'right' } } }
+        });
+
+        // Stress Chart
+        new Chart(document.getElementById('stressChart'), {
+            type: 'bar',
+            data: {
+                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
+                datasets: [{
+                    label: 'Unhedged',
+                    data: [-7.9, -15.5, -23.2, -28.4, -45.3],
+                    backgroundColor: '#ff6b6b'
+                }, {
+                    label: 'Hedged',
+                    data: [-7.0, -7.0, -7.0, -7.0, -7.0],
+                    backgroundColor: '#00d4aa'
+                }]
+            },
+            options: { responsive: true, scales: { y: { title: { display: true, text: 'Return (%)' } } } }
+        });
+
+        // Regime Timeline
+        new Chart(document.getElementById('regimeTimelineChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Volatility',
+                    data: [12, 14, 18, 22, 16, 14, 13, 15, 17, 14, 13, 14.5],
+                    borderColor: '#0099ff',
+                    fill: true,
+                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { title: { display: true, text: 'Volatility (%)' } } } }
+        });
+
+        // Correlation Time
+        new Chart(document.getElementById('correlationTimeChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [{
+                    label: 'Avg Correlation',
+                    data: [0.35, 0.38, 0.52, 0.48, 0.40, 0.36, 0.33, 0.38, 0.42, 0.38, 0.35, 0.37],
+                    borderColor: '#a855f7',
+                    fill: true,
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { min: 0, max: 1 } } }
+        });
+
+        // Payoff Chart
+        new Chart(document.getElementById('payoffChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 21}, (_, i) => 400 + i * 10),
+                datasets: [{
+                    label: 'Put Payoff',
+                    data: Array.from({length: 21}, (_, i) => Math.max(456 - (400 + i * 10), 0) - 1.74),
+                    borderColor: '#00d4aa',
+                    fill: true,
+                    backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: { responsive: true, scales: { y: { title: { display: true, text: 'Profit/Loss ($)' } }, x: { title: { display: true, text: 'Price at Expiry' } } } }
+        });
+
+        // Delta Chart
+        new Chart(document.getElementById('deltaChart'), {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 21}, (_, i) => 400 + i * 10),
+                datasets: [{
+                    label: 'Delta',
+                    data: [-0.95, -0.90, -0.82, -0.70, -0.55, -0.40, -0.28, -0.18, -0.11, -0.06, -0.03, -0.02, -0.01, -0.005, -0.002, -0.001, 0, 0, 0, 0, 0],
+                    borderColor: '#0099ff',
+                    fill: true,
+                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, scales: { y: { min: -1, max: 0 } } }
+        });
+
+        // Strategy Scores
+        new Chart(document.getElementById('strategyScoresChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Zero-Cost Collar', 'Put Spread', '5% OTM Put', 'VIX Call', 'ATM Put'],
+                datasets: [{
+                    label: 'Suitability Score',
+                    data: [0.86, 0.67, 0.54, 0.42, 0.35],
+                    backgroundColor: ['#00d4aa', '#0099ff', '#0099ff', '#a855f7', '#ffd93d'],
+                    borderRadius: 8
+                }]
+            },
+            options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { max: 1 } } }
+        });
+
+        // Stress Comparison
+        new Chart(document.getElementById('stressComparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
+                datasets: [
+                    { label: 'Unhedged', data: [-7.9, -15.5, -23.2, -28.4, -45.3], backgroundColor: '#ff6b6b' },
+                    { label: 'Hedged', data: [-7.0, -7.0, -7.0, -7.0, -7.0], backgroundColor: '#00d4aa' }
+                ]
+            },
+            options: { responsive: true }
+        });
+
+        // Effectiveness Chart
+        new Chart(document.getElementById('effectivenessChart'), {
+            type: 'radar',
+            data: {
+                labels: ['-10%', '-20%', '-30%', 'COVID', 'GFC'],
+                datasets: [{
+                    label: 'Effectiveness %',
+                    data: [11, 55, 70, 75, 85],
+                    backgroundColor: 'rgba(0, 212, 170, 0.2)',
+                    borderColor: '#00d4aa',
+                    pointBackgroundColor: '#00d4aa'
+                }]
+            },
+            options: { responsive: true, scales: { r: { beginAtZero: true, max: 100 } } }
+        });
+
+        // Backtest Chart
+        new Chart(document.getElementById('backtestChart'), {
+            type: 'line',
+            data: {
+                labels: ['Jan 24', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan 25', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan 26'],
+                datasets: [
+                    { label: 'Unhedged', data: [100, 105, 110, 108, 115, 120, 125, 130, 128, 138, 142, 148, 150], borderColor: '#ff6b6b', tension: 0.4, fill: false },
+                    { label: 'Hedged', data: [100, 104, 108, 107, 113, 117, 122, 126, 125, 134, 138, 144, 148], borderColor: '#00d4aa', tension: 0.4, fill: false }
+                ]
+            },
+            options: { responsive: true }
+        });
+
+        // Initialize
+        updateAllDisplays();
+        updateGreeks();
+    </script>
+</body>
+</html>
