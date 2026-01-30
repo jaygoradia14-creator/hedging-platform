@@ -1204,7 +1204,9 @@
         };
 
         function getSector(ticker) {
-            return SECTOR_MAP[ticker.toUpperCase()] || 'Other';
+            // Clean the ticker - remove exchange suffix (.US, .L, etc) and extra characters
+            const cleanTicker = ticker.toUpperCase().split('.')[0].split('-')[0].replace(/[^A-Z]/g, '');
+            return SECTOR_MAP[cleanTicker] || 'Other';
         }
 
         // ==================== NAVIGATION ====================
@@ -1501,15 +1503,19 @@
         async function selectStock(symbol, name, type) {
             document.getElementById('searchResults').classList.remove('show');
             document.getElementById('stockSearch').value = '';
-            document.getElementById('newTicker').value = symbol;
-            document.getElementById('selectedStock').innerHTML = `<span style="color: var(--accent-1); font-weight: 600;">${symbol}</span> - ${name} <span style="color: var(--accent-2); font-size: 0.8rem;">(fetching price...)</span>`;
+
+            // Clean symbol - remove exchange suffix
+            const cleanSymbol = symbol.split('.')[0].split('-')[0].toUpperCase();
+
+            document.getElementById('newTicker').value = cleanSymbol;
+            document.getElementById('selectedStock').innerHTML = `<span style="color: var(--accent-1); font-weight: 600;">${cleanSymbol}</span> - ${name} <span style="color: var(--accent-2); font-size: 0.8rem;">(fetching price...)</span>`;
 
             // Auto-detect sector
-            const sector = getSector(symbol);
+            const sector = getSector(cleanSymbol);
             document.getElementById('newSector').value = sector;
             document.getElementById('newSectorDisplay').innerHTML = `<span style="color: var(--accent-2);">${sector}</span>`;
 
-            selectedStockData = { symbol, name, type, sector };
+            selectedStockData = { symbol: cleanSymbol, name, type, sector };
 
             // Fetch current price from Yahoo Finance
             const proxies = [
@@ -1518,7 +1524,7 @@
                 (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
             ];
 
-            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
+            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${cleanSymbol}?interval=1d&range=1d`;
             let priceFound = false;
 
             for (const proxyFn of proxies) {
