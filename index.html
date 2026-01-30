@@ -1269,9 +1269,7 @@
         function getSector(ticker) {
             // Clean the ticker - remove exchange suffix (.US, .L, etc) and extra characters
             const cleanTicker = ticker.toUpperCase().split('.')[0].split('-')[0].replace(/[^A-Z]/g, '');
-            const sector = SECTOR_MAP[cleanTicker] || 'Other';
-            console.log(`getSector: ticker="${ticker}" → cleanTicker="${cleanTicker}" → sector="${sector}"`);
-            return sector;
+            return SECTOR_MAP[cleanTicker] || 'Other';
         }
 
         // ==================== NAVIGATION ====================
