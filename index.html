@@ -551,11 +551,11 @@
                     <div class="recommendation-grid">
                         <div class="rec-item">
                             <div class="rec-label">Strategy</div>
-                            <div class="rec-value">Zero-Cost Collar</div>
+                            <div class="rec-value" id="recStrategy">Zero-Cost Collar</div>
                         </div>
                         <div class="rec-item">
                             <div class="rec-label">Instrument</div>
-                            <div class="rec-value">QQQ Options</div>
+                            <div class="rec-value" id="recInstrument">QQQ Options</div>
                         </div>
                         <div class="rec-item">
                             <div class="rec-label">Contracts</div>
@@ -563,28 +563,31 @@
                         </div>
                         <div class="rec-item">
                             <div class="rec-label">Cost</div>
-                            <div class="rec-value" style="color: var(--accent-1);">$0</div>
+                            <div class="rec-value" id="recCost" style="color: var(--accent-1);">$0</div>
                         </div>
                         <div class="rec-item">
                             <div class="rec-label">Protection</div>
-                            <div class="rec-value">Floor -7%</div>
+                            <div class="rec-value" id="recProtection">Floor -7%</div>
                         </div>
                         <div class="rec-item">
                             <div class="rec-label">Upside Cap</div>
-                            <div class="rec-value">+8%</div>
+                            <div class="rec-value" id="recCap">+8%</div>
                         </div>
                     </div>
-                    <div class="trade-ticket" style="margin-top: 1rem;">
+                    <div class="trade-ticket" style="margin-top: 1rem;" id="tradeTicket">
                         <div class="trade-line">
                             <span class="trade-action buy">BUY</span>
-                            <span>5 QQQ 400 PUT</span>
+                            <span id="tradeBuy">5 QQQ 400 PUT</span>
                             <span style="color: var(--text-muted);">30-45 DTE</span>
                         </div>
                         <div class="trade-line">
                             <span class="trade-action sell">SELL</span>
-                            <span>5 QQQ 435 CALL</span>
+                            <span id="tradeSell">5 QQQ 435 CALL</span>
                             <span style="color: var(--text-muted);">30-45 DTE</span>
                         </div>
+                    </div>
+                    <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-dark); border-radius: 8px; font-size: 0.85rem; color: var(--text-muted);" id="recReason">
+                        Recommendation based on: balanced portfolio, moderate beta
                     </div>
                 </div>
 
@@ -1197,8 +1200,103 @@
             const contractsEl = document.getElementById('optContracts');
             if (contractsEl) contractsEl.textContent = Math.max(1, Math.round(metrics.totalValue / 20000));
 
-            const recContractsEl = document.getElementById('recContracts');
-            if (recContractsEl) recContractsEl.textContent = Math.max(1, Math.round(metrics.totalValue / 20000));
+            // Update dynamic hedge recommendation
+            updateHedgeRecommendation(metrics);
+        }
+
+        function updateHedgeRecommendation(metrics) {
+            const totalValue = metrics.totalValue;
+            const beta = metrics.portfolioBeta;
+            const techConc = metrics.techConcentration;
+            const positions = portfolio.length;
+
+            // Determine best instrument based on portfolio
+            let instrument, instrumentPrice, instrumentName;
+            if (techConc > 40) {
+                instrument = 'QQQ'; instrumentPrice = 480; instrumentName = 'QQQ Options (Tech-heavy)';
+            } else if (totalValue > 200000) {
+                instrument = 'SPX'; instrumentPrice = 5800; instrumentName = 'SPX Options (Large portfolio)';
+            } else {
+                instrument = 'SPY'; instrumentPrice = 580; instrumentName = 'SPY Options';
+            }
+
+            // Determine strategy based on beta and risk
+            let strategy, cost, protection, cap, reason;
+            const contracts = Math.max(1, Math.round(totalValue / (instrumentPrice * 100)));
+
+            if (beta > 1.2) {
+                strategy = 'Protective Put';
+                cost = '$' + Math.round(totalValue * 0.025).toLocaleString();
+                protection = 'Floor -5%';
+                cap = 'Unlimited';
+                reason = `High beta (${beta.toFixed(2)}) = more downside risk. Protective puts recommended for strong protection.`;
+            } else if (beta > 0.9) {
+                strategy = 'Put Spread';
+                cost = '$' + Math.round(totalValue * 0.012).toLocaleString();
+                protection = 'Floor -5% to -15%';
+                cap = 'Unlimited';
+                reason = `Moderate beta (${beta.toFixed(2)}). Put spread offers cost-effective protection for typical crashes.`;
+            } else if (beta > 0.6) {
+                strategy = 'Zero-Cost Collar';
+                cost = '$0';
+                protection = 'Floor -7%';
+                cap = '+8%';
+                reason = `Balanced beta (${beta.toFixed(2)}). Collar provides free protection by capping upside.`;
+            } else {
+                strategy = 'Tail Hedge (VIX Calls)';
+                cost = '$' + Math.round(totalValue * 0.005).toLocaleString();
+                protection = 'Crash insurance';
+                cap = 'Unlimited';
+                reason = `Low beta (${beta.toFixed(2)}) = already defensive. Light VIX hedge for black swan events.`;
+            }
+
+            // Add tech concentration warning
+            if (techConc > 50) {
+                reason += ` ⚠️ High tech concentration (${techConc}%) - consider sector diversification.`;
+            }
+
+            // Update UI elements
+            const el = (id) => document.getElementById(id);
+            if (el('recStrategy')) el('recStrategy').textContent = strategy;
+            if (el('recInstrument')) el('recInstrument').textContent = instrumentName;
+            if (el('recContracts')) el('recContracts').textContent = contracts;
+            if (el('recCost')) {
+                el('recCost').textContent = cost;
+                el('recCost').style.color = cost === '$0' ? 'var(--accent-1)' : 'var(--accent-3)';
+            }
+            if (el('recProtection')) el('recProtection').textContent = protection;
+            if (el('recCap')) el('recCap').textContent = cap;
+            if (el('recReason')) el('recReason').textContent = reason;
+
+            // Update trade ticket
+            const putStrike = Math.round(instrumentPrice * 0.93);
+            const callStrike = Math.round(instrumentPrice * 1.08);
+
+            if (el('tradeBuy')) {
+                if (strategy === 'Zero-Cost Collar') {
+                    el('tradeBuy').textContent = `${contracts} ${instrument} ${putStrike} PUT`;
+                } else if (strategy === 'Put Spread') {
+                    el('tradeBuy').textContent = `${contracts} ${instrument} ${Math.round(instrumentPrice * 0.95)} PUT`;
+                } else if (strategy === 'Protective Put') {
+                    el('tradeBuy').textContent = `${contracts} ${instrument} ${Math.round(instrumentPrice * 0.95)} PUT`;
+                } else {
+                    el('tradeBuy').textContent = `${Math.max(1, Math.round(contracts/5))} VIX 20 CALL`;
+                }
+            }
+
+            if (el('tradeSell')) {
+                if (strategy === 'Zero-Cost Collar') {
+                    el('tradeSell').textContent = `${contracts} ${instrument} ${callStrike} CALL`;
+                    document.querySelector('.trade-action.sell')?.parentElement?.style.setProperty('display', 'flex');
+                } else if (strategy === 'Put Spread') {
+                    el('tradeSell').textContent = `${contracts} ${instrument} ${Math.round(instrumentPrice * 0.85)} PUT`;
+                    document.querySelector('.trade-action.sell')?.parentElement?.style.setProperty('display', 'flex');
+                } else {
+                    // Hide sell line for protective put and VIX calls
+                    const sellLine = document.querySelector('.trade-action.sell')?.parentElement;
+                    if (sellLine) sellLine.style.display = 'none';
+                }
+            }
         }
 
         function renderPortfolio() {
