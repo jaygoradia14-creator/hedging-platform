@@ -1363,6 +1363,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
+            updateRegimeCharts();
         }
 
         // ==================== HOLDINGS UI (PART 2) ====================
@@ -1598,6 +1599,7 @@
                 updatePortfolioSummary();
                 updatePortfolioRegime();
                 updateStressCharts();
+                updateRegimeCharts();
                 hideAddModal();
             } finally {
                 btn.disabled = false;
@@ -1624,6 +1626,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
+            updateRegimeCharts();
             hideEditModal();
         }
 
@@ -1636,6 +1639,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
+            updateRegimeCharts();
             hideEditModal();
         }
 
@@ -2227,14 +2231,74 @@
             return data;
         }
 
-        function generateVolatilityData(months, random) {
+        function generateVolatilityData(months, random, metrics = null) {
             const data = [];
+            // Portfolio metrics affect volatility levels
+            const baseVol = metrics ? 10 + metrics.hhi * 8 : 12;
+            const volRange = metrics ? 6 + metrics.avgCorr * 6 : 8;
+            const stressMultiplier = metrics ? 1.5 + metrics.hhi * 1.5 : 2.5;
+
             for (let i = 0; i <= months; i++) {
-                let val = 12 + random() * 8;
+                let val = baseVol + random() * volRange;
+                // Stress spikes - more intense for concentrated portfolios
                 if (i === 12 || i === 24) {
-                    val = 30 + random() * 15;
+                    val = (25 + random() * 15) * stressMultiplier / 2;
                 }
                 data.push(Math.round(val * 10) / 10);
+            }
+            return data;
+        }
+
+        function updateRegimeCharts() {
+            const metrics = getPortfolioMetrics();
+
+            // Create deterministic seed based on portfolio
+            const seedStr = 'regime-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100);
+            const seed = hashString(seedStr);
+            const volRandom = mulberry32(seed);
+
+            // Update Regime Timeline Chart
+            if (charts.regimeTimeline) {
+                const newVolData = generateVolatilityData(36, volRandom, metrics);
+                charts.regimeTimeline.data.datasets[0].data = newVolData;
+                charts.regimeTimeline.update('none');
+            }
+
+            // Update Correlation Timeline Chart
+            const corrSeed = hashString(seedStr + '-corr');
+            const corrRandom = mulberry32(corrSeed);
+            if (charts.correlationTimeline) {
+                const newCorrData = generateCorrelationDataWithMetrics(36, corrRandom, metrics);
+                charts.correlationTimeline.data.datasets[0].data = newCorrData;
+                charts.correlationTimeline.update('none');
+            }
+
+            // Update Rolling Correlation Chart
+            const rollSeed = hashString(seedStr + '-roll');
+            const rollRandom = mulberry32(rollSeed);
+            if (charts.rollingCorrelation) {
+                const newRollData = generateCorrelationDataWithMetrics(36, rollRandom, metrics);
+                charts.rollingCorrelation.data.datasets[0].data = newRollData;
+                charts.rollingCorrelation.update('none');
+            }
+        }
+
+        function generateCorrelationDataWithMetrics(months, random, metrics = null) {
+            const data = [];
+            // Portfolio metrics affect correlation levels
+            const baseCorr = metrics ? 0.2 + metrics.avgCorr * 0.2 : 0.25;
+            const corrRange = metrics ? 0.15 + metrics.hhi * 0.1 : 0.2;
+            const stressCorr = metrics ? 0.6 + metrics.hhi * 0.2 : 0.65;
+
+            for (let i = 0; i <= months; i++) {
+                let val;
+                if (i === 12 || i === 24) {
+                    // Stress periods - higher correlation
+                    val = stressCorr + random() * 0.15;
+                } else {
+                    val = baseCorr + random() * corrRange;
+                }
+                data.push(Math.round(val * 100) / 100);
             }
             return data;
         }
@@ -2250,6 +2314,7 @@
             initCharts();
             updatePortfolioRegime();
             updateStressCharts();
+            updateRegimeCharts();
 
             // Refresh prices if we have holdings
             if (holdings.positions.length > 0) {
