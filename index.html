@@ -767,7 +767,6 @@
             <a class="nav-link" onclick="showSection('regime', this)">Regime</a>
             <a class="nav-link" onclick="showSection('correlations', this)">Correlations</a>
             <a class="nav-link" onclick="showSection('stress', this)">Stress</a>
-            <a class="nav-link" onclick="showSection('methodology', this)">Methodology</a>
         </div>
     </nav>
 
@@ -1193,112 +1192,6 @@
             </div>
         </section>
 
-        <!-- METHODOLOGY -->
-        <section id="methodology" class="section">
-            <div class="section-header">
-                <h1 class="section-title">Methodology</h1>
-                <p class="section-subtitle">
-                    How this analysis works, what it measures, and what it does not claim.
-                </p>
-            </div>
-
-            <div class="thesis-box">
-                <div class="thesis-text">
-                    This site demonstrates how standard portfolio assumptions break down during market stress.
-                    It shows that correlations between assets spike during crashes—exactly when diversification is supposed to protect you.
-                    Using historical return data, the tool detects market regimes, compares normal correlations to tail correlations,
-                    and illustrates how portfolios behave under hypothetical stress scenarios.
-                    It does not provide investment advice, trading recommendations, or forecasts.
-                </div>
-            </div>
-
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <div class="card-title">Calculations</div>
-
-                <div class="method-step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>Data Collection</h4>
-                        <p>Daily adjusted close prices are fetched from Yahoo Finance for the specified assets and time period. Returns are calculated as log returns.</p>
-                    </div>
-                </div>
-
-                <div class="method-step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>Regime Detection</h4>
-                        <p>Rolling 21-day volatility is calculated and annualized. Regimes are classified based on volatility percentiles: Normal (&lt;75th), Transition (75th-95th), Stress (&gt;95th or high vol + correlation spike).</p>
-                    </div>
-                </div>
-
-                <div class="method-step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>Normal Correlation</h4>
-                        <p>Standard Pearson correlation matrix calculated across all observations in the sample period.</p>
-                    </div>
-                </div>
-
-                <div class="method-step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h4>Tail Correlation</h4>
-                        <p>Correlation matrix calculated using only observations where the first asset (market proxy) experienced returns in the bottom 5th percentile.</p>
-                    </div>
-                </div>
-
-                <div class="method-step">
-                    <div class="step-number">5</div>
-                    <div class="step-content">
-                        <h4>Diversification Ratio</h4>
-                        <p>Ratio of weighted average individual volatilities to portfolio volatility. Values above 1.0 indicate diversification benefit; approaching 1.0 indicates diversification failure.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="grid grid-2">
-                <div class="card">
-                    <div class="card-title">What This Analysis Does</div>
-                    <ul style="color: var(--text-muted); line-height: 2; padding-left: 1.2rem;">
-                        <li>Visualizes regime changes over time</li>
-                        <li>Compares normal vs. tail correlations</li>
-                        <li>Shows how correlations spike during stress</li>
-                        <li>Illustrates diversification breakdown</li>
-                        <li>Provides historical context for stress events</li>
-                    </ul>
-                </div>
-                <div class="card">
-                    <div class="card-title">What This Analysis Does NOT Do</div>
-                    <ul style="color: var(--text-muted); line-height: 2; padding-left: 1.2rem;">
-                        <li>Predict future market movements</li>
-                        <li>Recommend specific investments</li>
-                        <li>Provide trading signals</li>
-                        <li>Forecast regime changes</li>
-                        <li>Constitute financial advice</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="card" style="margin-top: 1.5rem;">
-                <div class="card-title">Limitations</div>
-                <ul style="color: var(--text-muted); line-height: 2; padding-left: 1.2rem;">
-                    <li><strong>Simple correlation:</strong> Uses Pearson correlation, not copula-based tail dependence measures</li>
-                    <li><strong>Threshold-based regimes:</strong> Uses fixed percentile thresholds, not statistical regime-switching models</li>
-                    <li><strong>Historical data only:</strong> Past patterns may not repeat; structural breaks are possible</li>
-                    <li><strong>No transaction costs:</strong> Does not model real-world frictions</li>
-                    <li><strong>Linear assumptions:</strong> Stress scenarios assume linear transmission of shocks</li>
-                </ul>
-            </div>
-
-            <div class="insight-box success" style="margin-top: 1.5rem;">
-                <div class="insight-title">Purpose</div>
-                <div class="insight-text">
-                    This is a research and teaching tool designed to make one counterintuitive point visible:
-                    the assumptions embedded in most portfolio models fail precisely when they matter most.
-                    It is intended for educational purposes only.
-                </div>
-            </div>
-        </section>
     </main>
 
     <!-- Add Stock Modal -->
