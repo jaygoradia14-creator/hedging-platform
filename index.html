@@ -649,6 +649,105 @@
             border-radius: 4px;
             margin-left: 0.5rem;
         }
+
+        /* Stress Scenarios Page */
+        .stress-portfolio-summary {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            background: var(--bg-card);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .stress-metric {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .stress-metric-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stress-metric-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .scenario-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .scenario-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .scenario-title {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .scenario-desc {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            line-height: 1.4;
+        }
+
+        .scenario-chart-container {
+            height: 180px;
+            margin-bottom: 0.75rem;
+        }
+
+        .scenario-outcome {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+        }
+
+        .outcome-value {
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .outcome-value.loss { color: var(--accent-3); }
+        .outcome-value.neutral { color: var(--text); }
+        .outcome-value.gain { color: var(--accent-1); }
+
+        .stress-note {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .stress-portfolio-summary {
+                gap: 1rem;
+            }
+            .stress-metric {
+                flex: 1;
+                min-width: 45%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -996,112 +1095,101 @@
         <!-- STRESS SCENARIOS -->
         <section id="stress" class="section">
             <div class="section-header">
-                <h1 class="section-title">Stress Mechanisms <span class="static-badge">Educational</span></h1>
+                <h1 class="section-title">Stress Scenarios <span class="dynamic-badge">Updates with Portfolio</span></h1>
                 <p class="section-subtitle">
-                    How portfolios break down during stress. These are mechanisms, not predictions—understanding them helps you recognize when assumptions fail.
+                    How your portfolio behaves under different stress mechanisms. Charts update automatically when you change holdings.
                 </p>
             </div>
 
-            <div class="grid grid-3" style="margin-bottom: 1.5rem;">
-                <div class="mechanism-card severity-high">
-                    <div class="mechanism-icon">🔗</div>
-                    <div class="mechanism-title">Correlation Convergence</div>
-                    <div class="mechanism-desc">
-                        All correlations move toward 1.0. Assets that normally move independently start moving together.
+            <!-- Portfolio Summary for Stress -->
+            <div class="stress-portfolio-summary" id="stressPortfolioSummary">
+                <div class="stress-metric">
+                    <span class="stress-metric-label">Positions</span>
+                    <span class="stress-metric-value" id="stressPositionCount">0</span>
+                </div>
+                <div class="stress-metric">
+                    <span class="stress-metric-label">Concentration</span>
+                    <span class="stress-metric-value" id="stressHHI">--</span>
+                </div>
+                <div class="stress-metric">
+                    <span class="stress-metric-label">Avg Correlation</span>
+                    <span class="stress-metric-value" id="stressAvgCorr">--</span>
+                </div>
+                <div class="stress-metric">
+                    <span class="stress-metric-label">Diversification Benefit</span>
+                    <span class="stress-metric-value" id="stressDivBenefit">--</span>
+                </div>
+            </div>
+
+            <!-- Scenario Grid -->
+            <div class="grid grid-2" style="margin-top: 1.5rem;">
+                <!-- Correlation Shock -->
+                <div class="scenario-card">
+                    <div class="scenario-header">
+                        <div class="scenario-title">Correlation Shock</div>
+                        <span class="tag tag-red" id="corrShockImpact">Diversification: --</span>
                     </div>
-                    <div class="list-item">
-                        <span>Diversification Impact</span>
-                        <span class="tag tag-red">Near Failure</span>
+                    <div class="scenario-desc">Correlations spike to 0.9. Assets fall together.</div>
+                    <div class="scenario-chart-container">
+                        <canvas id="corrShockChart"></canvas>
                     </div>
-                    <div class="list-item">
-                        <span>Historical Example</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">2008 GFC</span>
-                    </div>
-                    <div class="list-item">
-                        <span>What Happens</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Stocks, bonds, commodities fall together</span>
+                    <div class="scenario-outcome" id="corrShockOutcome">
+                        <span>Day 45 Value:</span>
+                        <span class="outcome-value">--</span>
                     </div>
                 </div>
 
-                <div class="mechanism-card severity-high">
-                    <div class="mechanism-icon">📈</div>
-                    <div class="mechanism-title">Volatility Spike</div>
-                    <div class="mechanism-desc">
-                        Volatility doubles or triples across asset classes. VIX can jump from 15 to 80 in days.
+                <!-- Volatility Spike -->
+                <div class="scenario-card">
+                    <div class="scenario-header">
+                        <div class="scenario-title">Volatility Spike</div>
+                        <span class="tag tag-red" id="volSpikeImpact">Daily Swings: --</span>
                     </div>
-                    <div class="list-item">
-                        <span>Diversification Impact</span>
-                        <span class="tag tag-red">Hedges Expensive</span>
+                    <div class="scenario-desc">Volatility triples. Large daily moves without clear direction.</div>
+                    <div class="scenario-chart-container">
+                        <canvas id="volSpikeChart"></canvas>
                     </div>
-                    <div class="list-item">
-                        <span>Historical Example</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">March 2020</span>
-                    </div>
-                    <div class="list-item">
-                        <span>What Happens</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Option costs spike, rebalancing difficult</span>
+                    <div class="scenario-outcome" id="volSpikeOutcome">
+                        <span>Day 45 Value:</span>
+                        <span class="outcome-value">--</span>
                     </div>
                 </div>
 
-                <div class="mechanism-card severity-medium">
-                    <div class="mechanism-icon">💧</div>
-                    <div class="mechanism-title">Liquidity Stress</div>
-                    <div class="mechanism-desc">
-                        Bid-ask spreads widen dramatically. Forced selling at unfavorable prices.
+                <!-- Liquidity Stress -->
+                <div class="scenario-card">
+                    <div class="scenario-header">
+                        <div class="scenario-title">Liquidity Stress</div>
+                        <span class="tag tag-yellow" id="liqStressImpact">Exit Cost: --</span>
                     </div>
-                    <div class="list-item">
-                        <span>Diversification Impact</span>
-                        <span class="tag tag-yellow">Exit Costs Rise</span>
+                    <div class="scenario-desc">Bid-ask spreads widen. Forced selling at unfavorable prices.</div>
+                    <div class="scenario-chart-container">
+                        <canvas id="liqStressChart"></canvas>
                     </div>
-                    <div class="list-item">
-                        <span>Historical Example</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">March 2020 Treasuries</span>
+                    <div class="scenario-outcome" id="liqStressOutcome">
+                        <span>Day 45 Value:</span>
+                        <span class="outcome-value">--</span>
                     </div>
-                    <div class="list-item">
-                        <span>What Happens</span>
-                        <span style="font-size: 0.85rem; color: var(--text-muted);">Can't exit at fair value</span>
+                </div>
+
+                <!-- Combined Crisis -->
+                <div class="scenario-card">
+                    <div class="scenario-header">
+                        <div class="scenario-title">Combined Crisis</div>
+                        <span class="tag tag-red" id="combinedImpact">All Mechanisms</span>
+                    </div>
+                    <div class="scenario-desc">Correlation + volatility + liquidity stress simultaneously.</div>
+                    <div class="scenario-chart-container">
+                        <canvas id="combinedChart"></canvas>
+                    </div>
+                    <div class="scenario-outcome" id="combinedOutcome">
+                        <span>Day 45 Value:</span>
+                        <span class="outcome-value">--</span>
                     </div>
                 </div>
             </div>
 
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <div class="card-title">How Mechanisms Interact</div>
-                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-                    These mechanisms don't occur in isolation. A liquidity crisis triggers forced selling, which spikes volatility, which causes correlations to converge as everyone rushes for the exit simultaneously.
-                </p>
-                <div class="grid grid-2">
-                    <div>
-                        <strong style="font-size: 0.9rem;">Cascade Pattern</strong>
-                        <ul style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem; line-height: 1.8;">
-                            <li>Initial shock triggers margin calls</li>
-                            <li>Forced selling increases volatility</li>
-                            <li>Volatility spike raises correlation</li>
-                            <li>Diversification fails at the worst moment</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong style="font-size: 0.9rem;">What Typically Survives</strong>
-                        <ul style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem; line-height: 1.8;">
-                            <li>Cash and short-term T-bills</li>
-                            <li>Explicit hedges (puts, if bought early)</li>
-                            <li>Truly uncorrelated strategies (rare)</li>
-                            <li>Nothing is guaranteed</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="chart-container" style="margin-bottom: 1.5rem;">
-                <div class="chart-title">Historical Stress Events: Correlation Behavior</div>
-                <canvas id="stressEventsChart"></canvas>
-            </div>
-
-            <div class="insight-box" style="margin-top: 1.5rem;">
-                <div class="insight-title">Analytical Note</div>
-                <div class="insight-text">
-                    These mechanisms explain HOW portfolios break down, not WHEN they will break down.
-                    Understanding the mechanisms helps you recognize early warning signs and avoid false confidence in diversification.
-                </div>
+            <div class="stress-note">
+                These are illustrative scenarios, not predictions. Same inputs always produce the same output.
             </div>
         </section>
 
@@ -1381,6 +1469,7 @@
             renderHoldingsTable();
             updatePortfolioSummary();
             updatePortfolioRegime();
+            updateStressCharts();
         }
 
         // ==================== HOLDINGS UI (PART 2) ====================
@@ -1615,6 +1704,7 @@
                 renderHoldingsTable();
                 updatePortfolioSummary();
                 updatePortfolioRegime();
+                updateStressCharts();
                 hideAddModal();
             } finally {
                 btn.disabled = false;
@@ -1640,6 +1730,7 @@
             renderHoldingsTable();
             updatePortfolioSummary();
             updatePortfolioRegime();
+            updateStressCharts();
             hideEditModal();
         }
 
@@ -1651,6 +1742,7 @@
             renderHoldingsTable();
             updatePortfolioSummary();
             updatePortfolioRegime();
+            updateStressCharts();
             hideEditModal();
         }
 
@@ -1930,30 +2022,291 @@
                 }
             });
 
-            // Stress Events Chart
-            const ctxStress = document.getElementById('stressEventsChart').getContext('2d');
-            charts.stressEvents = new Chart(ctxStress, {
-                type: 'bar',
+            // Initialize Stress Scenario Charts
+            initStressCharts();
+        }
+
+        // ==================== STRESS SCENARIO CHARTS ====================
+        const SCENARIO_DAYS = 45;
+        const SCENARIO_COLORS = {
+            baseline: { border: '#9ca3af', bg: 'rgba(156, 163, 175, 0.1)' },
+            corrShock: { border: '#eb5b3c', bg: 'rgba(235, 91, 60, 0.15)' },
+            volSpike: { border: '#ff9800', bg: 'rgba(255, 152, 0, 0.15)' },
+            liqStress: { border: '#7c3aed', bg: 'rgba(124, 58, 237, 0.15)' },
+            combined: { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.15)' }
+        };
+
+        function getPortfolioMetrics() {
+            const n = holdings.positions.length;
+            if (n === 0) {
+                return { numPositions: 0, hhi: 1, avgCorr: 0.5, divBenefit: 0 };
+            }
+
+            // Calculate weights
+            let totalValue = 0;
+            holdings.positions.forEach(pos => {
+                totalValue += (pos.lastPrice || 100) * pos.quantity;
+            });
+
+            const weights = holdings.positions.map(pos => {
+                const value = (pos.lastPrice || 100) * pos.quantity;
+                return totalValue > 0 ? value / totalValue : 1 / n;
+            });
+
+            // HHI concentration
+            const hhi = weights.reduce((sum, w) => sum + w * w, 0);
+
+            // Average correlation from analysis data
+            const tickers = holdings.positions.map(p => p.ticker);
+            let avgCorr = 0.4;
+            let corrCount = 0;
+
+            for (let i = 0; i < tickers.length; i++) {
+                for (let j = i + 1; j < tickers.length; j++) {
+                    const key1 = `${tickers[i]}-${tickers[j]}`;
+                    const key2 = `${tickers[j]}-${tickers[i]}`;
+                    const corr = analysisData.normalCorr[key1] || analysisData.normalCorr[key2];
+                    if (corr !== undefined) {
+                        avgCorr += corr;
+                        corrCount++;
+                    }
+                }
+            }
+            if (corrCount > 0) avgCorr = avgCorr / corrCount;
+
+            // Diversification benefit: higher when low HHI and low correlation
+            const divBenefit = Math.max(0, (1 - hhi) * (1 - avgCorr));
+
+            return { numPositions: n, hhi, avgCorr, divBenefit };
+        }
+
+        function generateScenarioPath(scenarioType, metrics, seed) {
+            const random = mulberry32(seed);
+            const days = [];
+            const baseline = [];
+            const scenario = [];
+
+            // Base daily volatility (annualized 20% -> daily ~1.26%)
+            const baseDailyVol = 0.0126;
+            // Concentration amplifies impact
+            const concFactor = 1 + metrics.hhi * 0.5;
+            // Low diversification means worse outcomes
+            const divFactor = 1 - metrics.divBenefit * 0.3;
+
+            let baseValue = 100;
+            let scenValue = 100;
+
+            for (let d = 0; d <= SCENARIO_DAYS; d++) {
+                days.push(d);
+                baseline.push(Math.round(baseValue * 100) / 100);
+                scenario.push(Math.round(scenValue * 100) / 100);
+
+                if (d === SCENARIO_DAYS) break;
+
+                // Baseline: slight drift with low vol
+                const baseReturn = 0.0002 + (random() - 0.5) * baseDailyVol * 0.5;
+                baseValue *= (1 + baseReturn);
+
+                // Scenario-specific paths
+                let scenReturn = 0;
+
+                switch (scenarioType) {
+                    case 'corrShock':
+                        // Correlation shock: steady decline as diversification fails
+                        // Worse for concentrated portfolios
+                        const corrDrift = -0.004 * concFactor * divFactor;
+                        const corrNoise = (random() - 0.5) * baseDailyVol * 1.5;
+                        scenReturn = corrDrift + corrNoise;
+                        break;
+
+                    case 'volSpike':
+                        // Volatility spike: large swings, slight negative bias
+                        const volMultiplier = 3;
+                        const volDrift = -0.001;
+                        const volNoise = (random() - 0.5) * baseDailyVol * volMultiplier * concFactor;
+                        scenReturn = volDrift + volNoise;
+                        break;
+
+                    case 'liqStress':
+                        // Liquidity stress: steady haircut + exit costs
+                        // More positions = harder to exit
+                        const liqDrift = -0.002 * (1 + metrics.numPositions * 0.1);
+                        const liqNoise = (random() - 0.5) * baseDailyVol * 0.8;
+                        // Sudden drops on some days
+                        const liqShock = random() < 0.1 ? -0.02 : 0;
+                        scenReturn = liqDrift + liqNoise + liqShock;
+                        break;
+
+                    case 'combined':
+                        // All mechanisms at once
+                        const combDrift = -0.006 * concFactor * divFactor;
+                        const combNoise = (random() - 0.5) * baseDailyVol * 2.5 * concFactor;
+                        const combShock = random() < 0.08 ? -0.03 : 0;
+                        scenReturn = combDrift + combNoise + combShock;
+                        break;
+                }
+
+                scenValue *= (1 + scenReturn);
+                scenValue = Math.max(scenValue, 50); // Floor at 50
+            }
+
+            return { days, baseline, scenario };
+        }
+
+        function createScenarioChart(canvasId, scenarioType, metrics) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return null;
+
+            // Deterministic seed based on scenario + portfolio
+            const seedStr = scenarioType + '-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100);
+            const seed = hashString(seedStr);
+
+            const data = generateScenarioPath(scenarioType, metrics, seed);
+            const colors = SCENARIO_COLORS[scenarioType] || SCENARIO_COLORS.corrShock;
+
+            return new Chart(canvas.getContext('2d'), {
+                type: 'line',
                 data: {
-                    labels: ['2008 GFC', '2011 Euro', '2015 China', '2018 Q4', '2020 COVID', '2022 Rates'],
+                    labels: data.days,
                     datasets: [
                         {
-                            label: 'Normal Correlation',
-                            data: [0.35, 0.32, 0.28, 0.31, 0.29, 0.33],
-                            backgroundColor: '#2962ff'
+                            label: 'Baseline',
+                            data: data.baseline,
+                            borderColor: SCENARIO_COLORS.baseline.border,
+                            backgroundColor: SCENARIO_COLORS.baseline.bg,
+                            borderWidth: 1.5,
+                            borderDash: [4, 4],
+                            fill: false,
+                            tension: 0.3,
+                            pointRadius: 0
                         },
                         {
-                            label: 'Crisis Correlation',
-                            data: [0.82, 0.71, 0.65, 0.68, 0.85, 0.72],
-                            backgroundColor: '#eb5b3c'
+                            label: 'Scenario',
+                            data: data.scenario,
+                            borderColor: colors.border,
+                            backgroundColor: colors.bg,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 0
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
+                    maintainAspectRatio: false,
+                    interaction: { intersect: false, mode: 'index' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1)
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: { display: true, text: 'Days', font: { size: 10 } },
+                            ticks: { maxTicksLimit: 6, font: { size: 9 } }
+                        },
+                        y: {
+                            min: 50,
+                            max: 110,
+                            title: { display: true, text: 'Value', font: { size: 10 } },
+                            ticks: { font: { size: 9 } }
+                        }
+                    }
                 }
+            });
+        }
+
+        function initStressCharts() {
+            const metrics = getPortfolioMetrics();
+
+            charts.corrShock = createScenarioChart('corrShockChart', 'corrShock', metrics);
+            charts.volSpike = createScenarioChart('volSpikeChart', 'volSpike', metrics);
+            charts.liqStress = createScenarioChart('liqStressChart', 'liqStress', metrics);
+            charts.combined = createScenarioChart('combinedChart', 'combined', metrics);
+
+            updateStressLabels(metrics);
+        }
+
+        function updateStressCharts() {
+            const metrics = getPortfolioMetrics();
+
+            // Update summary metrics
+            document.getElementById('stressPositionCount').textContent = metrics.numPositions;
+            document.getElementById('stressHHI').textContent = metrics.numPositions > 0 ? (metrics.hhi * 100).toFixed(0) + '%' : '--';
+            document.getElementById('stressAvgCorr').textContent = metrics.numPositions > 0 ? metrics.avgCorr.toFixed(2) : '--';
+            document.getElementById('stressDivBenefit').textContent = metrics.numPositions > 0 ?
+                (metrics.divBenefit > 0.3 ? 'Strong' : metrics.divBenefit > 0.15 ? 'Moderate' : 'Weak') : '--';
+
+            // Regenerate chart data
+            const scenarios = ['corrShock', 'volSpike', 'liqStress', 'combined'];
+
+            scenarios.forEach(scenarioType => {
+                if (charts[scenarioType]) {
+                    const seedStr = scenarioType + '-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100);
+                    const seed = hashString(seedStr);
+                    const data = generateScenarioPath(scenarioType, metrics, seed);
+
+                    charts[scenarioType].data.datasets[0].data = data.baseline;
+                    charts[scenarioType].data.datasets[1].data = data.scenario;
+                    charts[scenarioType].update('none');
+                }
+            });
+
+            updateStressLabels(metrics);
+        }
+
+        function updateStressLabels(metrics) {
+            const n = metrics.numPositions;
+
+            // Correlation Shock
+            const corrImpact = n === 0 ? '--' : (metrics.divBenefit < 0.15 ? 'Failed' : metrics.divBenefit < 0.3 ? 'Weakened' : 'Reduced');
+            document.getElementById('corrShockImpact').textContent = 'Diversification: ' + corrImpact;
+            document.getElementById('corrShockImpact').className = 'tag ' + (corrImpact === 'Failed' ? 'tag-red' : corrImpact === 'Weakened' ? 'tag-yellow' : 'tag-blue');
+
+            // Volatility Spike
+            const volImpact = n === 0 ? '--' : (metrics.hhi > 0.5 ? '3-4x' : metrics.hhi > 0.25 ? '2-3x' : '2x');
+            document.getElementById('volSpikeImpact').textContent = 'Daily Swings: ' + volImpact;
+            document.getElementById('volSpikeImpact').className = 'tag ' + (volImpact === '3-4x' ? 'tag-red' : 'tag-yellow');
+
+            // Liquidity Stress
+            const liqImpact = n === 0 ? '--' : (n > 5 ? '4-6%' : n > 2 ? '2-4%' : '1-2%');
+            document.getElementById('liqStressImpact').textContent = 'Exit Cost: ' + liqImpact;
+            document.getElementById('liqStressImpact').className = 'tag ' + (n > 5 ? 'tag-red' : 'tag-yellow');
+
+            // Update outcome values
+            updateScenarioOutcomes(metrics);
+        }
+
+        function updateScenarioOutcomes(metrics) {
+            const scenarios = [
+                { id: 'corrShockOutcome', type: 'corrShock' },
+                { id: 'volSpikeOutcome', type: 'volSpike' },
+                { id: 'liqStressOutcome', type: 'liqStress' },
+                { id: 'combinedOutcome', type: 'combined' }
+            ];
+
+            scenarios.forEach(({ id, type }) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+
+                if (metrics.numPositions === 0) {
+                    el.querySelector('.outcome-value').textContent = '--';
+                    el.querySelector('.outcome-value').className = 'outcome-value';
+                    return;
+                }
+
+                const seedStr = type + '-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100);
+                const seed = hashString(seedStr);
+                const data = generateScenarioPath(type, metrics, seed);
+                const finalValue = data.scenario[data.scenario.length - 1];
+
+                const valueEl = el.querySelector('.outcome-value');
+                valueEl.textContent = finalValue.toFixed(1);
+                valueEl.className = 'outcome-value ' + (finalValue < 95 ? 'loss' : finalValue > 102 ? 'gain' : 'neutral');
             });
         }
 
@@ -2003,6 +2356,7 @@
             renderCorrelationChanges();
             initCharts();
             updatePortfolioRegime();
+            updateStressCharts();
 
             // Refresh prices if we have holdings
             if (holdings.positions.length > 0) {
