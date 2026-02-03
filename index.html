@@ -10,26 +10,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #12121a;
-            --bg-hover: #1a1a25;
-            --border: #2a2a3a;
-            --text: #e8e8f0;
-            --text-muted: #8888a0;
-            --accent-1: #00d4aa;
-            --accent-2: #0099ff;
-            --accent-3: #ff6b6b;
-            --accent-4: #ffd93d;
-            --accent-5: #a855f7;
-            --gradient-1: linear-gradient(135deg, #00d4aa, #0099ff);
-            --gradient-2: linear-gradient(135deg, #ff6b6b, #ffd93d);
+            --bg-primary: #ffffff;
+            --bg-secondary: #f5f7fa;
+            --bg-dark: #f5f7fa;
+            --bg-card: #ffffff;
+            --bg-hover: #f0f4f8;
+            --border: #e0e4eb;
+            --text: #212121;
+            --text-muted: #6b7280;
+            --accent-1: #00b386;
+            --accent-2: #2962ff;
+            --accent-3: #eb5b3c;
+            --accent-4: #ff9800;
+            --accent-5: #7c3aed;
+            --gradient-1: #2962ff;
+            --gradient-2: #eb5b3c;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-dark);
+            background: var(--bg-secondary);
             color: var(--text);
             min-height: 100vh;
         }
@@ -40,9 +44,9 @@
             left: 0;
             right: 0;
             height: 70px;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(10px);
+            background: #ffffff;
             border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -53,9 +57,7 @@
         .logo {
             font-size: 1.5rem;
             font-weight: 700;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--accent-2);
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -74,14 +76,16 @@
             cursor: pointer;
         }
 
-        .nav-link:hover, .nav-link.active {
-            background: var(--bg-card);
-            color: var(--text);
+        .nav-link:hover {
+            color: var(--accent-2);
+            background: var(--bg-hover);
         }
 
         .nav-link.active {
-            background: var(--gradient-1);
-            color: #000;
+            color: var(--accent-2);
+            background: transparent;
+            border-bottom: 2px solid var(--accent-2);
+            border-radius: 0;
         }
 
         .main { padding-top: 70px; min-height: 100vh; }
@@ -125,7 +129,7 @@
         .hamburger span {
             width: 25px;
             height: 3px;
-            background: var(--text);
+            background: var(--accent-2);
             border-radius: 3px;
             transition: all 0.3s;
         }
@@ -143,26 +147,29 @@
                 top: 70px;
                 left: 0;
                 right: 0;
-                background: rgba(10, 10, 15, 0.98);
+                background: #ffffff;
                 flex-direction: column;
                 padding: 1rem;
                 border-bottom: 1px solid var(--border);
+                box-shadow: var(--shadow-md);
                 gap: 0.5rem;
             }
             .nav-links.show { display: flex !important; }
             .nav-link { width: 100%; text-align: center; padding: 1rem; }
+            .nav-link.active { border-bottom: none; border-left: 3px solid var(--accent-2); border-radius: 0; }
         }
 
         .card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            border: none;
+            border-radius: 12px;
             padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
             transition: all 0.2s;
         }
 
         .card:hover {
-            border-color: var(--accent-1);
+            box-shadow: var(--shadow-md);
             transform: translateY(-2px);
         }
 
@@ -187,10 +194,11 @@
 
         .metric-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: none;
             border-radius: 12px;
             padding: 1.25rem;
             text-align: center;
+            box-shadow: var(--shadow-sm);
         }
 
         .metric-label {
@@ -209,19 +217,21 @@
 
         .chart-container {
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            border: none;
+            border-radius: 12px;
             padding: 1.5rem;
             height: 100%;
+            box-shadow: var(--shadow-sm);
         }
 
         .chart-title { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; }
 
         .table-container {
             background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            border: none;
+            border-radius: 12px;
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
         }
 
         .table-header {
@@ -236,7 +246,7 @@
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 1rem 1.5rem; text-align: left; border-bottom: 1px solid var(--border); }
         th {
-            background: rgba(255,255,255,0.02);
+            background: var(--bg-secondary);
             color: var(--text-muted);
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -253,15 +263,15 @@
             font-size: 0.75rem;
             font-weight: 600;
         }
-        .tag-green { background: rgba(0, 212, 170, 0.15); color: var(--accent-1); }
-        .tag-red { background: rgba(255, 107, 107, 0.15); color: var(--accent-3); }
-        .tag-blue { background: rgba(0, 153, 255, 0.15); color: var(--accent-2); }
-        .tag-yellow { background: rgba(255, 217, 61, 0.15); color: var(--accent-4); }
+        .tag-green { background: rgba(0, 179, 134, 0.12); color: var(--accent-1); }
+        .tag-red { background: rgba(235, 91, 60, 0.12); color: var(--accent-3); }
+        .tag-blue { background: rgba(41, 98, 255, 0.12); color: var(--accent-2); }
+        .tag-yellow { background: rgba(255, 152, 0, 0.12); color: #e65100; }
 
         .recommendation-box {
-            background: linear-gradient(135deg, rgba(0, 212, 170, 0.1), rgba(0, 153, 255, 0.1));
-            border: 2px solid var(--accent-1);
-            border-radius: 16px;
+            background: rgba(41, 98, 255, 0.05);
+            border: 1px solid var(--accent-2);
+            border-radius: 12px;
             padding: 2rem;
             margin: 1.5rem 0;
         }
@@ -269,7 +279,7 @@
         .recommendation-title {
             font-size: 1.25rem;
             font-weight: 700;
-            color: var(--accent-1);
+            color: var(--accent-2);
             margin-bottom: 1rem;
         }
 
@@ -279,12 +289,12 @@
             gap: 1rem;
         }
 
-        .rec-item { background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; }
+        .rec-item { background: var(--bg-secondary); padding: 1rem; border-radius: 8px; }
         .rec-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; }
         .rec-value { font-size: 1.1rem; font-weight: 600; }
 
         .trade-ticket {
-            background: var(--bg-dark);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
@@ -305,8 +315,8 @@
             gap: 1rem;
             margin: 1rem 0;
         }
-        .alert-success { background: rgba(0, 212, 170, 0.1); border: 1px solid var(--accent-1); }
-        .alert-warning { background: rgba(255, 217, 61, 0.1); border: 1px solid var(--accent-4); }
+        .alert-success { background: rgba(0, 179, 134, 0.08); border: 1px solid var(--accent-1); }
+        .alert-warning { background: rgba(255, 152, 0, 0.08); border: 1px solid var(--accent-4); }
         .alert-icon { font-size: 1.5rem; }
 
         .tabs {
@@ -325,8 +335,8 @@
             color: var(--text-muted);
             transition: all 0.2s;
         }
-        .tab:hover { background: var(--bg-card); color: var(--text); }
-        .tab.active { background: var(--gradient-1); color: #000; }
+        .tab:hover { background: var(--bg-hover); color: var(--text); }
+        .tab.active { background: var(--accent-2); color: #fff; }
 
         .control-group { margin-bottom: 1rem; }
         .control-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem; }
@@ -334,13 +344,13 @@
         .control-input {
             width: 100%;
             padding: 0.75rem 1rem;
-            background: var(--bg-dark);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text);
             font-size: 1rem;
         }
-        .control-input:focus { outline: none; border-color: var(--accent-1); }
+        .control-input:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(41, 98, 255, 0.1); }
 
         .slider-container { display: flex; align-items: center; gap: 1rem; }
 
@@ -356,7 +366,7 @@
             -webkit-appearance: none;
             width: 18px;
             height: 18px;
-            background: var(--accent-1);
+            background: var(--accent-2);
             border-radius: 50%;
             cursor: pointer;
         }
@@ -372,10 +382,12 @@
             border: none;
             font-size: 0.9rem;
         }
-        .btn-primary { background: var(--gradient-1); color: #000; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0, 212, 170, 0.3); }
-        .btn-secondary { background: var(--bg-card); color: var(--text); border: 1px solid var(--border); }
+        .btn-primary { background: var(--accent-2); color: #fff; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }
+        .btn-secondary { background: #ffffff; color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--bg-hover); }
         .btn-danger { background: var(--accent-3); color: #fff; }
+        .btn-success { background: var(--accent-1); color: #fff; }
         .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.8rem; }
 
         .footer {
@@ -397,11 +409,16 @@
 
         .stock-form input, .stock-form select {
             padding: 0.6rem;
-            background: var(--bg-dark);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text);
             font-size: 0.9rem;
+        }
+        .stock-form input:focus, .stock-form select:focus {
+            outline: none;
+            border-color: var(--accent-2);
+            box-shadow: 0 0 0 3px rgba(41, 98, 255, 0.1);
         }
 
         .search-dropdown {
@@ -409,14 +426,14 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: var(--bg-card);
+            background: #ffffff;
             border: 1px solid var(--border);
             border-radius: 8px;
             max-height: 250px;
             overflow-y: auto;
             z-index: 100;
             display: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            box-shadow: var(--shadow-md);
         }
 
         .search-dropdown.show { display: block; }
@@ -434,7 +451,7 @@
 
         .search-item .ticker {
             font-weight: 700;
-            color: var(--accent-1);
+            color: var(--accent-2);
             margin-right: 0.5rem;
         }
 
@@ -450,7 +467,7 @@
         }
 
         .delete-btn {
-            background: rgba(255, 107, 107, 0.2);
+            background: rgba(235, 91, 60, 0.1);
             color: var(--accent-3);
             border: none;
             padding: 0.5rem;
@@ -461,7 +478,7 @@
         .delete-btn:hover { background: var(--accent-3); color: #fff; }
 
         .sell-btn {
-            background: rgba(255, 107, 107, 0.2);
+            background: rgba(235, 91, 60, 0.1);
             color: var(--accent-3);
             border: 1px solid var(--accent-3);
             padding: 0.4rem 0.8rem;
@@ -476,7 +493,7 @@
         .progress-bar-container {
             width: 100%;
             height: 20px;
-            background: var(--bg-dark);
+            background: var(--bg-secondary);
             border-radius: 10px;
             overflow: hidden;
             margin: 0.5rem 0;
@@ -484,7 +501,7 @@
 
         .progress-bar-fill {
             height: 100%;
-            background: var(--gradient-1);
+            background: var(--accent-2);
             border-radius: 10px;
             transition: width 0.3s ease;
             display: flex;
@@ -492,7 +509,7 @@
             justify-content: center;
             font-size: 0.75rem;
             font-weight: 600;
-            color: #000;
+            color: #fff;
         }
 
         .monte-carlo-paths {
@@ -611,13 +628,13 @@
             </div>
 
             <!-- Live Price Fetcher -->
-            <div class="card" style="margin-bottom: 1.5rem; border-color: var(--accent-2);">
+            <div class="card" style="margin-bottom: 1.5rem; border: 1px solid var(--accent-2);">
                 <h3 style="margin-bottom: 1rem; color: var(--accent-2);">📡 Live Stock Prices</h3>
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                     <button class="btn btn-primary" onclick="fetchLivePrices()" id="fetchPricesBtn" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
                         🔄 Fetch Live Prices
                     </button>
-                    <button class="btn btn-secondary" onclick="useDemoData()" style="background: var(--accent-4); color: #000;" title="Test with simulated prices">
+                    <button class="btn btn-secondary" onclick="useDemoData()" style="background: var(--accent-4); color: #fff;" title="Test with simulated prices">
                         Demo Data
                     </button>
                     <span id="priceStatus" style="font-size: 0.85rem; color: var(--text-muted);">
@@ -640,7 +657,7 @@
                     </div>
                     <div>
                         <label class="control-label">Selected</label>
-                        <div id="selectedStock" style="padding: 0.6rem; background: var(--bg-dark); border-radius: 6px; min-height: 38px; display: flex; align-items: center; color: var(--text-muted);">Type to search...</div>
+                        <div id="selectedStock" style="padding: 0.6rem; background: var(--bg-secondary); border-radius: 6px; min-height: 38px; display: flex; align-items: center; color: var(--text-muted);">Type to search...</div>
                     </div>
                     <div>
                         <label class="control-label">Shares</label>
@@ -656,7 +673,7 @@
                     </div>
                     <div>
                         <label class="control-label">Sector (Auto)</label>
-                        <div id="newSectorDisplay" style="padding: 0.6rem; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 6px; min-height: 38px; display: flex; align-items: center; color: var(--text-muted);">--</div>
+                        <div id="newSectorDisplay" style="padding: 0.6rem; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; min-height: 38px; display: flex; align-items: center; color: var(--text-muted);">--</div>
                         <input type="hidden" id="newSector" value="Other">
                     </div>
                     <div>
@@ -1027,7 +1044,7 @@
                                 <span style="color: var(--text-muted);" id="strategySellDTE">30-45 DTE</span>
                             </div>
                         </div>
-                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-dark); border-radius: 8px; font-size: 0.85rem;" id="strategyReasoning">
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px; font-size: 0.85rem;" id="strategyReasoning">
                             <span style="color: var(--accent-4);">💡 Why this action:</span>
                             <span style="color: var(--text-muted);" id="strategyWhyText">Select options above to get personalized recommendation.</span>
                         </div>
@@ -1789,7 +1806,7 @@
             // Sector Chart
             const sectorLabels = Object.keys(metrics.sectorTotals);
             const sectorValues = Object.values(metrics.sectorTotals);
-            const colors = ['#00d4aa', '#0099ff', '#ff6b6b', '#ffd93d', '#a855f7', '#ec4899', '#14b8a6', '#f97316'];
+            const colors = ['#2962ff', '#00b386', '#eb5b3c', '#ff9800', '#7c3aed', '#ec4899', '#0891b2', '#f97316'];
 
             if (sectorChart) sectorChart.destroy();
             sectorChart = new Chart(document.getElementById('sectorChart'), {
@@ -1813,7 +1830,7 @@
                     datasets: [{
                         label: 'Weight %',
                         data: weights,
-                        backgroundColor: '#0099ff',
+                        backgroundColor: '#2962ff',
                         borderRadius: 6
                     }]
                 },
@@ -2240,8 +2257,8 @@
                     datasets: [{
                         label: 'P/L at Expiration',
                         data: payoffs,
-                        borderColor: '#00d4aa',
-                        backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                        borderColor: '#00b386',
+                        backgroundColor: 'rgba(0, 179, 134, 0.1)',
                         fill: true,
                         tension: 0.4
                     }]
@@ -2250,18 +2267,18 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { labels: { color: '#8888a0' } }
+                        legend: { labels: { color: '#6b7280' } }
                     },
                     scales: {
                         x: {
-                            title: { display: true, text: 'Stock Price at Expiration', color: '#8888a0' },
-                            ticks: { color: '#8888a0' },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            title: { display: true, text: 'Stock Price at Expiration', color: '#6b7280' },
+                            ticks: { color: '#6b7280' },
+                            grid: { color: 'rgba(0,0,0,0.06)' }
                         },
                         y: {
-                            title: { display: true, text: 'Profit/Loss ($)', color: '#8888a0' },
-                            ticks: { color: '#8888a0' },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            title: { display: true, text: 'Profit/Loss ($)', color: '#6b7280' },
+                            ticks: { color: '#6b7280' },
+                            grid: { color: 'rgba(0,0,0,0.06)' }
                         }
                     }
                 }
@@ -2284,7 +2301,7 @@
                     datasets: [{
                         label: 'Suitability Score',
                         data: [strategy.bullish, strategy.neutral, strategy.bearish, strategy.volatile],
-                        backgroundColor: ['#00d4aa', '#0099ff', '#ff6b6b', '#a855f7']
+                        backgroundColor: ['#00b386', '#2962ff', '#eb5b3c', '#7c3aed']
                     }]
                 },
                 options: {
@@ -2294,11 +2311,11 @@
                         legend: { display: false }
                     },
                     scales: {
-                        x: { ticks: { color: '#8888a0' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                        x: { ticks: { color: '#6b7280' }, grid: { color: 'rgba(0,0,0,0.06)' } },
                         y: {
                             min: 0, max: 5,
-                            ticks: { color: '#8888a0', stepSize: 1 },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
+                            ticks: { color: '#6b7280', stepSize: 1 },
+                            grid: { color: 'rgba(0,0,0,0.06)' }
                         }
                     }
                 }
@@ -2412,8 +2429,8 @@
                         {
                             label: '95th Percentile',
                             data: p95,
-                            borderColor: '#00d4aa',
-                            backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                            borderColor: '#00b386',
+                            backgroundColor: 'rgba(0, 179, 134, 0.1)',
                             fill: '+1',
                             borderDash: [5, 5],
                             pointRadius: 0,
@@ -2422,8 +2439,8 @@
                         {
                             label: '75th Percentile',
                             data: p75,
-                            borderColor: '#0099ff',
-                            backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                            borderColor: '#2962ff',
+                            backgroundColor: 'rgba(41, 98, 255, 0.1)',
                             fill: '+1',
                             borderDash: [3, 3],
                             pointRadius: 0,
@@ -2432,7 +2449,7 @@
                         {
                             label: 'Median',
                             data: p50,
-                            borderColor: '#ffd93d',
+                            borderColor: '#ff9800',
                             borderWidth: 3,
                             fill: false,
                             pointRadius: 0,
@@ -2441,8 +2458,8 @@
                         {
                             label: '25th Percentile',
                             data: p25,
-                            borderColor: '#0099ff',
-                            backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                            borderColor: '#2962ff',
+                            backgroundColor: 'rgba(41, 98, 255, 0.1)',
                             fill: '+1',
                             borderDash: [3, 3],
                             pointRadius: 0,
@@ -2451,7 +2468,7 @@
                         {
                             label: '5th Percentile',
                             data: p5,
-                            borderColor: '#ff6b6b',
+                            borderColor: '#eb5b3c',
                             fill: false,
                             borderDash: [5, 5],
                             pointRadius: 0,
@@ -2493,8 +2510,8 @@
         }
 
         // ==================== INITIALIZE CHARTS ====================
-        Chart.defaults.color = '#8888a0';
-        Chart.defaults.borderColor = '#2a2a3a';
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.borderColor = '#e0e4eb';
 
         // Protection Chart - Portfolio risk/return profile
         new Chart(document.getElementById('protectionChart'), {
@@ -2504,8 +2521,8 @@
                 datasets: [{
                     label: 'Expected Portfolio Return',
                     data: [-24, -16, -8, 0, 8, 17, 26],
-                    borderColor: '#0099ff',
-                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    borderColor: '#2962ff',
+                    backgroundColor: 'rgba(41, 98, 255, 0.1)',
                     tension: 0.3,
                     fill: true
                 }]
@@ -2525,7 +2542,7 @@
             type: 'doughnut',
             data: {
                 labels: ['Normal', 'Low Vol', 'High Vol', 'Crisis'],
-                datasets: [{ data: [49.8, 25.1, 20.1, 5.0], backgroundColor: ['#0099ff', '#00d4aa', '#ffd93d', '#ff6b6b'], borderWidth: 0 }]
+                datasets: [{ data: [49.8, 25.1, 20.1, 5.0], backgroundColor: ['#2962ff', '#00b386', '#ff9800', '#eb5b3c'], borderWidth: 0 }]
             },
             options: { responsive: true, plugins: { legend: { position: 'right' } } }
         });
@@ -2538,7 +2555,7 @@
                 datasets: [{
                     label: 'Portfolio Impact',
                     data: [-8, -18, -28, -40],
-                    backgroundColor: ['#ffd93d', '#ff9f43', '#ff6b6b', '#ee5253'],
+                    backgroundColor: ['#ff9800', '#f57c00', '#eb5b3c', '#c62828'],
                     borderRadius: 6
                 }]
             },
@@ -2557,9 +2574,9 @@
                 datasets: [{
                     label: 'Volatility',
                     data: [12, 14, 18, 22, 16, 14, 13, 15, 17, 14, 13, 14.5],
-                    borderColor: '#0099ff',
+                    borderColor: '#2962ff',
                     fill: true,
-                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    backgroundColor: 'rgba(41, 98, 255, 0.1)',
                     tension: 0.4
                 }]
             },
@@ -2574,9 +2591,9 @@
                 datasets: [{
                     label: 'Avg Correlation',
                     data: [0.35, 0.38, 0.52, 0.48, 0.40, 0.36, 0.33, 0.38, 0.42, 0.38, 0.35, 0.37],
-                    borderColor: '#a855f7',
+                    borderColor: '#7c3aed',
                     fill: true,
-                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    backgroundColor: 'rgba(124, 58, 237, 0.1)',
                     tension: 0.4
                 }]
             },
@@ -2591,9 +2608,9 @@
                 datasets: [{
                     label: 'Put Payoff',
                     data: Array.from({length: 21}, (_, i) => Math.max(456 - (400 + i * 10), 0) - 1.74),
-                    borderColor: '#00d4aa',
+                    borderColor: '#00b386',
                     fill: true,
-                    backgroundColor: 'rgba(0, 212, 170, 0.1)',
+                    backgroundColor: 'rgba(0, 179, 134, 0.1)',
                     tension: 0.1
                 }]
             },
@@ -2608,9 +2625,9 @@
                 datasets: [{
                     label: 'Delta',
                     data: [-0.95, -0.90, -0.82, -0.70, -0.55, -0.40, -0.28, -0.18, -0.11, -0.06, -0.03, -0.02, -0.01, -0.005, -0.002, -0.001, 0, 0, 0, 0, 0],
-                    borderColor: '#0099ff',
+                    borderColor: '#2962ff',
                     fill: true,
-                    backgroundColor: 'rgba(0, 153, 255, 0.1)',
+                    backgroundColor: 'rgba(41, 98, 255, 0.1)',
                     tension: 0.4
                 }]
             },
@@ -2625,7 +2642,7 @@
                 datasets: [{
                     label: 'Suitability Score',
                     data: [0.86, 0.67, 0.54, 0.42, 0.35],
-                    backgroundColor: ['#00d4aa', '#0099ff', '#0099ff', '#a855f7', '#ffd93d'],
+                    backgroundColor: ['#00b386', '#2962ff', '#2962ff', '#7c3aed', '#ff9800'],
                     borderRadius: 8
                 }]
             },
