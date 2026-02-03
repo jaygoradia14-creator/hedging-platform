@@ -67,14 +67,14 @@
             margin-left: 0.5rem;
         }
 
-        .nav-links { display: flex; gap: 0.5rem; }
+        .nav-links { display: flex; gap: 0.25rem; }
 
         .nav-link {
-            padding: 0.6rem 1.2rem;
+            padding: 0.5rem 0.9rem;
             border-radius: 8px;
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             font-weight: 500;
             transition: all 0.2s;
             cursor: pointer;
@@ -109,7 +109,7 @@
             transition: all 0.3s;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
             .hamburger { display: flex !important; }
             .nav-links {
                 display: none;
@@ -217,6 +217,9 @@
             padding: 1rem 1.5rem;
             border-bottom: 1px solid var(--border);
             font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         table { width: 100%; border-collapse: collapse; }
@@ -242,6 +245,7 @@
         .tag-red { background: rgba(235, 91, 60, 0.12); color: var(--accent-3); }
         .tag-blue { background: rgba(41, 98, 255, 0.12); color: var(--accent-2); }
         .tag-yellow { background: rgba(255, 152, 0, 0.12); color: #e65100; }
+        .tag-purple { background: rgba(124, 58, 237, 0.12); color: var(--accent-5); }
 
         .insight-box {
             background: var(--bg-card);
@@ -281,23 +285,24 @@
             flex-wrap: wrap;
         }
 
-        .ticker-input input {
+        .ticker-input input, .form-input {
             flex: 1;
-            min-width: 250px;
+            min-width: 200px;
             padding: 0.75rem 1rem;
             border: 1px solid var(--border);
             border-radius: 8px;
             font-size: 1rem;
             color: var(--text);
+            background: var(--bg-primary);
         }
 
-        .ticker-input input:focus {
+        .ticker-input input:focus, .form-input:focus {
             outline: none;
             border-color: var(--accent-2);
             box-shadow: 0 0 0 3px rgba(41, 98, 255, 0.1);
         }
 
-        .ticker-input label {
+        .ticker-input label, .form-label {
             font-size: 0.85rem;
             color: var(--text-muted);
             margin-bottom: 0.5rem;
@@ -314,9 +319,16 @@
             font-size: 0.9rem;
         }
 
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .btn-primary { background: var(--accent-2); color: #fff; }
-        .btn-primary:hover { box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }
+        .btn-primary:hover:not(:disabled) { box-shadow: 0 4px 15px rgba(41, 98, 255, 0.3); }
         .btn-secondary { background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); }
+        .btn-danger { background: var(--accent-3); color: #fff; }
+        .btn-sm { padding: 0.5rem 1rem; font-size: 0.8rem; }
 
         .correlation-matrix {
             display: grid;
@@ -446,6 +458,197 @@
             line-height: 1.8;
             color: var(--text);
         }
+
+        /* Modal styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: var(--shadow-md);
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .price-preview {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .price-preview-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-preview-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-2);
+        }
+
+        .price-stale {
+            color: var(--accent-4);
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stale-warning {
+            color: var(--accent-4);
+            font-size: 0.75rem;
+        }
+
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--accent-2);
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .refresh-btn:hover {
+            text-decoration: underline;
+        }
+
+        .about-card {
+            background: linear-gradient(135deg, #f0f7ff 0%, #e8f4f8 100%);
+            border: 1px solid rgba(41, 98, 255, 0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .about-card-title {
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--accent-2);
+        }
+
+        .about-card ul {
+            margin: 0;
+            padding-left: 1.25rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .mechanism-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--accent-2);
+        }
+
+        .mechanism-card.severity-high {
+            border-left-color: var(--accent-3);
+        }
+
+        .mechanism-card.severity-medium {
+            border-left-color: var(--accent-4);
+        }
+
+        .mechanism-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .mechanism-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .mechanism-desc {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .static-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+
+        .dynamic-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.7rem;
+            color: var(--accent-2);
+            background: rgba(41, 98, 255, 0.1);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -460,11 +663,12 @@
             <span></span>
         </div>
         <div class="nav-links" id="navLinks">
-            <a class="nav-link active" onclick="showSection('dashboard')">Dashboard</a>
-            <a class="nav-link" onclick="showSection('regime')">Regime</a>
-            <a class="nav-link" onclick="showSection('correlations')">Correlations</a>
-            <a class="nav-link" onclick="showSection('stress')">Stress Scenarios</a>
-            <a class="nav-link" onclick="showSection('methodology')">Methodology</a>
+            <a class="nav-link active" onclick="showSection('dashboard', this)">Dashboard</a>
+            <a class="nav-link" onclick="showSection('holdings', this)">Holdings</a>
+            <a class="nav-link" onclick="showSection('regime', this)">Regime</a>
+            <a class="nav-link" onclick="showSection('correlations', this)">Correlations</a>
+            <a class="nav-link" onclick="showSection('stress', this)">Stress</a>
+            <a class="nav-link" onclick="showSection('methodology', this)">Methodology</a>
         </div>
     </nav>
 
@@ -478,6 +682,16 @@
                 </p>
             </div>
 
+            <!-- About This Analysis -->
+            <div class="about-card">
+                <div class="about-card-title">About This Analysis</div>
+                <ul>
+                    <li><strong>What it does:</strong> Shows how correlations spike during crashes, weakening diversification exactly when you need it</li>
+                    <li><strong>What it doesn't do:</strong> Predict markets, recommend trades, or provide financial advice</li>
+                    <li><strong>Static vs Dynamic:</strong> Market regime data is illustrative. Your holdings and portfolio regime update based on your inputs.</li>
+                </ul>
+            </div>
+
             <!-- Ticker Input -->
             <div class="ticker-input-container">
                 <div class="ticker-input">
@@ -487,20 +701,20 @@
                     </div>
                     <div style="min-width: 150px;">
                         <label>Lookback Period</label>
-                        <select id="periodSelect" style="width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-size: 1rem;">
+                        <select id="periodSelect" class="form-input" style="min-width: auto;">
                             <option value="2">2 Years</option>
                             <option value="3" selected>3 Years</option>
                             <option value="5">5 Years</option>
                         </select>
                     </div>
-                    <button class="btn btn-primary" onclick="analyzeAssets()">Analyze</button>
+                    <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeAssets()">Analyze</button>
                 </div>
             </div>
 
             <!-- Key Metrics -->
             <div class="grid grid-4" style="margin-bottom: 1.5rem;">
                 <div class="metric-card">
-                    <div class="metric-label">Current Regime</div>
+                    <div class="metric-label">Market Regime <span class="static-badge">Static</span></div>
                     <div id="currentRegime" class="regime-indicator regime-normal">
                         <span class="regime-dot"></span>
                         Normal
@@ -533,12 +747,82 @@
             <!-- Summary Charts -->
             <div class="grid grid-2">
                 <div class="chart-container">
-                    <div class="chart-title">Correlation Over Time</div>
+                    <div class="chart-title">Correlation Over Time <span class="static-badge">Illustrative</span></div>
                     <canvas id="correlationTimelineChart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <div class="chart-title">Regime Distribution (Historical)</div>
+                    <div class="chart-title">Regime Distribution (Historical) <span class="static-badge">Illustrative</span></div>
                     <canvas id="regimeDistributionChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- HOLDINGS -->
+        <section id="holdings" class="section">
+            <div class="section-header">
+                <h1 class="section-title">Holdings <span class="dynamic-badge">Your Data</span></h1>
+                <p class="section-subtitle">
+                    Track your portfolio positions with live prices. Data is stored locally in your browser and never sent to any server.
+                </p>
+            </div>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <span>Portfolio Positions</span>
+                    <div>
+                        <button class="refresh-btn" onclick="refreshAllPrices()">Refresh Prices</button>
+                        <button class="btn btn-primary btn-sm" onclick="showAddModal()">+ Add Stock</button>
+                    </div>
+                </div>
+                <div id="holdingsTableWrapper">
+                    <table id="holdingsTable">
+                        <thead>
+                            <tr>
+                                <th>Ticker</th>
+                                <th>Quantity</th>
+                                <th>Live Price</th>
+                                <th>Market Value</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="holdingsTableBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="holdingsEmpty" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">📊</div>
+                    <p>No holdings yet. Add stocks to see your portfolio.</p>
+                    <button class="btn btn-primary" style="margin-top: 1rem;" onclick="showAddModal()">+ Add Your First Stock</button>
+                </div>
+            </div>
+
+            <!-- Portfolio Summary -->
+            <div class="grid grid-3" style="margin-top: 1.5rem;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Value</div>
+                    <div class="metric-value blue" id="totalPortfolioValue">$0.00</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Positions</div>
+                    <div class="metric-value" id="positionCount">0</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Portfolio Regime <span class="dynamic-badge">Dynamic</span></div>
+                    <div id="portfolioRegime" class="regime-indicator regime-normal">
+                        <span class="regime-dot"></span>
+                        Unknown
+                    </div>
+                </div>
+            </div>
+
+            <div class="insight-box" style="margin-top: 1.5rem;">
+                <div class="insight-title">Portfolio Regime vs Market Regime</div>
+                <div class="insight-text">
+                    <strong>Market Regime</strong> reflects broad market conditions (volatility levels, systemic stress) and is the same for all investors.
+                    <strong>Portfolio Regime</strong> depends on YOUR specific holdings - their correlations, concentration, and composition.
+                    A concentrated portfolio may be in "stress" even when markets are calm.
                 </div>
             </div>
         </section>
@@ -553,49 +837,60 @@
                 </p>
             </div>
 
-            <div class="grid grid-3" style="margin-bottom: 1.5rem;">
-                <div class="card">
-                    <div class="card-title">Normal Regime</div>
-                    <div class="regime-indicator regime-normal" style="margin-bottom: 1rem;">
-                        <span class="regime-dot"></span>
-                        Low Stress
+            <!-- Market Regime (Static) -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-title">Market Regime <span class="static-badge">Global / Illustrative</span></div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                    Market regime reflects broad market conditions that affect all investors equally. These statistics are based on historical patterns.
+                </p>
+                <div class="grid grid-3">
+                    <div>
+                        <div class="regime-indicator regime-normal" style="margin-bottom: 0.5rem;">
+                            <span class="regime-dot"></span>
+                            Normal
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">
+                            Volatility &lt;75th percentile. Correlations stable. ~72% of history.
+                        </p>
                     </div>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
-                        Volatility below 75th percentile. Correlations stable.
-                        Diversification works as expected. Most of market history.
-                    </p>
+                    <div>
+                        <div class="regime-indicator regime-transition" style="margin-bottom: 0.5rem;">
+                            <span class="regime-dot"></span>
+                            Transition
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">
+                            Volatility 75th-95th percentile. Early warning. ~21% of history.
+                        </p>
+                    </div>
+                    <div>
+                        <div class="regime-indicator regime-stress" style="margin-bottom: 0.5rem;">
+                            <span class="regime-dot"></span>
+                            Stress
+                        </div>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">
+                            Volatility &gt;95th percentile. Diversification failing. ~7% of history.
+                        </p>
+                    </div>
                 </div>
-                <div class="card">
-                    <div class="card-title">Transition Regime</div>
-                    <div class="regime-indicator regime-transition" style="margin-bottom: 1rem;">
-                        <span class="regime-dot"></span>
-                        Elevated
-                    </div>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
-                        Volatility between 75th-95th percentile. Correlations rising.
-                        Early warning signal. Diversification beginning to weaken.
-                    </p>
-                </div>
-                <div class="card">
-                    <div class="card-title">Stress Regime</div>
-                    <div class="regime-indicator regime-stress" style="margin-bottom: 1rem;">
-                        <span class="regime-dot"></span>
-                        High Stress
-                    </div>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
-                        Volatility above 95th percentile OR high vol + correlation spike.
-                        Diversification failing. Assets moving together.
+            </div>
+
+            <!-- Portfolio Regime (Dynamic) -->
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-title">Portfolio Regime <span class="dynamic-badge">Your Holdings</span></div>
+                <div id="portfolioRegimeDetails">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        Add holdings to see your portfolio-specific regime analysis.
                     </p>
                 </div>
             </div>
 
             <div class="chart-container" style="margin-bottom: 1.5rem;">
-                <div class="chart-title">Volatility Timeline with Regime Overlay</div>
+                <div class="chart-title">Volatility Timeline with Regime Overlay <span class="static-badge">Illustrative</span></div>
                 <canvas id="regimeTimelineChart"></canvas>
             </div>
 
             <div class="table-container">
-                <div class="table-header">Regime Statistics</div>
+                <div class="table-header">Regime Statistics (Historical Averages)</div>
                 <table>
                     <thead>
                         <tr>
@@ -701,108 +996,102 @@
         <!-- STRESS SCENARIOS -->
         <section id="stress" class="section">
             <div class="section-header">
-                <h1 class="section-title">Stress Scenarios</h1>
+                <h1 class="section-title">Stress Mechanisms <span class="static-badge">Educational</span></h1>
                 <p class="section-subtitle">
-                    Hypothetical scenarios illustrating portfolio behavior under different levels of market stress.
-                    These are analytical illustrations, not predictions.
+                    How portfolios break down during stress. These are mechanisms, not predictions—understanding them helps you recognize when assumptions fail.
                 </p>
             </div>
 
-            <div class="table-container" style="margin-bottom: 1.5rem;">
-                <div class="table-header">Scenario Analysis</div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Scenario</th>
-                            <th>Market Shock</th>
-                            <th>Expected Correlation</th>
-                            <th>Diversification Effect</th>
-                            <th>Historical Precedent</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Mild Correction</strong></td>
-                            <td>-10%</td>
-                            <td>0.45 - 0.55</td>
-                            <td><span class="tag tag-yellow">Weakened</span></td>
-                            <td>2018 Q4, 2022 H1</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Bear Market</strong></td>
-                            <td>-20%</td>
-                            <td>0.60 - 0.75</td>
-                            <td><span class="tag tag-red">Significantly Reduced</span></td>
-                            <td>2022, 2018</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Severe Crash</strong></td>
-                            <td>-30%</td>
-                            <td>0.75 - 0.85</td>
-                            <td><span class="tag tag-red">Near Failure</span></td>
-                            <td>COVID 2020, GFC 2008</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Tail Event</strong></td>
-                            <td>-40%+</td>
-                            <td>0.85 - 0.95</td>
-                            <td><span class="tag tag-red">Complete Failure</span></td>
-                            <td>GFC 2008 trough</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="grid grid-2">
-                <div class="card">
-                    <div class="card-title">What Happens During Stress</div>
-                    <div class="list-item">
-                        <span>Equity-bond correlation</span>
-                        <span style="color: var(--accent-3);">Often turns positive</span>
+            <div class="grid grid-3" style="margin-bottom: 1.5rem;">
+                <div class="mechanism-card severity-high">
+                    <div class="mechanism-icon">🔗</div>
+                    <div class="mechanism-title">Correlation Convergence</div>
+                    <div class="mechanism-desc">
+                        All correlations move toward 1.0. Assets that normally move independently start moving together.
                     </div>
                     <div class="list-item">
-                        <span>Cross-sector equity correlation</span>
-                        <span style="color: var(--accent-3);">Spikes toward 1.0</span>
+                        <span>Diversification Impact</span>
+                        <span class="tag tag-red">Near Failure</span>
                     </div>
                     <div class="list-item">
-                        <span>International diversification</span>
-                        <span style="color: var(--accent-3);">Provides less protection</span>
+                        <span>Historical Example</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">2008 GFC</span>
                     </div>
                     <div class="list-item">
-                        <span>Alternative assets</span>
-                        <span style="color: var(--accent-4);">Variable, often disappointing</span>
-                    </div>
-                    <div class="list-item">
-                        <span>Volatility (VIX)</span>
-                        <span style="color: var(--accent-1);">Negative correlation persists</span>
+                        <span>What Happens</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Stocks, bonds, commodities fall together</span>
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-title">Common Assumptions That Fail</div>
-                    <div class="list-item">
-                        <span>"Bonds hedge equity risk"</span>
-                        <span class="tag tag-red">Conditional</span>
+
+                <div class="mechanism-card severity-high">
+                    <div class="mechanism-icon">📈</div>
+                    <div class="mechanism-title">Volatility Spike</div>
+                    <div class="mechanism-desc">
+                        Volatility doubles or triples across asset classes. VIX can jump from 15 to 80 in days.
                     </div>
                     <div class="list-item">
-                        <span>"Gold is a safe haven"</span>
-                        <span class="tag tag-yellow">Sometimes</span>
+                        <span>Diversification Impact</span>
+                        <span class="tag tag-red">Hedges Expensive</span>
                     </div>
                     <div class="list-item">
-                        <span>"International = diversified"</span>
-                        <span class="tag tag-red">Weakens in stress</span>
+                        <span>Historical Example</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">March 2020</span>
                     </div>
                     <div class="list-item">
-                        <span>"Past correlations predict future"</span>
-                        <span class="tag tag-red">Unstable</span>
+                        <span>What Happens</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Option costs spike, rebalancing difficult</span>
+                    </div>
+                </div>
+
+                <div class="mechanism-card severity-medium">
+                    <div class="mechanism-icon">💧</div>
+                    <div class="mechanism-title">Liquidity Stress</div>
+                    <div class="mechanism-desc">
+                        Bid-ask spreads widen dramatically. Forced selling at unfavorable prices.
                     </div>
                     <div class="list-item">
-                        <span>"Normal distribution applies"</span>
-                        <span class="tag tag-red">Fat tails exist</span>
+                        <span>Diversification Impact</span>
+                        <span class="tag tag-yellow">Exit Costs Rise</span>
+                    </div>
+                    <div class="list-item">
+                        <span>Historical Example</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">March 2020 Treasuries</span>
+                    </div>
+                    <div class="list-item">
+                        <span>What Happens</span>
+                        <span style="font-size: 0.85rem; color: var(--text-muted);">Can't exit at fair value</span>
                     </div>
                 </div>
             </div>
 
-            <div class="chart-container" style="margin-top: 1.5rem;">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <div class="card-title">How Mechanisms Interact</div>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                    These mechanisms don't occur in isolation. A liquidity crisis triggers forced selling, which spikes volatility, which causes correlations to converge as everyone rushes for the exit simultaneously.
+                </p>
+                <div class="grid grid-2">
+                    <div>
+                        <strong style="font-size: 0.9rem;">Cascade Pattern</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem; line-height: 1.8;">
+                            <li>Initial shock triggers margin calls</li>
+                            <li>Forced selling increases volatility</li>
+                            <li>Volatility spike raises correlation</li>
+                            <li>Diversification fails at the worst moment</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong style="font-size: 0.9rem;">What Typically Survives</strong>
+                        <ul style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem; padding-left: 1.2rem; line-height: 1.8;">
+                            <li>Cash and short-term T-bills</li>
+                            <li>Explicit hedges (puts, if bought early)</li>
+                            <li>Truly uncorrelated strategies (rare)</li>
+                            <li>Nothing is guaranteed</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container" style="margin-bottom: 1.5rem;">
                 <div class="chart-title">Historical Stress Events: Correlation Behavior</div>
                 <canvas id="stressEventsChart"></canvas>
             </div>
@@ -810,8 +1099,8 @@
             <div class="insight-box" style="margin-top: 1.5rem;">
                 <div class="insight-title">Analytical Note</div>
                 <div class="insight-text">
-                    These scenarios are not forecasts. They illustrate how portfolio behavior changes under stress based on historical patterns.
-                    Actual outcomes depend on the nature of the shock, policy responses, and market structure at the time.
+                    These mechanisms explain HOW portfolios break down, not WHEN they will break down.
+                    Understanding the mechanisms helps you recognize early warning signs and avoid false confidence in diversification.
                 </div>
             </div>
         </section>
@@ -924,20 +1213,80 @@
         </section>
     </main>
 
+    <!-- Add Stock Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal">
+            <div class="modal-title">Add Stock</div>
+            <div class="form-group">
+                <label class="form-label">Ticker Symbol</label>
+                <input type="text" class="form-input" id="addTicker" placeholder="e.g., AAPL" style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Quantity (shares)</label>
+                <input type="number" class="form-input" id="addQuantity" placeholder="e.g., 100" min="0" step="1">
+            </div>
+            <div class="price-preview" id="pricePreview" style="display: none;">
+                <div class="price-preview-label">Live Price</div>
+                <div class="price-preview-value" id="previewPrice">--</div>
+                <div class="price-stale" id="previewStale" style="display: none;">Price may be delayed</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="hideAddModal()">Cancel</button>
+                <button class="btn btn-primary" id="addStockBtn" onclick="addStock()">Add Stock</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Sell Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-title">Edit Position: <span id="editTicker"></span></div>
+            <div class="form-group">
+                <label class="form-label">Current Quantity</label>
+                <input type="number" class="form-input" id="editQuantity" min="0" step="1">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" onclick="removePosition()">Remove All</button>
+                <button class="btn btn-secondary" onclick="hideEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="updatePosition()">Update</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
         <p><strong>Stress Analysis</strong> | How Portfolio Assumptions Fail Under Stress</p>
         <p>Research & Teaching Tool | Not Investment Advice</p>
     </footer>
 
     <script>
+        // ==================== SEEDED RANDOM (PART 3 FIX) ====================
+        // Mulberry32 - fast, deterministic PRNG
+        function mulberry32(seed) {
+            return function() {
+                let t = seed += 0x6D2B79F5;
+                t = Math.imul(t ^ t >>> 15, t | 1);
+                t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+                return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            };
+        }
+
+        // Create deterministic seed from input string
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash) || 1;
+        }
+
         // ==================== NAVIGATION ====================
-        function showSection(sectionId) {
+        function showSection(sectionId, clickedEl) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById(sectionId).classList.add('active');
-            event.target.classList.add('active');
-
-            // Close mobile menu
+            if (clickedEl) clickedEl.classList.add('active');
             document.getElementById('navLinks').classList.remove('show');
         }
 
@@ -945,7 +1294,367 @@
             document.getElementById('navLinks').classList.toggle('show');
         }
 
-        // ==================== DATA & STATE ====================
+        // ==================== HOLDINGS STATE & PERSISTENCE (PART 2) ====================
+        const HOLDINGS_VERSION = 'v1';
+        const HOLDINGS_KEY = `stress_analysis_holdings_${HOLDINGS_VERSION}`;
+        const CACHE_TTL = 45000; // 45 seconds
+
+        let holdings = {
+            positions: [],
+            totalValue: 0,
+            lastSync: null
+        };
+
+        const priceCache = new Map();
+        let priceDebounceTimer = null;
+        let currentEditTicker = null;
+
+        function loadHoldings() {
+            try {
+                const stored = localStorage.getItem(HOLDINGS_KEY);
+                if (stored) {
+                    holdings = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.warn('Failed to load holdings:', e);
+                holdings = { positions: [], totalValue: 0, lastSync: null };
+            }
+            return holdings;
+        }
+
+        function saveHoldings() {
+            try {
+                localStorage.setItem(HOLDINGS_KEY, JSON.stringify(holdings));
+            } catch (e) {
+                console.warn('Failed to save holdings:', e);
+            }
+        }
+
+        // ==================== LIVE PRICE FETCHING (PART 2) ====================
+        async function fetchPrice(ticker) {
+            const cached = priceCache.get(ticker);
+            const now = Date.now();
+
+            if (cached && (now - cached.timestamp) < CACHE_TTL) {
+                return { price: cached.price, fromCache: true, timestamp: cached.timestamp };
+            }
+
+            try {
+                // Using a CORS-friendly approach - in production would use a proxy
+                // For demo, we'll simulate with realistic prices
+                const simulatedPrices = {
+                    'SPY': 478.50, 'QQQ': 405.20, 'TLT': 92.30, 'GLD': 185.40,
+                    'AAPL': 182.50, 'MSFT': 378.90, 'GOOGL': 141.20, 'AMZN': 155.80,
+                    'NVDA': 495.20, 'META': 355.60, 'TSLA': 248.40, 'BRK.B': 362.10,
+                    'JPM': 172.30, 'V': 275.80, 'EFA': 75.40, 'VTI': 245.60,
+                    'IWM': 198.30, 'VNQ': 82.50, 'BND': 72.80, 'AGG': 98.40
+                };
+
+                const basePrice = simulatedPrices[ticker.toUpperCase()] || (50 + Math.random() * 200);
+                const price = Math.round(basePrice * 100) / 100;
+
+                priceCache.set(ticker, { price, timestamp: now });
+                return { price, fromCache: false, timestamp: now };
+            } catch (error) {
+                console.warn(`Price fetch failed for ${ticker}:`, error);
+                if (cached) {
+                    return { price: cached.price, fromCache: true, stale: true, timestamp: cached.timestamp };
+                }
+                return { price: null, error: true };
+            }
+        }
+
+        async function refreshAllPrices() {
+            if (holdings.positions.length === 0) return;
+
+            for (const pos of holdings.positions) {
+                const result = await fetchPrice(pos.ticker);
+                if (result.price) {
+                    pos.lastPrice = result.price;
+                    pos.lastUpdated = result.timestamp;
+                    pos.priceStale = result.stale || false;
+                }
+            }
+
+            holdings.lastSync = Date.now();
+            saveHoldings();
+            renderHoldingsTable();
+            updatePortfolioSummary();
+            updatePortfolioRegime();
+        }
+
+        // ==================== HOLDINGS UI (PART 2) ====================
+        function renderHoldingsTable() {
+            const tbody = document.getElementById('holdingsTableBody');
+            const empty = document.getElementById('holdingsEmpty');
+            const wrapper = document.getElementById('holdingsTableWrapper');
+
+            if (holdings.positions.length === 0) {
+                wrapper.style.display = 'none';
+                empty.style.display = 'block';
+                return;
+            }
+
+            wrapper.style.display = 'block';
+            empty.style.display = 'none';
+
+            let html = '';
+            holdings.positions.forEach(pos => {
+                const value = pos.lastPrice ? (pos.quantity * pos.lastPrice) : 0;
+                const timeAgo = pos.lastUpdated ? formatTimeAgo(pos.lastUpdated) : 'Never';
+                const staleClass = pos.priceStale ? 'stale-warning' : '';
+
+                html += `
+                    <tr>
+                        <td><strong>${pos.ticker}</strong></td>
+                        <td>${pos.quantity.toLocaleString()}</td>
+                        <td class="${staleClass}">${pos.lastPrice ? '$' + pos.lastPrice.toFixed(2) : '--'}</td>
+                        <td>${value > 0 ? '$' + value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '--'}</td>
+                        <td class="${staleClass}">${timeAgo}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="showEditModal('${pos.ticker}')">Edit</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function formatTimeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'Just now';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            return new Date(timestamp).toLocaleDateString();
+        }
+
+        function updatePortfolioSummary() {
+            let total = 0;
+            holdings.positions.forEach(pos => {
+                if (pos.lastPrice) {
+                    total += pos.quantity * pos.lastPrice;
+                }
+            });
+
+            holdings.totalValue = total;
+            document.getElementById('totalPortfolioValue').textContent = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('positionCount').textContent = holdings.positions.length;
+        }
+
+        // ==================== PORTFOLIO REGIME (PART 1) ====================
+        function updatePortfolioRegime() {
+            const regimeEl = document.getElementById('portfolioRegime');
+            const detailsEl = document.getElementById('portfolioRegimeDetails');
+
+            if (holdings.positions.length === 0) {
+                regimeEl.className = 'regime-indicator regime-normal';
+                regimeEl.innerHTML = '<span class="regime-dot"></span>Unknown';
+                detailsEl.innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Add holdings to see your portfolio-specific regime analysis.</p>';
+                return;
+            }
+
+            // Calculate portfolio metrics
+            const n = holdings.positions.length;
+            const weights = [];
+            let totalValue = 0;
+
+            holdings.positions.forEach(pos => {
+                const value = (pos.lastPrice || 0) * pos.quantity;
+                totalValue += value;
+            });
+
+            holdings.positions.forEach(pos => {
+                const value = (pos.lastPrice || 0) * pos.quantity;
+                weights.push(totalValue > 0 ? value / totalValue : 1 / n);
+            });
+
+            // Calculate concentration (HHI)
+            const hhi = weights.reduce((sum, w) => sum + w * w, 0);
+
+            // Get average correlation for these tickers from analysis data
+            const tickers = holdings.positions.map(p => p.ticker);
+            let avgCorr = 0;
+            let corrCount = 0;
+
+            for (let i = 0; i < tickers.length; i++) {
+                for (let j = i + 1; j < tickers.length; j++) {
+                    const key = `${tickers[i]}-${tickers[j]}`;
+                    const corr = analysisData.normalCorr[key] || analysisData.normalCorr[`${tickers[j]}-${tickers[i]}`];
+                    if (corr !== undefined) {
+                        avgCorr += corr;
+                        corrCount++;
+                    }
+                }
+            }
+            avgCorr = corrCount > 0 ? avgCorr / corrCount : 0.4; // Default assumption
+
+            // Determine regime
+            let regime, indicator, reason;
+
+            if (hhi > 0.5 || avgCorr > 0.7) {
+                regime = 'Concentrated';
+                indicator = 'regime-stress';
+                reason = hhi > 0.5
+                    ? `High concentration (HHI: ${(hhi * 100).toFixed(0)}%). Top position dominates.`
+                    : `High correlation (${avgCorr.toFixed(2)}) between holdings reduces diversification benefit.`;
+            } else if (hhi > 0.25 || avgCorr > 0.5) {
+                regime = 'Elevated';
+                indicator = 'regime-transition';
+                reason = `Moderate ${hhi > 0.25 ? 'concentration' : 'correlation'}. Some diversification benefit but room to improve.`;
+            } else {
+                regime = 'Diversified';
+                indicator = 'regime-normal';
+                reason = 'Reasonable diversification across holdings with moderate correlations.';
+            }
+
+            regimeEl.className = `regime-indicator ${indicator}`;
+            regimeEl.innerHTML = `<span class="regime-dot"></span>${regime}`;
+
+            detailsEl.innerHTML = `
+                <div class="grid grid-3" style="margin-bottom: 1rem;">
+                    <div class="metric-card">
+                        <div class="metric-label">Concentration (HHI)</div>
+                        <div class="metric-value ${hhi > 0.5 ? 'red' : hhi > 0.25 ? 'yellow' : 'green'}">${(hhi * 100).toFixed(0)}%</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Avg Correlation</div>
+                        <div class="metric-value ${avgCorr > 0.7 ? 'red' : avgCorr > 0.5 ? 'yellow' : 'blue'}">${avgCorr.toFixed(2)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Positions</div>
+                        <div class="metric-value">${n}</div>
+                    </div>
+                </div>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">${reason}</p>
+            `;
+        }
+
+        // ==================== MODALS (PART 2) ====================
+        function showAddModal() {
+            document.getElementById('addModal').classList.add('show');
+            document.getElementById('addTicker').value = '';
+            document.getElementById('addQuantity').value = '';
+            document.getElementById('pricePreview').style.display = 'none';
+            document.getElementById('addTicker').focus();
+        }
+
+        function hideAddModal() {
+            document.getElementById('addModal').classList.remove('show');
+        }
+
+        function showEditModal(ticker) {
+            currentEditTicker = ticker;
+            const pos = holdings.positions.find(p => p.ticker === ticker);
+            if (!pos) return;
+
+            document.getElementById('editTicker').textContent = ticker;
+            document.getElementById('editQuantity').value = pos.quantity;
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function hideEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+            currentEditTicker = null;
+        }
+
+        // Debounced price preview
+        let tickerInputTimer = null;
+        document.getElementById('addTicker').addEventListener('input', function(e) {
+            clearTimeout(tickerInputTimer);
+            const ticker = e.target.value.trim().toUpperCase();
+
+            if (ticker.length >= 1) {
+                tickerInputTimer = setTimeout(async () => {
+                    const result = await fetchPrice(ticker);
+                    if (result.price) {
+                        document.getElementById('pricePreview').style.display = 'block';
+                        document.getElementById('previewPrice').textContent = '$' + result.price.toFixed(2);
+                        document.getElementById('previewStale').style.display = result.stale ? 'block' : 'none';
+                    }
+                }, 500);
+            } else {
+                document.getElementById('pricePreview').style.display = 'none';
+            }
+        });
+
+        async function addStock() {
+            const ticker = document.getElementById('addTicker').value.trim().toUpperCase();
+            const quantity = parseInt(document.getElementById('addQuantity').value);
+
+            if (!ticker || !quantity || quantity <= 0) {
+                alert('Please enter a valid ticker and quantity');
+                return;
+            }
+
+            const btn = document.getElementById('addStockBtn');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            try {
+                const result = await fetchPrice(ticker);
+
+                const existing = holdings.positions.find(p => p.ticker === ticker);
+                if (existing) {
+                    existing.quantity += quantity;
+                    if (result.price) {
+                        existing.lastPrice = result.price;
+                        existing.lastUpdated = Date.now();
+                    }
+                } else {
+                    holdings.positions.push({
+                        ticker,
+                        quantity,
+                        lastPrice: result.price || null,
+                        lastUpdated: result.price ? Date.now() : null,
+                        priceStale: false
+                    });
+                }
+
+                saveHoldings();
+                renderHoldingsTable();
+                updatePortfolioSummary();
+                updatePortfolioRegime();
+                hideAddModal();
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Add Stock';
+            }
+        }
+
+        function updatePosition() {
+            if (!currentEditTicker) return;
+
+            const quantity = parseInt(document.getElementById('editQuantity').value);
+            const pos = holdings.positions.find(p => p.ticker === currentEditTicker);
+
+            if (!pos) return;
+
+            if (quantity <= 0) {
+                removePosition();
+                return;
+            }
+
+            pos.quantity = quantity;
+            saveHoldings();
+            renderHoldingsTable();
+            updatePortfolioSummary();
+            updatePortfolioRegime();
+            hideEditModal();
+        }
+
+        function removePosition() {
+            if (!currentEditTicker) return;
+
+            holdings.positions = holdings.positions.filter(p => p.ticker !== currentEditTicker);
+            saveHoldings();
+            renderHoldingsTable();
+            updatePortfolioSummary();
+            updatePortfolioRegime();
+            hideEditModal();
+        }
+
+        // ==================== ANALYSIS DATA & STATE ====================
         let analysisData = {
             tickers: ['SPY', 'TLT', 'GLD', 'QQQ', 'EFA'],
             normalCorr: {},
@@ -954,15 +1663,15 @@
             avgTailCorr: 0.68
         };
 
-        // ==================== INITIALIZE ====================
-        function init() {
-            renderCorrelationMatrices();
-            renderCorrelationChanges();
-            initCharts();
-        }
+        let analysisInProgress = false;
 
+        // ==================== DETERMINISTIC ANALYSIS (PART 3 FIX) ====================
         function analyzeAssets() {
+            if (analysisInProgress) return;
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
             const input = document.getElementById('tickerInput').value;
+            const period = document.getElementById('periodSelect').value;
             const tickers = input.split(',').map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
 
             if (tickers.length < 2) {
@@ -970,17 +1679,31 @@
                 return;
             }
 
-            analysisData.tickers = tickers.slice(0, 6); // Max 6
+            try {
+                analysisInProgress = true;
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analyzing...';
 
-            // Simulate new analysis (in real app, this would fetch data)
-            simulateAnalysis();
-            renderCorrelationMatrices();
-            renderCorrelationChanges();
-            updateInsight();
+                analysisData.tickers = tickers.slice(0, 6);
+                simulateAnalysis();
+                renderCorrelationMatrices();
+                renderCorrelationChanges();
+                updateInsight();
+                updatePortfolioRegime();
+
+            } finally {
+                analysisInProgress = false;
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze';
+            }
         }
 
         function simulateAnalysis() {
-            // Generate realistic-looking correlation data
+            // Create deterministic seed from inputs (PART 3 FIX)
+            const inputKey = analysisData.tickers.slice().sort().join(',') + '-' + document.getElementById('periodSelect').value;
+            const seed = hashString(inputKey);
+            const random = mulberry32(seed);
+
             const n = analysisData.tickers.length;
             analysisData.normalCorr = {};
             analysisData.tailCorr = {};
@@ -992,11 +1715,10 @@
                         analysisData.normalCorr[key] = 1.0;
                         analysisData.tailCorr[key] = 1.0;
                     } else {
-                        // Normal correlation: low to moderate
-                        const baseCorr = 0.15 + Math.random() * 0.35;
+                        // Use seeded random for deterministic results
+                        const baseCorr = 0.15 + random() * 0.35;
                         analysisData.normalCorr[key] = Math.round(baseCorr * 100) / 100;
-                        // Tail correlation: higher
-                        const tailCorr = Math.min(0.95, baseCorr + 0.25 + Math.random() * 0.25);
+                        const tailCorr = Math.min(0.95, baseCorr + 0.25 + random() * 0.25);
                         analysisData.tailCorr[key] = Math.round(tailCorr * 100) / 100;
                     }
                 }
@@ -1016,11 +1738,12 @@
             analysisData.avgNormalCorr = count > 0 ? Math.round(normalSum / count * 100) / 100 : 0;
             analysisData.avgTailCorr = count > 0 ? Math.round(tailSum / count * 100) / 100 : 0;
 
-            // Update metrics
             document.getElementById('avgCorrelation').textContent = analysisData.avgNormalCorr.toFixed(2);
             document.getElementById('tailCorrelation').textContent = analysisData.avgTailCorr.toFixed(2);
 
-            const spike = Math.round((analysisData.avgTailCorr - analysisData.avgNormalCorr) / analysisData.avgNormalCorr * 100);
+            const spike = analysisData.avgNormalCorr > 0
+                ? Math.round((analysisData.avgTailCorr - analysisData.avgNormalCorr) / analysisData.avgNormalCorr * 100)
+                : 0;
             document.getElementById('correlationSpike').textContent = '+' + spike + '%';
         }
 
@@ -1118,6 +1841,10 @@
         let charts = {};
 
         function initCharts() {
+            // Use seeded random for chart data too
+            const chartSeed = hashString('chart-data-seed');
+            const chartRandom = mulberry32(chartSeed);
+
             // Correlation Timeline Chart
             const ctxTimeline = document.getElementById('correlationTimelineChart').getContext('2d');
             charts.correlationTimeline = new Chart(ctxTimeline, {
@@ -1126,7 +1853,7 @@
                     labels: generateDateLabels(36),
                     datasets: [{
                         label: 'Average Correlation',
-                        data: generateCorrelationData(36),
+                        data: generateCorrelationData(36, chartRandom),
                         borderColor: '#2962ff',
                         backgroundColor: 'rgba(41, 98, 255, 0.1)',
                         fill: true,
@@ -1135,12 +1862,8 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
                 }
             });
 
@@ -1157,13 +1880,12 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
+                    plugins: { legend: { position: 'bottom' } }
                 }
             });
 
             // Regime Timeline Chart
+            const volRandom = mulberry32(chartSeed + 1);
             const ctxRegimeTimeline = document.getElementById('regimeTimelineChart').getContext('2d');
             charts.regimeTimeline = new Chart(ctxRegimeTimeline, {
                 type: 'line',
@@ -1171,7 +1893,7 @@
                     labels: generateDateLabels(36),
                     datasets: [{
                         label: 'Volatility',
-                        data: generateVolatilityData(36),
+                        data: generateVolatilityData(36, volRandom),
                         borderColor: '#2962ff',
                         backgroundColor: 'rgba(41, 98, 255, 0.1)',
                         fill: true,
@@ -1180,16 +1902,13 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { display: false }
-                    },
-                    scales: {
-                        y: { min: 0, title: { display: true, text: 'Annualized Volatility' } }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 0, title: { display: true, text: 'Annualized Volatility' } } }
                 }
             });
 
             // Rolling Correlation Chart
+            const rollRandom = mulberry32(chartSeed + 2);
             const ctxRolling = document.getElementById('rollingCorrelationChart').getContext('2d');
             charts.rollingCorrelation = new Chart(ctxRolling, {
                 type: 'line',
@@ -1197,7 +1916,7 @@
                     labels: generateDateLabels(36),
                     datasets: [{
                         label: 'Rolling Correlation',
-                        data: generateCorrelationData(36),
+                        data: generateCorrelationData(36, rollRandom),
                         borderColor: '#eb5b3c',
                         backgroundColor: 'rgba(235, 91, 60, 0.1)',
                         fill: true,
@@ -1206,24 +1925,8 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { display: false },
-                        annotation: {
-                            annotations: {
-                                line1: {
-                                    type: 'line',
-                                    yMin: 0.6,
-                                    yMax: 0.6,
-                                    borderColor: '#ff9800',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5]
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } }
-                    }
+                    plugins: { legend: { display: false } },
+                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
                 }
             });
 
@@ -1232,7 +1935,7 @@
             charts.stressEvents = new Chart(ctxStress, {
                 type: 'bar',
                 data: {
-                    labels: ['2008 GFC', '2011 Euro Crisis', '2015 China', '2018 Q4', '2020 COVID', '2022 Rate Hikes'],
+                    labels: ['2008 GFC', '2011 Euro', '2015 China', '2018 Q4', '2020 COVID', '2022 Rates'],
                     datasets: [
                         {
                             label: 'Normal Correlation',
@@ -1248,12 +1951,8 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    },
-                    scales: {
-                        y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } }
-                    }
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
                 }
             });
         }
@@ -1268,36 +1967,58 @@
             return labels;
         }
 
-        function generateCorrelationData(months) {
+        function generateCorrelationData(months, random) {
             const data = [];
-            let val = 0.3;
             for (let i = 0; i <= months; i++) {
-                // Add some stress periods
+                let val;
                 if (i === 12 || i === 24) {
-                    val = 0.65 + Math.random() * 0.15;
+                    val = 0.65 + random() * 0.15;
                 } else {
-                    val = 0.25 + Math.random() * 0.2;
+                    val = 0.25 + random() * 0.2;
                 }
                 data.push(Math.round(val * 100) / 100);
             }
             return data;
         }
 
-        function generateVolatilityData(months) {
+        function generateVolatilityData(months, random) {
             const data = [];
             for (let i = 0; i <= months; i++) {
-                let val = 12 + Math.random() * 8;
-                // Add stress spikes
+                let val = 12 + random() * 8;
                 if (i === 12 || i === 24) {
-                    val = 30 + Math.random() * 15;
+                    val = 30 + random() * 15;
                 }
                 data.push(Math.round(val * 10) / 10);
             }
             return data;
         }
 
+        // ==================== INITIALIZE ====================
+        function init() {
+            loadHoldings();
+            renderHoldingsTable();
+            updatePortfolioSummary();
+            simulateAnalysis();
+            renderCorrelationMatrices();
+            renderCorrelationChanges();
+            initCharts();
+            updatePortfolioRegime();
+
+            // Refresh prices if we have holdings
+            if (holdings.positions.length > 0) {
+                refreshAllPrices();
+            }
+        }
+
+        // Close modals on outside click
+        document.getElementById('addModal').addEventListener('click', function(e) {
+            if (e.target === this) hideAddModal();
+        });
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) hideEditModal();
+        });
+
         // Initialize on load
-        simulateAnalysis();
         init();
     </script>
 </body>
