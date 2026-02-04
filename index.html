@@ -842,16 +842,10 @@
                 </div>
             </div>
 
-            <!-- Summary Charts -->
-            <div class="grid grid-2">
-                <div class="chart-container">
-                    <div class="chart-title">Correlation Over Time <span class="static-badge">Illustrative</span></div>
-                    <canvas id="correlationTimelineChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-title">Regime Distribution (Historical) <span class="static-badge">Illustrative</span></div>
-                    <canvas id="regimeDistributionChart"></canvas>
-                </div>
+            <!-- Summary Chart -->
+            <div class="chart-container">
+                <div class="chart-title">Correlation Over Time <span class="dynamic-badge" id="correlationTimelineBadge">Updates with Portfolio</span></div>
+                <canvas id="correlationTimelineChart"></canvas>
             </div>
         </section>
 
@@ -911,6 +905,22 @@
                     <div id="portfolioRegime" class="regime-indicator regime-normal">
                         <span class="regime-dot"></span>
                         Unknown
+                    </div>
+                </div>
+            </div>
+
+            <!-- Portfolio Allocation Chart -->
+            <div class="grid grid-2" style="margin-top: 1.5rem;" id="portfolioChartsContainer">
+                <div class="chart-container" id="allocationChartContainer" style="display: none;">
+                    <div class="chart-title">Portfolio Allocation <span class="dynamic-badge">Live Weights</span></div>
+                    <div style="max-width: 350px; margin: 0 auto;">
+                        <canvas id="allocationChart"></canvas>
+                    </div>
+                </div>
+                <div class="card" id="holdingsBreakdownContainer" style="display: none;">
+                    <div class="card-title">Holdings Breakdown</div>
+                    <div id="holdingsBreakdownList">
+                        <!-- Populated by JS -->
                     </div>
                 </div>
             </div>
@@ -983,7 +993,7 @@
             </div>
 
             <div class="chart-container" style="margin-bottom: 1.5rem;">
-                <div class="chart-title">Volatility Timeline with Regime Overlay <span class="static-badge">Illustrative</span></div>
+                <div class="chart-title" id="regimeTimelineTitle">Volatility Timeline with Regime Overlay <span class="dynamic-badge" id="regimeTimelineBadge">Updates with Portfolio</span></div>
                 <canvas id="regimeTimelineChart"></canvas>
             </div>
 
@@ -1086,7 +1096,7 @@
             </div>
 
             <div class="chart-container" style="margin-top: 1.5rem;">
-                <div class="chart-title">Rolling Average Correlation (63-day window)</div>
+                <div class="chart-title" id="rollingCorrelationTitle">Rolling Average Correlation (63-day window) <span class="dynamic-badge" id="rollingCorrelationBadge">Updates with Portfolio</span></div>
                 <canvas id="rollingCorrelationChart"></canvas>
             </div>
         </section>
@@ -1287,8 +1297,10 @@
         };
 
         const priceCache = new Map();
+        const historicalPriceCache = new Map(); // Cache for historical price data
         let priceDebounceTimer = null;
         let currentEditTicker = null;
+        let isLoadingHistoricalData = false;
 
         function loadHoldings() {
             try {
@@ -1311,6 +1323,448 @@
             }
         }
 
+        // ==================== HISTORICAL DATA FETCHING (YAHOO FINANCE) ====================
+        async function fetchHistoricalPrices(ticker) {
+            // Check cache first
+            const cached = historicalPriceCache.get(ticker);
+            if (cached && (Date.now() - cached.timestamp) < 3600000) { // 1 hour cache
+                return cached.data;
+            }
+
+            try {
+                // Calculate date range (2 years of data)
+                const endDate = Math.floor(Date.now() / 1000);
+                const startDate = endDate - (2 * 365 * 24 * 60 * 60);
+
+                const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${startDate}&period2=${endDate}&interval=1d`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
+
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Fetch failed');
+
+                const proxyData = await response.json();
+                const data = JSON.parse(proxyData.contents);
+
+                if (data.chart.error) {
+                    throw new Error(data.chart.error.description || 'Invalid ticker');
+                }
+
+                const result = data.chart.result[0];
+                const timestamps = result.timestamp;
+                const closes = result.indicators.quote[0].close;
+
+                // Build price series with dates
+                const priceData = [];
+                for (let i = 0; i < timestamps.length; i++) {
+                    if (closes[i] !== null) {
+                        priceData.push({
+                            date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                            close: closes[i]
+                        });
+                    }
+                }
+
+                // Cache the result
+                historicalPriceCache.set(ticker, { data: priceData, timestamp: Date.now() });
+                return priceData;
+            } catch (error) {
+                console.warn(`Historical fetch failed for ${ticker}:`, error);
+                return null;
+            }
+        }
+
+        // ==================== RETURN & CORRELATION CALCULATIONS ====================
+        function calculateReturns(prices) {
+            const returns = [];
+            for (let i = 1; i < prices.length; i++) {
+                const ret = (prices[i].close - prices[i - 1].close) / prices[i - 1].close;
+                returns.push({ date: prices[i].date, return: ret });
+            }
+            return returns;
+        }
+
+        function pearsonCorrelation(x, y) {
+            const n = x.length;
+            if (n === 0 || n !== y.length) return 0;
+
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            for (let i = 0; i < n; i++) {
+                sumX += x[i];
+                sumY += y[i];
+                sumXY += x[i] * y[i];
+                sumX2 += x[i] * x[i];
+                sumY2 += y[i] * y[i];
+            }
+
+            const numerator = n * sumXY - sumX * sumY;
+            const denominator = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+
+            if (denominator === 0) return 0;
+            return numerator / denominator;
+        }
+
+        function alignByDate(returns1, returns2) {
+            const dateMap1 = new Map(returns1.map(r => [r.date, r.return]));
+            const dateMap2 = new Map(returns2.map(r => [r.date, r.return]));
+
+            const aligned1 = [];
+            const aligned2 = [];
+            const dates = [];
+
+            for (const [date, ret1] of dateMap1) {
+                if (dateMap2.has(date)) {
+                    dates.push(date);
+                    aligned1.push(ret1);
+                    aligned2.push(dateMap2.get(date));
+                }
+            }
+
+            return { dates, returns1: aligned1, returns2: aligned2 };
+        }
+
+        function calculateRollingCorrelation(returns1, returns2, window = 63) {
+            const aligned = alignByDate(returns1, returns2);
+            const result = [];
+
+            for (let i = window; i < aligned.dates.length; i++) {
+                const slice1 = aligned.returns1.slice(i - window, i);
+                const slice2 = aligned.returns2.slice(i - window, i);
+                const corr = pearsonCorrelation(slice1, slice2);
+                result.push({ date: aligned.dates[i], correlation: corr });
+            }
+
+            return result;
+        }
+
+        // ==================== VOLATILITY CALCULATIONS ====================
+        function calculateRollingVolatility(returns, window = 21) {
+            const result = [];
+            const annualizationFactor = Math.sqrt(252); // Trading days per year
+
+            for (let i = window; i < returns.length; i++) {
+                const slice = returns.slice(i - window, i).map(r => r.return);
+                const mean = slice.reduce((a, b) => a + b, 0) / slice.length;
+                const variance = slice.reduce((sum, r) => sum + Math.pow(r - mean, 2), 0) / slice.length;
+                const vol = Math.sqrt(variance) * annualizationFactor * 100; // As percentage
+                result.push({ date: returns[i].date, volatility: vol });
+            }
+
+            return result;
+        }
+
+        // ==================== PORTFOLIO AGGREGATION FUNCTIONS ====================
+        async function calculatePortfolioVolatility(tickers, weights) {
+            // Fetch historical data for all tickers
+            const priceDataMap = new Map();
+            const returnsMap = new Map();
+
+            for (const ticker of tickers) {
+                const prices = await fetchHistoricalPrices(ticker);
+                if (prices && prices.length > 0) {
+                    priceDataMap.set(ticker, prices);
+                    returnsMap.set(ticker, calculateReturns(prices));
+                }
+            }
+
+            if (returnsMap.size === 0) return null;
+
+            // Find common dates across all tickers
+            const allDates = new Set();
+            let firstReturns = null;
+            for (const [ticker, returns] of returnsMap) {
+                if (!firstReturns) {
+                    returns.forEach(r => allDates.add(r.date));
+                    firstReturns = returns;
+                } else {
+                    const tickerDates = new Set(returns.map(r => r.date));
+                    for (const date of allDates) {
+                        if (!tickerDates.has(date)) allDates.delete(date);
+                    }
+                }
+            }
+
+            const commonDates = Array.from(allDates).sort();
+
+            // Calculate weighted portfolio returns for each date
+            const portfolioReturns = [];
+            for (const date of commonDates) {
+                let weightedReturn = 0;
+                let weightSum = 0;
+
+                let i = 0;
+                for (const [ticker, returns] of returnsMap) {
+                    const dayReturn = returns.find(r => r.date === date);
+                    if (dayReturn) {
+                        const weight = weights[i] || 1 / tickers.length;
+                        weightedReturn += dayReturn.return * weight;
+                        weightSum += weight;
+                    }
+                    i++;
+                }
+
+                if (weightSum > 0) {
+                    portfolioReturns.push({ date, return: weightedReturn / weightSum * weightSum });
+                }
+            }
+
+            // Calculate rolling volatility of portfolio returns
+            return calculateRollingVolatility(portfolioReturns, 21);
+        }
+
+        async function calculateAverageCorrelationTimeline(tickers, window = 63) {
+            if (tickers.length < 2) return null;
+
+            // Fetch historical data for all tickers
+            const returnsMap = new Map();
+
+            for (const ticker of tickers) {
+                const prices = await fetchHistoricalPrices(ticker);
+                if (prices && prices.length > 0) {
+                    returnsMap.set(ticker, calculateReturns(prices));
+                }
+            }
+
+            if (returnsMap.size < 2) return null;
+
+            // Calculate pairwise rolling correlations and average them
+            const tickerList = Array.from(returnsMap.keys());
+            const pairwiseCorrelations = [];
+
+            for (let i = 0; i < tickerList.length; i++) {
+                for (let j = i + 1; j < tickerList.length; j++) {
+                    const rolling = calculateRollingCorrelation(
+                        returnsMap.get(tickerList[i]),
+                        returnsMap.get(tickerList[j]),
+                        window
+                    );
+                    pairwiseCorrelations.push(rolling);
+                }
+            }
+
+            if (pairwiseCorrelations.length === 0) return null;
+
+            // Average correlations by date
+            const dateCorrelations = new Map();
+            for (const series of pairwiseCorrelations) {
+                for (const point of series) {
+                    if (!dateCorrelations.has(point.date)) {
+                        dateCorrelations.set(point.date, { sum: 0, count: 0 });
+                    }
+                    const entry = dateCorrelations.get(point.date);
+                    entry.sum += point.correlation;
+                    entry.count++;
+                }
+            }
+
+            const result = [];
+            for (const [date, entry] of dateCorrelations) {
+                result.push({ date, correlation: entry.sum / entry.count });
+            }
+
+            return result.sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        // ==================== UPDATE CHARTS WITH REAL DATA ====================
+        async function updateAllChartsWithRealData() {
+            if (holdings.positions.length === 0) {
+                // Reset to synthetic data if no holdings
+                updateAllCharts();
+                return;
+            }
+
+            if (isLoadingHistoricalData) return;
+            isLoadingHistoricalData = true;
+
+            // Show loading state on charts
+            showChartLoadingState(true);
+
+            try {
+                const tickers = holdings.positions.map(p => p.ticker);
+
+                // Calculate weights based on portfolio values
+                let totalValue = 0;
+                holdings.positions.forEach(pos => {
+                    totalValue += (pos.lastPrice || 100) * pos.quantity;
+                });
+                const weights = holdings.positions.map(pos => {
+                    const value = (pos.lastPrice || 100) * pos.quantity;
+                    return totalValue > 0 ? value / totalValue : 1 / tickers.length;
+                });
+
+                // Fetch data and update charts in parallel
+                const [portfolioVol, avgCorrelation] = await Promise.all([
+                    calculatePortfolioVolatility(tickers, weights),
+                    calculateAverageCorrelationTimeline(tickers, 63)
+                ]);
+
+                // Track if we got real data
+                let gotRealData = false;
+
+                // Update Volatility Timeline Chart (Regime page)
+                if (portfolioVol && portfolioVol.length > 0 && charts.regimeTimeline) {
+                    updateVolatilityChart(portfolioVol);
+                    gotRealData = true;
+                }
+
+                // Update Correlation Over Time Chart (Dashboard)
+                if (avgCorrelation && avgCorrelation.length > 0 && charts.correlationTimeline) {
+                    updateCorrelationTimelineChart(avgCorrelation);
+                    gotRealData = true;
+                }
+
+                // Update Rolling Correlation Chart (Correlations page)
+                if (avgCorrelation && avgCorrelation.length > 0 && charts.rollingCorrelation) {
+                    updateRollingCorrelationChart(avgCorrelation);
+                    gotRealData = true;
+                }
+
+                // If no real data was fetched, fall back to synthetic
+                if (!gotRealData) {
+                    console.warn('No real data available, using synthetic data');
+                    resetChartBadgesToDefault();
+                    updateAllCharts();
+                }
+
+            } catch (error) {
+                console.error('Error updating charts with real data:', error);
+                // Fall back to synthetic data on error
+                resetChartBadgesToDefault();
+                updateAllCharts();
+            } finally {
+                isLoadingHistoricalData = false;
+            }
+        }
+
+        function showChartLoadingState(loading) {
+            // Update specific chart badges (not all dynamic badges)
+            const chartBadges = [
+                document.getElementById('regimeTimelineBadge'),
+                document.getElementById('correlationTimelineBadge'),
+                document.getElementById('rollingCorrelationBadge')
+            ];
+
+            chartBadges.forEach(badge => {
+                if (badge) {
+                    if (loading) {
+                        badge.textContent = 'Loading real data...';
+                        badge.style.background = 'rgba(255, 152, 0, 0.2)';
+                        badge.style.color = '#e65100';
+                    }
+                    // Don't reset here - let the individual update functions set the success state
+                }
+            });
+        }
+
+        function resetChartBadgesToDefault() {
+            const chartBadges = [
+                { el: document.getElementById('regimeTimelineBadge'), text: 'Updates with Portfolio' },
+                { el: document.getElementById('correlationTimelineBadge'), text: 'Updates with Portfolio' },
+                { el: document.getElementById('rollingCorrelationBadge'), text: 'Updates with Portfolio' }
+            ];
+
+            chartBadges.forEach(({ el, text }) => {
+                if (el) {
+                    el.textContent = text;
+                    el.style.background = 'rgba(41, 98, 255, 0.1)';
+                    el.style.color = 'var(--accent-2)';
+                }
+            });
+        }
+
+        function updateVolatilityChart(volData) {
+            if (!charts.regimeTimeline || !volData || volData.length === 0) return;
+
+            // Sample data to ~36 points for chart display
+            const sampledData = sampleDataForChart(volData, 36);
+
+            const labels = sampledData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+            const data = sampledData.map(d => Math.round(d.volatility * 10) / 10);
+
+            charts.regimeTimeline.data.labels = labels;
+            charts.regimeTimeline.data.datasets[0].data = data;
+            charts.regimeTimeline.update('none');
+
+            // Update badge to show real data
+            const badge = document.getElementById('regimeTimelineBadge');
+            if (badge) {
+                badge.textContent = 'Real Yahoo Data';
+                badge.style.background = 'rgba(0, 179, 134, 0.15)';
+                badge.style.color = 'var(--accent-1)';
+            }
+        }
+
+        function updateCorrelationTimelineChart(corrData) {
+            if (!charts.correlationTimeline || !corrData || corrData.length === 0) return;
+
+            // Sample data to ~36 points for chart display
+            const sampledData = sampleDataForChart(corrData, 36);
+
+            const labels = sampledData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+            const data = sampledData.map(d => Math.round(d.correlation * 100) / 100);
+
+            charts.correlationTimeline.data.labels = labels;
+            charts.correlationTimeline.data.datasets[0].data = data;
+            charts.correlationTimeline.update('none');
+
+            // Update badge to show real data
+            const badge = document.getElementById('correlationTimelineBadge');
+            if (badge) {
+                badge.textContent = 'Real Yahoo Data';
+                badge.style.background = 'rgba(0, 179, 134, 0.15)';
+                badge.style.color = 'var(--accent-1)';
+            }
+        }
+
+        function updateRollingCorrelationChart(corrData) {
+            if (!charts.rollingCorrelation || !corrData || corrData.length === 0) return;
+
+            // Sample data to ~36 points for chart display
+            const sampledData = sampleDataForChart(corrData, 36);
+
+            const labels = sampledData.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+            });
+            const data = sampledData.map(d => Math.round(d.correlation * 100) / 100);
+
+            charts.rollingCorrelation.data.labels = labels;
+            charts.rollingCorrelation.data.datasets[0].data = data;
+            charts.rollingCorrelation.update('none');
+
+            // Update badge to show real data
+            const badge = document.getElementById('rollingCorrelationBadge');
+            if (badge) {
+                badge.textContent = 'Real Yahoo Data';
+                badge.style.background = 'rgba(0, 179, 134, 0.15)';
+                badge.style.color = 'var(--accent-1)';
+            }
+        }
+
+        function sampleDataForChart(data, targetPoints) {
+            if (data.length <= targetPoints) return data;
+
+            const step = Math.floor(data.length / targetPoints);
+            const sampled = [];
+
+            for (let i = 0; i < data.length; i += step) {
+                sampled.push(data[i]);
+                if (sampled.length >= targetPoints) break;
+            }
+
+            // Always include the last point
+            if (sampled[sampled.length - 1] !== data[data.length - 1]) {
+                sampled.push(data[data.length - 1]);
+            }
+
+            return sampled;
+        }
+
         // ==================== LIVE PRICE FETCHING (PART 2) ====================
         async function fetchPrice(ticker) {
             const cached = priceCache.get(ticker);
@@ -1321,19 +1775,38 @@
             }
 
             try {
-                // Using a CORS-friendly approach - in production would use a proxy
-                // For demo, we'll simulate with realistic prices
-                const simulatedPrices = {
-                    'SPY': 478.50, 'QQQ': 405.20, 'TLT': 92.30, 'GLD': 185.40,
-                    'AAPL': 182.50, 'MSFT': 378.90, 'GOOGL': 141.20, 'AMZN': 155.80,
-                    'NVDA': 495.20, 'META': 355.60, 'TSLA': 248.40, 'BRK.B': 362.10,
-                    'JPM': 172.30, 'V': 275.80, 'EFA': 75.40, 'VTI': 245.60,
-                    'IWM': 198.30, 'VNQ': 82.50, 'BND': 72.80, 'AGG': 98.40
-                };
+                // Fetch real price from Yahoo Finance via CORS proxy
+                const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`;
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
 
-                const basePrice = simulatedPrices[ticker.toUpperCase()] || (50 + Math.random() * 200);
-                const price = Math.round(basePrice * 100) / 100;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error('Fetch failed');
 
+                const proxyData = await response.json();
+                const data = JSON.parse(proxyData.contents);
+
+                if (data.chart.error) {
+                    throw new Error(data.chart.error.description || 'Invalid ticker');
+                }
+
+                const result = data.chart.result[0];
+                const meta = result.meta;
+
+                // Use regularMarketPrice if available, otherwise use last close
+                let price = meta.regularMarketPrice || meta.previousClose;
+
+                // If we have quote data, get the most recent close
+                if (result.indicators && result.indicators.quote && result.indicators.quote[0]) {
+                    const closes = result.indicators.quote[0].close;
+                    if (closes && closes.length > 0) {
+                        const lastClose = closes[closes.length - 1];
+                        if (lastClose !== null) {
+                            price = lastClose;
+                        }
+                    }
+                }
+
+                price = Math.round(price * 100) / 100;
                 priceCache.set(ticker, { price, timestamp: now });
                 return { price, fromCache: false, timestamp: now };
             } catch (error) {
@@ -1363,7 +1836,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
-            updateRegimeCharts();
+            updateAllChartsWithRealData();
         }
 
         // ==================== HOLDINGS UI (PART 2) ====================
@@ -1423,6 +1896,116 @@
             holdings.totalValue = total;
             document.getElementById('totalPortfolioValue').textContent = '$' + total.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
             document.getElementById('positionCount').textContent = holdings.positions.length;
+
+            // Update allocation chart
+            updateAllocationChart();
+        }
+
+        // ==================== PORTFOLIO ALLOCATION CHART ====================
+        const ALLOCATION_COLORS = [
+            '#2962ff', '#00b386', '#eb5b3c', '#ff9800', '#7c3aed',
+            '#06b6d4', '#ec4899', '#84cc16', '#f59e0b', '#6366f1'
+        ];
+
+        function updateAllocationChart() {
+            const chartContainer = document.getElementById('allocationChartContainer');
+            const breakdownContainer = document.getElementById('holdingsBreakdownContainer');
+            const breakdownList = document.getElementById('holdingsBreakdownList');
+
+            if (holdings.positions.length === 0) {
+                chartContainer.style.display = 'none';
+                breakdownContainer.style.display = 'none';
+                return;
+            }
+
+            chartContainer.style.display = 'block';
+            breakdownContainer.style.display = 'block';
+
+            // Calculate values and weights
+            let totalValue = 0;
+            const positionData = holdings.positions.map(pos => {
+                const value = (pos.lastPrice || 0) * pos.quantity;
+                totalValue += value;
+                return { ticker: pos.ticker, value, price: pos.lastPrice, quantity: pos.quantity };
+            });
+
+            // Sort by value descending
+            positionData.sort((a, b) => b.value - a.value);
+
+            // Calculate weights
+            positionData.forEach(p => {
+                p.weight = totalValue > 0 ? (p.value / totalValue * 100) : 0;
+            });
+
+            // Update or create the chart
+            const canvas = document.getElementById('allocationChart');
+            if (charts.allocation) {
+                charts.allocation.data.labels = positionData.map(p => p.ticker);
+                charts.allocation.data.datasets[0].data = positionData.map(p => p.value);
+                charts.allocation.data.datasets[0].backgroundColor = positionData.map((_, i) => ALLOCATION_COLORS[i % ALLOCATION_COLORS.length]);
+                charts.allocation.update('none');
+            } else {
+                charts.allocation = new Chart(canvas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: positionData.map(p => p.ticker),
+                        datasets: [{
+                            data: positionData.map(p => p.value),
+                            backgroundColor: positionData.map((_, i) => ALLOCATION_COLORS[i % ALLOCATION_COLORS.length]),
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '60%',
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    font: { size: 11 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const pct = ((value / total) * 100).toFixed(1);
+                                        return `$${value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Update breakdown list
+            let breakdownHtml = '';
+            positionData.forEach((p, i) => {
+                const color = ALLOCATION_COLORS[i % ALLOCATION_COLORS.length];
+                breakdownHtml += `
+                    <div class="list-item">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <div style="width: 12px; height: 12px; border-radius: 3px; background: ${color};"></div>
+                            <div>
+                                <strong>${p.ticker}</strong>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${p.quantity.toLocaleString()} shares @ $${p.price ? p.price.toFixed(2) : '--'}</div>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600;">$${p.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                            <div style="font-size: 0.85rem; color: ${color}; font-weight: 600;">${p.weight.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                `;
+            });
+            breakdownList.innerHTML = breakdownHtml;
         }
 
         // ==================== PORTFOLIO REGIME (PART 1) ====================
@@ -1546,18 +2129,32 @@
         document.getElementById('addTicker').addEventListener('input', function(e) {
             clearTimeout(tickerInputTimer);
             const ticker = e.target.value.trim().toUpperCase();
+            const previewEl = document.getElementById('pricePreview');
+            const priceEl = document.getElementById('previewPrice');
+            const staleEl = document.getElementById('previewStale');
 
             if (ticker.length >= 1) {
+                previewEl.style.display = 'block';
+                priceEl.textContent = 'Loading...';
+                priceEl.style.color = 'var(--text-muted)';
+                staleEl.style.display = 'none';
+
                 tickerInputTimer = setTimeout(async () => {
                     const result = await fetchPrice(ticker);
                     if (result.price) {
-                        document.getElementById('pricePreview').style.display = 'block';
-                        document.getElementById('previewPrice').textContent = '$' + result.price.toFixed(2);
-                        document.getElementById('previewStale').style.display = result.stale ? 'block' : 'none';
+                        priceEl.textContent = '$' + result.price.toFixed(2);
+                        priceEl.style.color = 'var(--accent-2)';
+                        staleEl.style.display = result.stale ? 'block' : 'none';
+                        staleEl.textContent = result.stale ? 'Price may be delayed' : '';
+                    } else {
+                        priceEl.textContent = 'Invalid ticker';
+                        priceEl.style.color = 'var(--accent-3)';
+                        staleEl.style.display = 'block';
+                        staleEl.textContent = 'Could not fetch price for this symbol';
                     }
                 }, 500);
             } else {
-                document.getElementById('pricePreview').style.display = 'none';
+                previewEl.style.display = 'none';
             }
         });
 
@@ -1572,24 +2169,27 @@
 
             const btn = document.getElementById('addStockBtn');
             btn.disabled = true;
-            btn.textContent = 'Adding...';
+            btn.textContent = 'Fetching price...';
 
             try {
                 const result = await fetchPrice(ticker);
 
+                if (result.error || !result.price) {
+                    alert(`Could not fetch price for "${ticker}". Please check the ticker symbol and try again.`);
+                    return;
+                }
+
                 const existing = holdings.positions.find(p => p.ticker === ticker);
                 if (existing) {
                     existing.quantity += quantity;
-                    if (result.price) {
-                        existing.lastPrice = result.price;
-                        existing.lastUpdated = Date.now();
-                    }
+                    existing.lastPrice = result.price;
+                    existing.lastUpdated = Date.now();
                 } else {
                     holdings.positions.push({
                         ticker,
                         quantity,
-                        lastPrice: result.price || null,
-                        lastUpdated: result.price ? Date.now() : null,
+                        lastPrice: result.price,
+                        lastUpdated: Date.now(),
                         priceStale: false
                     });
                 }
@@ -1599,8 +2199,11 @@
                 updatePortfolioSummary();
                 updatePortfolioRegime();
                 updateStressCharts();
-                updateRegimeCharts();
+                updateAllChartsWithRealData();
                 hideAddModal();
+            } catch (error) {
+                console.error('Error adding stock:', error);
+                alert(`Error adding ${ticker}. Please try again.`);
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Add Stock';
@@ -1626,7 +2229,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
-            updateRegimeCharts();
+            updateAllChartsWithRealData();
             hideEditModal();
         }
 
@@ -1639,7 +2242,7 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
-            updateRegimeCharts();
+            updateAllChartsWithRealData();
             hideEditModal();
         }
 
@@ -1830,97 +2433,165 @@
         let charts = {};
 
         function initCharts() {
-            // Use seeded random for chart data too
-            const chartSeed = hashString('chart-data-seed');
-            const chartRandom = mulberry32(chartSeed);
+            const metrics = getPortfolioMetrics();
 
-            // Correlation Timeline Chart
-            const ctxTimeline = document.getElementById('correlationTimelineChart').getContext('2d');
-            charts.correlationTimeline = new Chart(ctxTimeline, {
-                type: 'line',
-                data: {
-                    labels: generateDateLabels(36),
-                    datasets: [{
-                        label: 'Average Correlation',
-                        data: generateCorrelationData(36, chartRandom),
-                        borderColor: '#2962ff',
-                        backgroundColor: 'rgba(41, 98, 255, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
-                }
-            });
+            // Correlation Timeline Chart (Dashboard)
+            const ctxTimeline = document.getElementById('correlationTimelineChart');
+            if (ctxTimeline) {
+                const seed = hashString('corr-timeline-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.correlationTimeline = new Chart(ctxTimeline.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: generateDateLabels(36),
+                        datasets: [{
+                            label: 'Average Correlation',
+                            data: generatePortfolioCorrelationData(36, random, metrics),
+                            borderColor: '#2962ff',
+                            backgroundColor: 'rgba(41, 98, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
+                    }
+                });
+            }
 
-            // Regime Distribution Chart
-            const ctxRegime = document.getElementById('regimeDistributionChart').getContext('2d');
-            charts.regimeDistribution = new Chart(ctxRegime, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Normal', 'Transition', 'Stress'],
-                    datasets: [{
-                        data: [72, 21, 7],
-                        backgroundColor: ['#00b386', '#ff9800', '#eb5b3c']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
+            // Regime Timeline Chart (Regime page)
+            const ctxRegimeTimeline = document.getElementById('regimeTimelineChart');
+            if (ctxRegimeTimeline) {
+                const seed = hashString('vol-timeline-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.regimeTimeline = new Chart(ctxRegimeTimeline.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: generateDateLabels(36),
+                        datasets: [{
+                            label: 'Volatility',
+                            data: generatePortfolioVolatilityData(36, random, metrics),
+                            borderColor: '#2962ff',
+                            backgroundColor: 'rgba(41, 98, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { min: 0, title: { display: true, text: 'Annualized Volatility' } } }
+                    }
+                });
+            }
 
-            // Regime Timeline Chart
-            const volRandom = mulberry32(chartSeed + 1);
-            const ctxRegimeTimeline = document.getElementById('regimeTimelineChart').getContext('2d');
-            charts.regimeTimeline = new Chart(ctxRegimeTimeline, {
-                type: 'line',
-                data: {
-                    labels: generateDateLabels(36),
-                    datasets: [{
-                        label: 'Volatility',
-                        data: generateVolatilityData(36, volRandom),
-                        borderColor: '#2962ff',
-                        backgroundColor: 'rgba(41, 98, 255, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { min: 0, title: { display: true, text: 'Annualized Volatility' } } }
-                }
-            });
-
-            // Rolling Correlation Chart
-            const rollRandom = mulberry32(chartSeed + 2);
-            const ctxRolling = document.getElementById('rollingCorrelationChart').getContext('2d');
-            charts.rollingCorrelation = new Chart(ctxRolling, {
-                type: 'line',
-                data: {
-                    labels: generateDateLabels(36),
-                    datasets: [{
-                        label: 'Rolling Correlation',
-                        data: generateCorrelationData(36, rollRandom),
-                        borderColor: '#eb5b3c',
-                        backgroundColor: 'rgba(235, 91, 60, 0.1)',
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
-                }
-            });
+            // Rolling Correlation Chart (Correlations page)
+            const ctxRolling = document.getElementById('rollingCorrelationChart');
+            if (ctxRolling) {
+                const seed = hashString('roll-corr-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.rollingCorrelation = new Chart(ctxRolling.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: generateDateLabels(36),
+                        datasets: [{
+                            label: 'Rolling Correlation',
+                            data: generatePortfolioCorrelationData(36, random, metrics),
+                            borderColor: '#eb5b3c',
+                            backgroundColor: 'rgba(235, 91, 60, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { min: 0, max: 1, title: { display: true, text: 'Correlation' } } }
+                    }
+                });
+            }
 
             // Initialize Stress Scenario Charts
             initStressCharts();
+        }
+
+        // Generate correlation data based on portfolio metrics
+        function generatePortfolioCorrelationData(months, random, metrics) {
+            const data = [];
+            // Base correlation depends on portfolio - more positions = lower base correlation
+            const baseCorr = metrics.numPositions > 0 ?
+                0.15 + (metrics.avgCorr * 0.3) + (metrics.hhi * 0.1) : 0.25;
+            const corrRange = metrics.numPositions > 0 ?
+                0.1 + (metrics.hhi * 0.15) : 0.2;
+            // Stress spike intensity depends on concentration
+            const stressCorr = metrics.numPositions > 0 ?
+                0.55 + (metrics.hhi * 0.25) + (metrics.avgCorr * 0.1) : 0.65;
+
+            for (let i = 0; i <= months; i++) {
+                let val;
+                // Stress periods at months 12 and 24
+                if (i === 12 || i === 24) {
+                    val = stressCorr + random() * 0.15;
+                } else {
+                    val = baseCorr + random() * corrRange;
+                }
+                data.push(Math.round(Math.min(0.95, Math.max(0.05, val)) * 100) / 100);
+            }
+            return data;
+        }
+
+        // Generate volatility data based on portfolio metrics
+        function generatePortfolioVolatilityData(months, random, metrics) {
+            const data = [];
+            // Base volatility depends on concentration
+            const baseVol = metrics.numPositions > 0 ?
+                10 + (metrics.hhi * 6) + (metrics.avgCorr * 4) : 14;
+            const volRange = metrics.numPositions > 0 ?
+                4 + (metrics.hhi * 4) : 6;
+            // Stress spike depends on portfolio characteristics
+            const stressMultiplier = metrics.numPositions > 0 ?
+                2 + (metrics.hhi * 1.5) : 2.5;
+
+            for (let i = 0; i <= months; i++) {
+                let val = baseVol + random() * volRange;
+                // Stress spikes at months 12 and 24
+                if (i === 12 || i === 24) {
+                    val = (20 + random() * 15) * stressMultiplier / 2;
+                }
+                data.push(Math.round(val * 10) / 10);
+            }
+            return data;
+        }
+
+        // Update all portfolio-reactive charts
+        function updateAllCharts() {
+            const metrics = getPortfolioMetrics();
+
+            // Update Correlation Timeline (Dashboard)
+            if (charts.correlationTimeline) {
+                const seed = hashString('corr-timeline-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.correlationTimeline.data.datasets[0].data = generatePortfolioCorrelationData(36, random, metrics);
+                charts.correlationTimeline.update('none');
+            }
+
+            // Update Regime Timeline (Regime page)
+            if (charts.regimeTimeline) {
+                const seed = hashString('vol-timeline-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.regimeTimeline.data.datasets[0].data = generatePortfolioVolatilityData(36, random, metrics);
+                charts.regimeTimeline.update('none');
+            }
+
+            // Update Rolling Correlation (Correlations page)
+            if (charts.rollingCorrelation) {
+                const seed = hashString('roll-corr-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100));
+                const random = mulberry32(seed);
+                charts.rollingCorrelation.data.datasets[0].data = generatePortfolioCorrelationData(36, random, metrics);
+                charts.rollingCorrelation.update('none');
+            }
         }
 
         // ==================== STRESS SCENARIO CHARTS ====================
@@ -2249,60 +2920,6 @@
             return data;
         }
 
-        function updateRegimeCharts() {
-            const metrics = getPortfolioMetrics();
-
-            // Create deterministic seed based on portfolio
-            const seedStr = 'regime-' + metrics.numPositions + '-' + Math.round(metrics.hhi * 100);
-            const seed = hashString(seedStr);
-            const volRandom = mulberry32(seed);
-
-            // Update Regime Timeline Chart
-            if (charts.regimeTimeline) {
-                const newVolData = generateVolatilityData(36, volRandom, metrics);
-                charts.regimeTimeline.data.datasets[0].data = newVolData;
-                charts.regimeTimeline.update('none');
-            }
-
-            // Update Correlation Timeline Chart
-            const corrSeed = hashString(seedStr + '-corr');
-            const corrRandom = mulberry32(corrSeed);
-            if (charts.correlationTimeline) {
-                const newCorrData = generateCorrelationDataWithMetrics(36, corrRandom, metrics);
-                charts.correlationTimeline.data.datasets[0].data = newCorrData;
-                charts.correlationTimeline.update('none');
-            }
-
-            // Update Rolling Correlation Chart
-            const rollSeed = hashString(seedStr + '-roll');
-            const rollRandom = mulberry32(rollSeed);
-            if (charts.rollingCorrelation) {
-                const newRollData = generateCorrelationDataWithMetrics(36, rollRandom, metrics);
-                charts.rollingCorrelation.data.datasets[0].data = newRollData;
-                charts.rollingCorrelation.update('none');
-            }
-        }
-
-        function generateCorrelationDataWithMetrics(months, random, metrics = null) {
-            const data = [];
-            // Portfolio metrics affect correlation levels
-            const baseCorr = metrics ? 0.2 + metrics.avgCorr * 0.2 : 0.25;
-            const corrRange = metrics ? 0.15 + metrics.hhi * 0.1 : 0.2;
-            const stressCorr = metrics ? 0.6 + metrics.hhi * 0.2 : 0.65;
-
-            for (let i = 0; i <= months; i++) {
-                let val;
-                if (i === 12 || i === 24) {
-                    // Stress periods - higher correlation
-                    val = stressCorr + random() * 0.15;
-                } else {
-                    val = baseCorr + random() * corrRange;
-                }
-                data.push(Math.round(val * 100) / 100);
-            }
-            return data;
-        }
-
         // ==================== INITIALIZE ====================
         function init() {
             loadHoldings();
@@ -2314,11 +2931,14 @@
             initCharts();
             updatePortfolioRegime();
             updateStressCharts();
-            updateRegimeCharts();
 
-            // Refresh prices if we have holdings
+            // Refresh prices and load real chart data if we have holdings
             if (holdings.positions.length > 0) {
                 refreshAllPrices();
+                // Also trigger real data fetch for charts
+                updateAllChartsWithRealData();
+            } else {
+                updateAllCharts();
             }
         }
 
