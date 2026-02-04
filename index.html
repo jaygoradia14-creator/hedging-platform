@@ -790,61 +790,58 @@
                 </ul>
             </div>
 
-            <!-- Ticker Input -->
+            <!-- Holdings-Based Analysis -->
             <div class="ticker-input-container">
                 <div class="ticker-input">
                     <div style="flex: 2; min-width: 300px;">
-                        <label>Assets to Analyze (comma-separated)</label>
-                        <input type="text" id="tickerInput" value="SPY, TLT, GLD, QQQ, EFA" placeholder="e.g., SPY, TLT, GLD">
+                        <label>Your Holdings (from Holdings page)</label>
+                        <div id="holdingsDropdownContainer">
+                            <select id="holdingsDropdown" class="form-input" multiple style="min-height: 80px; width: 100%;">
+                                <!-- Populated from holdings -->
+                            </select>
+                            <p id="noHoldingsMsg" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+                                No holdings yet. <a href="#" onclick="showSection('holdings', document.querySelector('.nav-link:nth-child(2)')); return false;" style="color: var(--accent-2);">Add stocks in Holdings</a> to see analysis.
+                            </p>
+                        </div>
                     </div>
-                    <div style="min-width: 150px;">
-                        <label>Lookback Period</label>
-                        <select id="periodSelect" class="form-input" style="min-width: auto;">
-                            <option value="2">2 Years</option>
-                            <option value="3" selected>3 Years</option>
-                            <option value="5">5 Years</option>
-                        </select>
+                    <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                        <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeFromHoldings()">Analyze Selected</button>
+                        <button class="btn btn-secondary" onclick="selectAllHoldings()">Select All</button>
                     </div>
-                    <button class="btn btn-primary" id="analyzeBtn" onclick="analyzeAssets()">Analyze</button>
                 </div>
             </div>
 
             <!-- Key Metrics -->
             <div class="grid grid-4" style="margin-bottom: 1.5rem;">
                 <div class="metric-card">
-                    <div class="metric-label">Market Regime <span class="static-badge">Static</span></div>
-                    <div id="currentRegime" class="regime-indicator regime-normal">
-                        <span class="regime-dot"></span>
-                        Normal
-                    </div>
+                    <div class="metric-label">Holdings Count</div>
+                    <div class="metric-value blue" id="dashboardHoldingsCount">0</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Avg Correlation</div>
-                    <div class="metric-value blue" id="avgCorrelation">0.32</div>
+                    <div class="metric-value blue" id="avgCorrelation">--</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Tail Correlation</div>
-                    <div class="metric-value red" id="tailCorrelation">0.68</div>
+                    <div class="metric-value red" id="tailCorrelation">--</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Correlation Spike</div>
-                    <div class="metric-value yellow" id="correlationSpike">+113%</div>
+                    <div class="metric-value yellow" id="correlationSpike">--</div>
                 </div>
             </div>
 
             <!-- Core Insight -->
-            <div class="insight-box warning">
+            <div class="insight-box warning" id="coreInsightBox">
                 <div class="insight-title">The Core Problem</div>
                 <div class="insight-text" id="coreInsight">
-                    During normal markets, these assets show an average correlation of <strong>0.32</strong>.
-                    But during the worst 5% of market days, that correlation jumps to <strong>0.68</strong>.
-                    Diversification weakens precisely when it matters most.
+                    Add at least 2 stocks to your holdings to see correlation analysis. Correlations show how assets move together - higher correlation means less diversification benefit.
                 </div>
             </div>
 
             <!-- Summary Chart -->
             <div class="chart-container">
-                <div class="chart-title">Correlation Over Time <span class="dynamic-badge" id="correlationTimelineBadge">Updates with Portfolio</span></div>
+                <div class="chart-title">Correlation Over Time <span class="dynamic-badge" id="correlationTimelineBadge">Add Holdings First</span></div>
                 <canvas id="correlationTimelineChart"></canvas>
             </div>
         </section>
@@ -2327,7 +2324,16 @@
                 updatePortfolioSummary();
                 updatePortfolioRegime();
                 updateStressCharts();
-                updateAllChartsWithRealData();
+                updateHoldingsDropdown();
+
+                // Auto-update analysis with all holdings
+                analysisData.tickers = holdings.positions.map(p => p.ticker);
+                if (analysisData.tickers.length >= 2) {
+                    runAnalysis();
+                } else {
+                    updateAllChartsWithRealData();
+                }
+
                 hideAddModal();
             } catch (error) {
                 console.error('Error adding stock:', error);
@@ -2357,7 +2363,16 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
-            updateAllChartsWithRealData();
+            updateHoldingsDropdown();
+
+            // Auto-update analysis
+            analysisData.tickers = holdings.positions.map(p => p.ticker);
+            if (analysisData.tickers.length >= 2) {
+                runAnalysis();
+            } else {
+                updateAllChartsWithRealData();
+            }
+
             hideEditModal();
         }
 
@@ -2370,57 +2385,109 @@
             updatePortfolioSummary();
             updatePortfolioRegime();
             updateStressCharts();
-            updateAllChartsWithRealData();
+            updateHoldingsDropdown();
+
+            // Auto-update analysis
+            analysisData.tickers = holdings.positions.map(p => p.ticker);
+            if (analysisData.tickers.length >= 2) {
+                runAnalysis();
+            } else {
+                clearDashboardState();
+                updateAllChartsWithRealData();
+            }
+
             hideEditModal();
         }
 
         // ==================== ANALYSIS DATA & STATE ====================
         let analysisData = {
-            tickers: ['SPY', 'TLT', 'GLD', 'QQQ', 'EFA'],
+            tickers: [],
             normalCorr: {},
             tailCorr: {},
-            avgNormalCorr: 0.32,
-            avgTailCorr: 0.68
+            avgNormalCorr: 0,
+            avgTailCorr: 0
         };
 
         let analysisInProgress = false;
 
-        // ==================== DETERMINISTIC ANALYSIS (PART 3 FIX) ====================
-        function analyzeAssets() {
-            if (analysisInProgress) return;
+        // ==================== HOLDINGS DROPDOWN & ANALYSIS ====================
+        function updateHoldingsDropdown() {
+            const dropdown = document.getElementById('holdingsDropdown');
+            const noHoldingsMsg = document.getElementById('noHoldingsMsg');
+            const countEl = document.getElementById('dashboardHoldingsCount');
 
-            const analyzeBtn = document.getElementById('analyzeBtn');
-            const input = document.getElementById('tickerInput').value;
-            const period = document.getElementById('periodSelect').value;
-            const tickers = input.split(',').map(t => t.trim().toUpperCase()).filter(t => t.length > 0);
+            if (!dropdown) return;
 
-            if (tickers.length < 2) {
-                alert('Please enter at least 2 tickers');
+            dropdown.innerHTML = '';
+
+            if (holdings.positions.length === 0) {
+                dropdown.style.display = 'none';
+                noHoldingsMsg.style.display = 'block';
+                countEl.textContent = '0';
                 return;
             }
 
+            dropdown.style.display = 'block';
+            noHoldingsMsg.style.display = 'none';
+            countEl.textContent = holdings.positions.length;
+
+            holdings.positions.forEach(pos => {
+                const option = document.createElement('option');
+                option.value = pos.ticker;
+                option.textContent = `${pos.ticker} (${pos.quantity} shares)`;
+                option.selected = true; // Select all by default
+                dropdown.appendChild(option);
+            });
+        }
+
+        function selectAllHoldings() {
+            const dropdown = document.getElementById('holdingsDropdown');
+            Array.from(dropdown.options).forEach(opt => opt.selected = true);
+        }
+
+        function analyzeFromHoldings() {
+            const dropdown = document.getElementById('holdingsDropdown');
+            const selectedTickers = Array.from(dropdown.selectedOptions).map(opt => opt.value);
+
+            if (selectedTickers.length < 2) {
+                alert('Please select at least 2 stocks to analyze correlations');
+                return;
+            }
+
+            analysisData.tickers = selectedTickers;
+            runAnalysis();
+        }
+
+        function runAnalysis() {
+            if (analysisInProgress || analysisData.tickers.length < 2) return;
+
+            const analyzeBtn = document.getElementById('analyzeBtn');
+
             try {
                 analysisInProgress = true;
-                analyzeBtn.disabled = true;
-                analyzeBtn.textContent = 'Analyzing...';
+                if (analyzeBtn) {
+                    analyzeBtn.disabled = true;
+                    analyzeBtn.textContent = 'Analyzing...';
+                }
 
-                analysisData.tickers = tickers.slice(0, 6);
                 simulateAnalysis();
                 renderCorrelationMatrices();
                 renderCorrelationChanges();
                 updateInsight();
                 updatePortfolioRegime();
+                updateAllChartsWithRealData();
 
             } finally {
                 analysisInProgress = false;
-                analyzeBtn.disabled = false;
-                analyzeBtn.textContent = 'Analyze';
+                if (analyzeBtn) {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyze Selected';
+                }
             }
         }
 
         function simulateAnalysis() {
-            // Create deterministic seed from inputs (PART 3 FIX)
-            const inputKey = analysisData.tickers.slice().sort().join(',') + '-' + document.getElementById('periodSelect').value;
+            const inputKey = analysisData.tickers.slice().sort().join(',');
             const seed = hashString(inputKey);
             const random = mulberry32(seed);
 
@@ -2435,7 +2502,6 @@
                         analysisData.normalCorr[key] = 1.0;
                         analysisData.tailCorr[key] = 1.0;
                     } else {
-                        // Use seeded random for deterministic results
                         const baseCorr = 0.15 + random() * 0.35;
                         analysisData.normalCorr[key] = Math.round(baseCorr * 100) / 100;
                         const tailCorr = Math.min(0.95, baseCorr + 0.25 + random() * 0.25);
@@ -2444,7 +2510,6 @@
                 }
             }
 
-            // Calculate averages
             let normalSum = 0, tailSum = 0, count = 0;
             for (let i = 0; i < n; i++) {
                 for (let j = i + 1; j < n; j++) {
@@ -2458,17 +2523,21 @@
             analysisData.avgNormalCorr = count > 0 ? Math.round(normalSum / count * 100) / 100 : 0;
             analysisData.avgTailCorr = count > 0 ? Math.round(tailSum / count * 100) / 100 : 0;
 
-            document.getElementById('avgCorrelation').textContent = analysisData.avgNormalCorr.toFixed(2);
-            document.getElementById('tailCorrelation').textContent = analysisData.avgTailCorr.toFixed(2);
+            document.getElementById('avgCorrelation').textContent = count > 0 ? analysisData.avgNormalCorr.toFixed(2) : '--';
+            document.getElementById('tailCorrelation').textContent = count > 0 ? analysisData.avgTailCorr.toFixed(2) : '--';
 
             const spike = analysisData.avgNormalCorr > 0
                 ? Math.round((analysisData.avgTailCorr - analysisData.avgNormalCorr) / analysisData.avgNormalCorr * 100)
                 : 0;
-            document.getElementById('correlationSpike').textContent = '+' + spike + '%';
+            document.getElementById('correlationSpike').textContent = count > 0 ? '+' + spike + '%' : '--';
         }
 
         function updateInsight() {
             const insight = document.getElementById('coreInsight');
+            if (analysisData.tickers.length < 2) {
+                insight.innerHTML = `Add at least 2 stocks to your holdings to see correlation analysis. Correlations show how assets move together - higher correlation means less diversification benefit.`;
+                return;
+            }
             insight.innerHTML = `
                 During normal markets, these assets show an average correlation of <strong>${analysisData.avgNormalCorr.toFixed(2)}</strong>.
                 But during the worst 5% of market days, that correlation jumps to <strong>${analysisData.avgTailCorr.toFixed(2)}</strong>.
@@ -2476,9 +2545,28 @@
             `;
         }
 
+        function clearDashboardState() {
+            document.getElementById('avgCorrelation').textContent = '--';
+            document.getElementById('tailCorrelation').textContent = '--';
+            document.getElementById('correlationSpike').textContent = '--';
+            document.getElementById('dashboardHoldingsCount').textContent = '0';
+            updateInsight();
+        }
+
         function renderCorrelationMatrices() {
             const tickers = analysisData.tickers;
             const n = tickers.length;
+            const normalMatrix = document.getElementById('normalCorrMatrix');
+            const tailMatrix = document.getElementById('tailCorrMatrix');
+
+            if (n < 2) {
+                const emptyMsg = '<div style="grid-column: 1/-1; padding: 2rem; text-align: center; color: var(--text-muted);">Add at least 2 stocks to see correlation matrix</div>';
+                normalMatrix.style.gridTemplateColumns = '1fr';
+                normalMatrix.innerHTML = emptyMsg;
+                tailMatrix.style.gridTemplateColumns = '1fr';
+                tailMatrix.innerHTML = emptyMsg;
+                return;
+            }
 
             // Normal correlation matrix
             let normalHtml = '<div class="corr-cell corr-header"></div>';
@@ -2496,7 +2584,6 @@
                 });
             });
 
-            const normalMatrix = document.getElementById('normalCorrMatrix');
             normalMatrix.style.gridTemplateColumns = `repeat(${n + 1}, 1fr)`;
             normalMatrix.innerHTML = normalHtml;
 
@@ -2516,7 +2603,6 @@
                 });
             });
 
-            const tailMatrix = document.getElementById('tailCorrMatrix');
             tailMatrix.style.gridTemplateColumns = `repeat(${n + 1}, 1fr)`;
             tailMatrix.innerHTML = tailHtml;
         }
@@ -2531,6 +2617,12 @@
 
         function renderCorrelationChanges() {
             const tickers = analysisData.tickers;
+
+            if (tickers.length < 2) {
+                document.getElementById('correlationChangeList').innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--text-muted);">Add at least 2 stocks to see correlation changes</div>';
+                return;
+            }
+
             let html = '';
 
             for (let i = 0; i < tickers.length; i++) {
@@ -3050,24 +3142,20 @@
 
         // ==================== INITIALIZE ====================
         function init() {
-            loadHoldings();
+            // Clear all holdings on fresh start (remove this line if you want to persist holdings)
+            localStorage.removeItem(HOLDINGS_KEY);
+            holdings = { positions: [], totalValue: 0, lastSync: null };
+
             renderHoldingsTable();
             updatePortfolioSummary();
-            simulateAnalysis();
+            updateHoldingsDropdown();
+            clearDashboardState();
             renderCorrelationMatrices();
             renderCorrelationChanges();
             initCharts();
             updatePortfolioRegime();
             updateStressCharts();
-
-            // Refresh prices and load real chart data if we have holdings
-            if (holdings.positions.length > 0) {
-                refreshAllPrices();
-                // Also trigger real data fetch for charts
-                updateAllChartsWithRealData();
-            } else {
-                updateAllCharts();
-            }
+            resetChartBadgesToDefault();
         }
 
         // Close modals on outside click
