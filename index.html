@@ -1324,53 +1324,87 @@
         }
 
         // ==================== HISTORICAL DATA FETCHING (YAHOO FINANCE) ====================
+        const CORS_PROXIES = [
+            (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            (url) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            (url) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        ];
+
         async function fetchHistoricalPrices(ticker) {
             // Check cache first
             const cached = historicalPriceCache.get(ticker);
-            if (cached && (Date.now() - cached.timestamp) < 3600000) { // 1 hour cache
+            if (cached && (Date.now() - cached.timestamp) < 3600000) {
                 return cached.data;
             }
 
-            try {
-                // Calculate date range (2 years of data)
-                const endDate = Math.floor(Date.now() / 1000);
-                const startDate = endDate - (2 * 365 * 24 * 60 * 60);
+            const endDate = Math.floor(Date.now() / 1000);
+            const startDate = endDate - (2 * 365 * 24 * 60 * 60);
+            const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${startDate}&period2=${endDate}&interval=1d`;
 
-                const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?period1=${startDate}&period2=${endDate}&interval=1d`;
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(yahooUrl)}`;
+            // Try each proxy until one works
+            for (const proxyFn of CORS_PROXIES) {
+                try {
+                    const proxyUrl = proxyFn(yahooUrl);
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-                const response = await fetch(proxyUrl);
-                if (!response.ok) throw new Error('Fetch failed');
+                    const response = await fetch(proxyUrl, { signal: controller.signal });
+                    clearTimeout(timeoutId);
 
-                const proxyData = await response.json();
-                const data = JSON.parse(proxyData.contents);
+                    if (!response.ok) continue;
 
-                if (data.chart.error) {
-                    throw new Error(data.chart.error.description || 'Invalid ticker');
-                }
-
-                const result = data.chart.result[0];
-                const timestamps = result.timestamp;
-                const closes = result.indicators.quote[0].close;
-
-                // Build price series with dates
-                const priceData = [];
-                for (let i = 0; i < timestamps.length; i++) {
-                    if (closes[i] !== null) {
-                        priceData.push({
-                            date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
-                            close: closes[i]
-                        });
+                    const text = await response.text();
+                    let data;
+                    try {
+                        data = JSON.parse(text);
+                    } catch {
+                        // Try parsing as allorigins format
+                        const parsed = JSON.parse(text);
+                        data = JSON.parse(parsed.contents);
                     }
-                }
 
-                // Cache the result
-                historicalPriceCache.set(ticker, { data: priceData, timestamp: Date.now() });
-                return priceData;
-            } catch (error) {
-                console.warn(`Historical fetch failed for ${ticker}:`, error);
-                return null;
+                    if (data.chart?.error) continue;
+
+                    const result = data.chart?.result?.[0];
+                    if (!result?.timestamp) continue;
+
+                    const timestamps = result.timestamp;
+                    const closes = result.indicators?.quote?.[0]?.close;
+                    if (!closes) continue;
+
+                    const priceData = [];
+                    for (let i = 0; i < timestamps.length; i++) {
+                        if (closes[i] !== null && closes[i] !== undefined) {
+                            priceData.push({
+                                date: new Date(timestamps[i] * 1000).toISOString().split('T')[0],
+                                close: closes[i]
+                            });
+                        }
+                    }
+
+                    if (priceData.length > 0) {
+                        historicalPriceCache.set(ticker, { data: priceData, timestamp: Date.now() });
+                        return priceData;
+                    }
+                } catch (error) {
+                    console.warn(`Proxy failed for ${ticker}:`, error.message);
+                    continue;
+                }
             }
+
+            console.error(`All proxies failed for ${ticker}`);
+            return null;
+        }
+
+        // Fetch multiple tickers in parallel
+        async function fetchAllHistoricalData(tickers) {
+            const results = await Promise.all(
+                tickers.map(async (ticker) => {
+                    const data = await fetchHistoricalPrices(ticker);
+                    return { ticker, data };
+                })
+            );
+            return results.filter(r => r.data && r.data.length > 0);
         }
 
         // ==================== RETURN & CORRELATION CALCULATIONS ====================
@@ -1572,7 +1606,6 @@
 
         async function updateAllChartsWithRealData() {
             if (holdings.positions.length === 0) {
-                // Reset to synthetic data if no holdings
                 resetChartBadgesToDefault();
                 updateAllCharts();
                 return;
@@ -1581,49 +1614,53 @@
             if (isLoadingHistoricalData) return;
             isLoadingHistoricalData = true;
 
-            // Show loading state on charts
             showChartLoadingState(true);
 
             try {
                 const tickers = holdings.positions.map(p => p.ticker);
-
-                // Fetch historical data for all tickers
-                const historicalDataMap = new Map();
-                const returnsMap = new Map();
-
                 console.log('Fetching historical data for:', tickers);
 
-                for (const ticker of tickers) {
-                    const prices = await fetchHistoricalPrices(ticker);
-                    if (prices && prices.length > 0) {
-                        historicalDataMap.set(ticker, prices);
-                        returnsMap.set(ticker, calculateReturns(prices));
-                        console.log(`Fetched ${prices.length} price points for ${ticker}`);
-                    } else {
-                        console.warn(`No data for ${ticker}`);
-                    }
-                }
+                // Fetch ALL tickers in parallel for speed
+                const results = await fetchAllHistoricalData(tickers);
+                console.log('Fetch results:', results.length, 'stocks loaded');
 
-                if (historicalDataMap.size === 0) {
+                if (results.length === 0) {
                     console.warn('No historical data available');
                     resetChartBadgesToDefault();
                     updateAllCharts();
                     return;
                 }
 
-                // Update Volatility Chart with individual stock volatilities
+                // Build returns map
+                const returnsMap = new Map();
+                for (const { ticker, data } of results) {
+                    const returns = calculateReturns(data);
+                    if (returns.length > 0) {
+                        returnsMap.set(ticker, returns);
+                        console.log(`${ticker}: ${data.length} prices, ${returns.length} returns`);
+                    }
+                }
+
+                if (returnsMap.size === 0) {
+                    console.warn('Could not calculate returns');
+                    resetChartBadgesToDefault();
+                    updateAllCharts();
+                    return;
+                }
+
+                // Update all three charts
                 updateVolatilityChartWithStocks(returnsMap);
 
-                // Update Correlation Charts with pairwise correlations
                 if (returnsMap.size >= 2) {
                     updateCorrelationChartsWithPairs(returnsMap);
                 } else {
-                    // Single stock - show message
-                    updateSingleStockCorrelationCharts(tickers[0]);
+                    updateSingleStockCorrelationCharts(Array.from(returnsMap.keys())[0]);
                 }
 
+                console.log('All charts updated successfully');
+
             } catch (error) {
-                console.error('Error updating charts with real data:', error);
+                console.error('Error updating charts:', error);
                 resetChartBadgesToDefault();
                 updateAllCharts();
             } finally {
