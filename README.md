@@ -1,54 +1,85 @@
-# Correlation Crash Course
+# Hedging Platform
 
-**See how diversification fails when you need it most.**
+[![CI](https://github.com/YOUR_USERNAME/hedging-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/hedging-platform/actions/workflows/ci.yml)
 
-Most investors believe spreading money across different assets protects them from big losses. This tool shows the uncomfortable truth: correlations spike during crashes, exactly when you need diversification to work.
+**Portfolio risk analysis and hedging effectiveness platform.**
+
+Analyzes how portfolio correlations spike during market crashes, detects market regimes, computes VaR/CVaR with Monte Carlo simulation, and evaluates hedging strategies - with an AI-powered chat advisor.
 
 ## Quick Start
 
 ```bash
-# Install dependencies
-pip install streamlit pandas numpy yfinance plotly
-
-# Run the app
-streamlit run correlation_crash_course.py
+pip install -r requirements.txt
+streamlit run streamlit_app.py
 ```
 
-## What This Shows
+## Features
 
-Enter 2-5 stock tickers and see:
+### 6 Analysis Pages
+1. **Dashboard** - Portfolio overview, HHI concentration, cumulative returns
+2. **Correlation Analysis** - Normal vs crash correlations, asymmetry, stability
+3. **Regime Detection** - Volatility-based regime timeline, conditional heatmaps
+4. **Hedge Impact** - Hedge effectiveness comparison, optimal ratio, VaR reduction
+5. **Risk Metrics** - VaR/CVaR gauges, Monte Carlo fan chart, terminal distribution
+6. **Stress Scenarios** - Correlation shock, vol spike, liquidity stress, combined crisis
 
-1. **Normal Correlation** - How assets move together on typical days
-2. **Crash Correlation** - How assets move together during the worst 5% of market days
-3. **Timeline** - Watch correlations spike during stress periods
+### AI Chat Advisor
+- Sidebar chat that persists across all pages
+- Uses OpenAI `gpt-4o-mini` with function-calling to reference real computed metrics
+- Graceful fallback to rules-based responses when no API key is present
 
-## The Key Insight
+### Real Analytics
+- All computations use real market data from Yahoo Finance
+- Regime-aware Monte Carlo simulation with transition probabilities
+- Historical, parametric, and regime-conditional VaR/CVaR
 
-During normal markets, a diversified portfolio of SPY (stocks), TLT (bonds), and GLD (gold) shows low correlations between assets. But during market crashes, those correlations spike toward 1.0.
+## Project Evolution
 
-This means the protection you thought you had disappears exactly when you need it most.
+| Commit | R->I Moment |
+|--------|-------------|
+| Initial | Single-page correlation demo (`correlation_crash_course.py`) |
+| Restructure | Multi-page architecture with shared `core/` and `risk/` modules |
+| Analytics | VaR/CVaR, Monte Carlo, hedge analysis modules |
+| Chat | LLM-powered sidebar advisor with function-calling |
+| CI/CD | GitHub Actions, 70% coverage threshold, documentation |
 
-## Why This Matters
-
-- **For investors**: Understanding tail correlation is essential for real risk management
-- **For students**: This concept isn't taught in intro finance courses - knowing it signals depth
-- **For interviews**: "Correlations spike during crashes" is a counterintuitive insight that demonstrates real market understanding
-
-## Technical Details
-
-- **Tail correlation**: Measured during the bottom 5% of market returns (quantile = 0.05)
-- **Stress detection**: Based on rolling volatility exceeding the 80th percentile
-- **Data source**: Yahoo Finance (yfinance)
-
-## Files
+## Architecture
 
 ```
-correlation_crash_course.py  # Main application (run this)
-app.py                       # Simple entry point
-core/                        # Data fetching and regime detection
-risk/                        # Correlation calculations
+streamlit_app.py          # Entry point + sidebar chat
+pages/                    # 6 analysis pages (UI only)
+core/                     # Data fetch, regime detection, portfolio state
+risk/                     # Correlation, VaR/CVaR, Monte Carlo, hedge analysis
+chat/                     # LLM chat engine with fallback
+tests/                    # 52+ tests, synthetic data, zero network calls
+docs/                     # DRIVER, REFLECT, AI Collaboration Log
 ```
+
+## Testing
+
+```bash
+pytest tests/ -v --cov=core --cov=risk --cov=chat --cov-report=term-missing
+```
+
+All tests use seeded synthetic data - no network calls, fully deterministic.
+
+## Configuration
+
+- **OpenAI API key** (optional): Set `OPENAI_API_KEY` in environment or `.streamlit/secrets.toml`
+- **Theme**: Dark theme configured in `.streamlit/config.toml`
+
+## Documentation
+
+- [DRIVER Methodology](docs/DRIVER.md) - Problem discovery through review
+- [REFLECT Log](docs/REFLECT.md) - Represent -> Implement iterations
+- [AI Collaboration Log](docs/AI_COLLAB_LOG.md) - AI usage with prompts and reflections
+
+## Legacy
+
+- `correlation_crash_course.py` - Original single-page app (deprecated, kept for reference)
+- `app.py` - Original entry point (deprecated, replaced by `streamlit_app.py`)
+- `index.html` - GitHub Pages visualization (separate, untouched)
 
 ---
 
-*Built to demonstrate one counterintuitive truth about markets.*
+*Built to demonstrate how correlation dynamics undermine portfolio diversification during market crises.*
