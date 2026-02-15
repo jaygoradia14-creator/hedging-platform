@@ -1,5 +1,5 @@
 """
-Hedge Impact - compare hedging candidates, optimal ratio, before/after VaR.
+Hedge Impact Analysis (Zerodha Kite style).
 """
 
 import streamlit as st
@@ -8,11 +8,11 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
+from core.style import page_header, kite_layout, BLUE, GREEN, RED
 from risk.hedge_analysis import compare_hedges, optimal_hedge_ratio, var_impact
 
 init_session_state()
-
-st.header("Hedge Impact Analysis")
+page_header("Hedge Impact")
 
 if not st.session_state.data_loaded:
     st.info("Load data from the sidebar first.")
@@ -26,19 +26,16 @@ if port_ret is None or returns is None:
     st.warning("Portfolio returns not available.")
     st.stop()
 
-# --- Hedge candidate selection ---
-st.subheader("Hedge Candidate Comparison")
-
-# Use all non-first assets as potential hedges
 candidates = [t for t in portfolio.tickers[1:]]
 if not candidates:
     st.warning("Need at least 2 assets to compare hedges.")
     st.stop()
 
+# --- Comparison table ---
+st.markdown("### Hedge Candidates")
 hedge_df = returns[candidates]
 comparison = compare_hedges(port_ret, hedge_df)
 
-# Display comparison table
 st.dataframe(
     comparison.style.format({
         "correlation": "{:.3f}",
@@ -49,47 +46,44 @@ st.dataframe(
     use_container_width=True,
 )
 
-# --- Best hedge details ---
+# --- Best hedge ---
 best_hedge = comparison.index[0]
-st.subheader(f"Best Hedge: {best_hedge}")
+st.markdown(f"### Best Hedge: {best_hedge}")
 
 opt_ratio = optimal_hedge_ratio(port_ret, returns[best_hedge])
-st.metric("Optimal Hedge Ratio", f"{opt_ratio:.3f}")
-
 impact = var_impact(port_ret, returns[best_hedge], opt_ratio)
 
-c1, c2, c3 = st.columns(3)
-c1.metric("VaR Before", f"{impact['var_before']:.2%}")
-c2.metric("VaR After", f"{impact['var_after']:.2%}")
-c3.metric("VaR Reduction", f"{impact['reduction_pct']:.1%}")
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Optimal Ratio", f"{opt_ratio:.3f}")
+c2.metric("VaR Before", f"{impact['var_before']:.2%}")
+c3.metric("VaR After", f"{impact['var_after']:.2%}")
+c4.metric("VaR Reduction", f"{impact['reduction_pct']:.1%}")
 
-# --- Before/after VaR bar chart ---
-st.subheader("VaR & CVaR: Before vs After Hedge")
-
+# --- Before / After bar chart ---
+st.markdown("### Risk Comparison")
 fig = go.Figure()
 fig.add_trace(go.Bar(
     x=["VaR", "CVaR"],
-    y=[impact["var_before"], impact["cvar_before"]],
+    y=[impact["var_before"] * 100, impact["cvar_before"] * 100],
     name="Before Hedge",
-    marker_color="#e74c3c",
+    marker_color=RED,
+    text=[f"{impact['var_before']:.2%}", f"{impact['cvar_before']:.2%}"],
+    textposition="auto", textfont=dict(color="#333"),
 ))
 fig.add_trace(go.Bar(
     x=["VaR", "CVaR"],
-    y=[impact["var_after"], impact["cvar_after"]],
+    y=[impact["var_after"] * 100, impact["cvar_after"] * 100],
     name="After Hedge",
-    marker_color="#4ecca3",
+    marker_color=GREEN,
+    text=[f"{impact['var_after']:.2%}", f"{impact['cvar_after']:.2%}"],
+    textposition="auto", textfont=dict(color="#333"),
 ))
-fig.update_layout(
-    template="plotly_dark", height=350, barmode="group",
-    yaxis_title="Loss (positive = worse)",
-    yaxis_tickformat=".2%",
-    margin=dict(l=50, r=20, t=10, b=40),
-)
+fig.update_layout(**kite_layout(height=350), barmode="group",
+                  yaxis_title="Loss %", yaxis_ticksuffix="%")
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Hedged vs unhedged cumulative returns ---
-st.subheader("Cumulative Returns: Unhedged vs Hedged")
-
+# --- Cumulative returns comparison ---
+st.markdown("### Performance: Unhedged vs Hedged")
 hedged_ret = port_ret + opt_ratio * returns[best_hedge]
 common = port_ret.index.intersection(hedged_ret.index)
 
@@ -98,16 +92,13 @@ cum_hedged = (1 + hedged_ret.loc[common]).cumprod() - 1
 
 fig2 = go.Figure()
 fig2.add_trace(go.Scatter(
-    x=cum_orig.index, y=cum_orig.values,
-    mode="lines", name="Unhedged", line=dict(color="#e74c3c", width=2),
+    x=cum_orig.index, y=cum_orig.values * 100,
+    mode="lines", name="Unhedged", line=dict(color=RED, width=2),
 ))
 fig2.add_trace(go.Scatter(
-    x=cum_hedged.index, y=cum_hedged.values,
-    mode="lines", name="Hedged", line=dict(color="#4ecca3", width=2),
+    x=cum_hedged.index, y=cum_hedged.values * 100,
+    mode="lines", name="Hedged", line=dict(color=GREEN, width=2),
 ))
-fig2.update_layout(
-    template="plotly_dark", height=380,
-    yaxis_title="Cumulative Return", yaxis_tickformat=".0%",
-    margin=dict(l=50, r=20, t=10, b=40),
-)
+fig2.update_layout(**kite_layout(height=380),
+                   yaxis_title="Return %", yaxis_ticksuffix="%")
 st.plotly_chart(fig2, use_container_width=True)
