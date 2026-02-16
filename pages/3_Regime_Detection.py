@@ -36,22 +36,12 @@ if regime_df is None:
 current = regime_df["regime"].iloc[-1]
 st.metric("Current Regime", current)
 
-# --- Timeline with individual stock volatilities ---
+# --- Timeline: avg volatility colored by regime ---
 st.markdown("### Regime Timeline")
 
 fig = go.Figure()
 
-# Individual stock rolling volatilities
-rolling_vol = calculate_rolling_volatility(returns, window=21)
-for i, ticker in enumerate(portfolio.tickers):
-    fig.add_trace(go.Scatter(
-        x=rolling_vol.index, y=rolling_vol[ticker],
-        mode="lines", name=ticker,
-        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
-        opacity=0.7,
-    ))
-
-# Regime markers on top
+# Single volatility line colored by regime
 for regime in MarketRegime:
     mask = regime_df["regime"] == regime.value
     if mask.any():
@@ -59,12 +49,12 @@ for regime in MarketRegime:
             x=regime_df.index[mask],
             y=regime_df["volatility"][mask],
             mode="markers",
-            name=f"Regime: {regime.value}",
-            marker=dict(color=REGIME_COLORS[regime.value], size=5, opacity=0.8),
+            name=regime.value,
+            marker=dict(color=REGIME_COLORS[regime.value], size=5),
         ))
 
-fig.update_layout(**kite_layout(height=450), yaxis_title="Annualized Volatility",
-                  yaxis_tickformat=".0%", hovermode="x unified")
+fig.update_layout(**kite_layout(height=400), yaxis_title="Avg Annualized Volatility",
+                  yaxis_tickformat=".0%")
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Stats table ---
