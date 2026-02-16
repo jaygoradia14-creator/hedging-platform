@@ -1,10 +1,11 @@
 """
 Hedging Platform - Main Entry Point
-Zerodha Kite-inspired UI
+Auto-loads data, shows live prices with sectors, Zerodha Kite UI.
 """
 
 import streamlit as st
 import numpy as np
+import pandas as pd
 from datetime import datetime, timedelta
 
 st.set_page_config(
@@ -15,144 +16,53 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Zerodha Kite-inspired CSS
+# Zerodha Kite CSS (same as before)
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* === GLOBAL === */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
-
-    .stApp {
-        background-color: #ffffff;
-    }
-
-    /* === SIDEBAR (Zerodha dark nav) === */
-    [data-testid="stSidebar"] {
-        background-color: #1a1a2e;
-        color: #ffffff;
-    }
-    [data-testid="stSidebar"] * {
-        color: #e0e0e0 !important;
-    }
+    .stApp { background-color: #ffffff; }
+    [data-testid="stSidebar"] { background-color: #1a1a2e; }
+    [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
     [data-testid="stSidebar"] .stTextInput label,
     [data-testid="stSidebar"] .stSelectbox label {
-        color: #9b9baf !important;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 600;
+        color: #9b9baf !important; font-size: 0.75rem;
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
     }
     [data-testid="stSidebar"] .stMarkdown h2 {
-        color: #ffffff !important;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-weight: 600;
-        border-bottom: 1px solid #2d2d44;
-        padding-bottom: 0.5rem;
+        color: #ffffff !important; font-size: 0.85rem; text-transform: uppercase;
+        letter-spacing: 0.08em; font-weight: 600;
+        border-bottom: 1px solid #2d2d44; padding-bottom: 0.5rem;
     }
-    [data-testid="stSidebar"] hr {
-        border-color: #2d2d44;
-    }
-
-    /* === TOP BAR === */
+    [data-testid="stSidebar"] hr { border-color: #2d2d44; }
     .kite-topbar {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        border-bottom: 1px solid #e8e8e8;
-        padding: 0.6rem 0;
-        margin-bottom: 1.5rem;
+        display: flex; align-items: center; justify-content: space-between;
+        border-bottom: 1px solid #e8e8e8; padding: 0.6rem 0; margin-bottom: 1.5rem;
     }
-    .kite-logo {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: #387ed1;
-        letter-spacing: -0.02em;
-    }
+    .kite-logo { font-size: 1.4rem; font-weight: 700; color: #387ed1; letter-spacing: -0.02em; }
     .kite-logo span { color: #999; font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem; }
-
-    /* === METRIC CARDS (Zerodha style) === */
     [data-testid="stMetric"] {
-        background: #ffffff;
-        border: 1px solid #e8e8e8;
-        border-radius: 4px;
-        padding: 1rem 1.2rem;
+        background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; padding: 1rem 1.2rem;
     }
     [data-testid="stMetric"] label {
-        color: #999999 !important;
-        font-size: 0.7rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 600 !important;
+        color: #999 !important; font-size: 0.7rem !important;
+        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600 !important;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #333333 !important;
-        font-size: 1.4rem !important;
-        font-weight: 600 !important;
+        color: #333 !important; font-size: 1.4rem !important; font-weight: 600 !important;
     }
-
-    /* === SECTION HEADERS === */
-    .stApp h1 {
-        display: none;
-    }
+    .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
-        color: #333333;
-        font-weight: 600;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        border-bottom: 1px solid #e8e8e8;
-        padding-bottom: 0.5rem;
-        margin-top: 2rem;
+        color: #333; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
+        letter-spacing: 0.05em; border-bottom: 1px solid #e8e8e8;
+        padding-bottom: 0.5rem; margin-top: 2rem;
     }
-
-    /* === TABLES === */
-    .stDataFrame {
-        border: 1px solid #e8e8e8;
-        border-radius: 4px;
-    }
-    .stDataFrame thead th {
-        background: #f8f9fa !important;
-        color: #999 !important;
-        font-size: 0.7rem !important;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        font-weight: 600 !important;
-        border-bottom: 1px solid #e8e8e8 !important;
-    }
-
-    /* === BUTTONS (Zerodha blue) === */
-    .stButton > button[kind="primary"] {
-        background-color: #387ed1;
-        border: none;
-        border-radius: 3px;
-        font-weight: 600;
-        font-size: 0.8rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-    }
-    .stButton > button[kind="primary"]:hover {
-        background-color: #2c6ab8;
-    }
-
-    /* === INFO/WARNING BOXES === */
-    .stAlert {
-        border-radius: 4px;
-        border-left: 3px solid #387ed1;
-        background: #f0f6ff;
-    }
-
-    /* === ZERODHA COLORS === */
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #d43725; font-weight: 600; }
-    .muted { color: #999999; font-size: 0.8rem; }
-
-    /* === HIDE STREAMLIT CHROME === */
+    .muted { color: #999; font-size: 0.8rem; }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header[data-testid="stHeader"] { background: #ffffff; border-bottom: 1px solid #e8e8e8; }
@@ -163,7 +73,7 @@ st.markdown("""
 # Session state
 # ---------------------------------------------------------------------------
 from core.portfolio import init_session_state, Portfolio
-from core.data_fetch import fetch_multi_asset_data, calculate_returns
+from core.data_fetch import fetch_multi_asset_data, calculate_returns, fetch_latest_prices, get_sectors
 from core.regime_detector import detect_regime
 
 init_session_state()
@@ -177,7 +87,7 @@ with st.sidebar:
     ticker_input = st.text_input(
         "INSTRUMENTS",
         value=", ".join(st.session_state.portfolio.tickers),
-        help="Enter 2-8 ticker symbols",
+        help="Enter 2-8 ticker symbols (e.g. SPY, TLT, GLD, QQQ, EFA)",
     )
 
     period = st.selectbox(
@@ -189,39 +99,47 @@ with st.sidebar:
 
     tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
-    if st.button("Load Data", type="primary", use_container_width=True):
-        if len(tickers) < 2:
-            st.error("Enter at least 2 tickers.")
-        else:
-            with st.spinner("Fetching..."):
-                end = datetime.now()
-                start = end - timedelta(days=365 * period)
-                try:
-                    prices = fetch_multi_asset_data(
-                        tickers, str(start.date()), str(end.date())
-                    )
+    load_clicked = st.button("Load Data", type="primary", use_container_width=True)
+
+    # Auto-load on first visit
+    if not st.session_state.data_loaded and not load_clicked:
+        load_clicked = True
+
+    if load_clicked and len(tickers) >= 2:
+        with st.spinner("Fetching market data..."):
+            end = datetime.now()
+            start = end - timedelta(days=365 * period)
+            try:
+                prices = fetch_multi_asset_data(
+                    tickers, str(start.date()), str(end.date())
+                )
+                if prices.empty or prices.shape[1] < 2:
+                    st.error("Could not fetch data for these tickers. Check symbols.")
+                else:
                     returns = calculate_returns(prices)
                     regime_df = detect_regime(returns)
 
+                    actual_tickers = list(prices.columns)
                     portfolio = Portfolio(
-                        tickers=list(prices.columns),
-                        weights=np.ones(len(prices.columns)) / len(prices.columns),
+                        tickers=actual_tickers,
+                        weights=np.ones(len(actual_tickers)) / len(actual_tickers),
                         prices=prices,
                     )
                     portfolio.returns = returns
                     st.session_state.portfolio = portfolio
                     st.session_state.regime_df = regime_df
                     st.session_state.data_loaded = True
-                    st.success(f"{len(prices.columns)} instruments loaded")
-                except Exception as exc:
-                    st.error(f"Failed: {exc}")
+                    st.success(f"{len(actual_tickers)} instruments loaded")
+            except Exception as exc:
+                st.error(f"Failed: {exc}")
+    elif load_clicked and len(tickers) < 2:
+        st.error("Enter at least 2 tickers.")
 
     st.markdown("---")
 
     # Chat
     st.markdown("## Advisor")
-
-    chat_container = st.container(height=280)
+    chat_container = st.container(height=250)
     with chat_container:
         for msg in st.session_state.chat_history:
             with st.chat_message(msg["role"]):
@@ -250,95 +168,162 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 if not st.session_state.data_loaded:
-    st.markdown("""
-    <div style="text-align:center; padding: 4rem 2rem; color: #999;">
-        <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">No instruments loaded</p>
-        <p style="font-size: 0.85rem;">Enter tickers in the sidebar and click <strong>Load Data</strong> to begin.</p>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    portfolio = st.session_state.portfolio
-    summary = portfolio.summary()
+    st.info("Loading default portfolio (SPY, TLT, GLD)...")
+    st.stop()
 
-    # Metrics row
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Instruments", summary["n_assets"])
-    c2.metric("Data Points", summary["data_points"])
-    c3.metric("HHI", f"{summary['hhi']:.3f}")
-    c4.metric("Effective N", f"{summary['effective_n']:.1f}")
+portfolio = st.session_state.portfolio
+summary = portfolio.summary()
+returns = portfolio.returns
 
-    st.markdown("### Allocation")
+import plotly.graph_objects as go
+from core.style import COLORS, BLUE, GREEN, RED, kite_layout
 
-    col_chart, col_table = st.columns([1, 1])
+# --- Metrics row ---
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Instruments", summary["n_assets"])
+c2.metric("Data Points", summary["data_points"])
+c3.metric("HHI", f"{summary['hhi']:.3f}")
+c4.metric("Effective N", f"{summary['effective_n']:.1f}")
 
-    with col_chart:
-        import plotly.graph_objects as go
-        kite_colors = ["#387ed1", "#00b386", "#d43725", "#f5a623",
-                       "#7c3aed", "#06b6d4", "#ec4899", "#84cc16"]
-        fig = go.Figure(data=[go.Pie(
-            labels=portfolio.tickers,
-            values=portfolio.weights,
-            hole=0.55,
-            marker=dict(colors=kite_colors[:portfolio.n_assets],
-                        line=dict(color="#ffffff", width=2)),
-            textinfo="label+percent",
-            textfont=dict(size=12, color="#333"),
-        )])
-        fig.update_layout(
-            height=320,
-            margin=dict(l=20, r=20, t=10, b=20),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            showlegend=False,
-            font=dict(family="Inter, sans-serif"),
-        )
-        st.plotly_chart(fig, use_container_width=True)
+# --- Live Prices & Sectors ---
+st.markdown("### Live Prices & Sectors")
 
-    with col_table:
-        import pandas as pd
-        ann_ret = portfolio.returns.mean() * 252
-        ann_vol = portfolio.returns.std() * np.sqrt(252)
+with st.spinner("Fetching latest prices..."):
+    live_df = fetch_latest_prices(portfolio.tickers)
 
-        stats_df = pd.DataFrame({
-            "Weight": [f"{w:.1%}" for w in portfolio.weights],
-            "Return (Ann.)": ann_ret.apply(lambda x: f"{x:+.2%}"),
-            "Volatility": ann_vol.apply(lambda x: f"{x:.2%}"),
-            "Sharpe": (ann_ret / ann_vol).apply(lambda x: f"{x:.2f}"),
-        }, index=portfolio.tickers)
-        stats_df.index.name = "Instrument"
-        st.dataframe(stats_df, use_container_width=True, height=280)
-
-    # Cumulative returns
-    st.markdown("### Performance")
-    returns = portfolio.returns
-    cum_ret = (1 + returns).cumprod() - 1
-    port_cum = (1 + portfolio.portfolio_returns).cumprod() - 1
-
-    fig_perf = go.Figure()
-    for i, ticker in enumerate(portfolio.tickers):
-        fig_perf.add_trace(go.Scatter(
-            x=cum_ret.index, y=cum_ret[ticker] * 100,
-            mode="lines", name=ticker, opacity=0.5,
-            line=dict(width=1.5, color=kite_colors[i % len(kite_colors)]),
-        ))
-    fig_perf.add_trace(go.Scatter(
-        x=port_cum.index, y=port_cum.values * 100,
-        mode="lines", name="Portfolio",
-        line=dict(color="#387ed1", width=2.5),
-    ))
-    fig_perf.update_layout(
-        height=380,
-        margin=dict(l=50, r=20, t=10, b=40),
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        yaxis=dict(title="Return %", gridcolor="#f0f0f0", zerolinecolor="#e0e0e0",
-                   ticksuffix="%"),
-        xaxis=dict(gridcolor="#f0f0f0"),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-                    font=dict(size=11)),
-        font=dict(family="Inter, sans-serif", color="#333"),
+if not live_df.empty and live_df["Price"].notna().any():
+    # Format for display
+    display_df = live_df.copy()
+    display_df["Price"] = display_df["Price"].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else "N/A")
+    display_df["Change"] = display_df["Change"].apply(
+        lambda x: f"{x:+.2f}" if pd.notna(x) else "N/A"
     )
-    st.plotly_chart(fig_perf, use_container_width=True)
+    display_df["Change %"] = display_df["Change %"].apply(
+        lambda x: f"{x:+.2f}%" if pd.notna(x) else "N/A"
+    )
+    display_df["Volume"] = display_df["Volume"].apply(
+        lambda x: f"{x:,.0f}" if pd.notna(x) and x > 0 else "N/A"
+    )
+    st.dataframe(display_df.set_index("Ticker"), use_container_width=True)
 
-    st.markdown(f'<p class="muted">Data: {summary["date_range"]} &middot; Navigate to pages in sidebar for detailed analysis</p>',
-                unsafe_allow_html=True)
+# --- Allocation ---
+st.markdown("### Allocation")
+
+col_pie, col_table = st.columns([1, 1])
+
+sectors = get_sectors(portfolio.tickers)
+
+with col_pie:
+    fig = go.Figure(data=[go.Pie(
+        labels=[f"{t} ({sectors[t]})" for t in portfolio.tickers],
+        values=portfolio.weights,
+        hole=0.55,
+        marker=dict(colors=COLORS[:portfolio.n_assets],
+                    line=dict(color="#ffffff", width=2)),
+        textinfo="label+percent",
+        textfont=dict(size=11, color="#333"),
+    )])
+    fig.update_layout(**kite_layout(height=340), showlegend=False)
+    st.plotly_chart(fig, use_container_width=True)
+
+with col_table:
+    ann_ret = returns.mean() * 252
+    ann_vol = returns.std() * np.sqrt(252)
+
+    stats_df = pd.DataFrame({
+        "Sector": [sectors[t] for t in portfolio.tickers],
+        "Weight": [f"{w:.1%}" for w in portfolio.weights],
+        "Return": ann_ret.apply(lambda x: f"{x:+.2%}"),
+        "Volatility": ann_vol.apply(lambda x: f"{x:.2%}"),
+        "Sharpe": (ann_ret / ann_vol).apply(lambda x: f"{x:.2f}"),
+    }, index=portfolio.tickers)
+    stats_df.index.name = "Instrument"
+    st.dataframe(stats_df, use_container_width=True, height=300)
+
+# --- Individual stock price charts ---
+st.markdown("### Individual Price History")
+
+fig_prices = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    # Normalize to 100 for comparison
+    normalized = (portfolio.prices[ticker] / portfolio.prices[ticker].iloc[0]) * 100
+    fig_prices.add_trace(go.Scatter(
+        x=normalized.index, y=normalized.values,
+        mode="lines", name=f"{ticker} ({sectors[ticker]})",
+        line=dict(width=2, color=COLORS[i % len(COLORS)]),
+    ))
+fig_prices.update_layout(
+    **kite_layout(height=420),
+    yaxis_title="Normalized Price (Base = 100)",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_prices, use_container_width=True)
+
+# --- Individual cumulative returns ---
+st.markdown("### Cumulative Returns")
+
+cum_ret = (1 + returns).cumprod() - 1
+port_cum = (1 + portfolio.portfolio_returns).cumprod() - 1
+
+fig_cum = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_cum.add_trace(go.Scatter(
+        x=cum_ret.index, y=cum_ret[ticker] * 100,
+        mode="lines", name=f"{ticker}",
+        line=dict(width=1.8, color=COLORS[i % len(COLORS)]),
+    ))
+fig_cum.add_trace(go.Scatter(
+    x=port_cum.index, y=port_cum.values * 100,
+    mode="lines", name="Portfolio",
+    line=dict(color="#1a1a2e", width=3),
+))
+fig_cum.update_layout(
+    **kite_layout(height=420),
+    yaxis_title="Return %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_cum, use_container_width=True)
+
+# --- Individual daily returns ---
+st.markdown("### Daily Returns")
+
+fig_daily = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_daily.add_trace(go.Scatter(
+        x=returns.index, y=returns[ticker] * 100,
+        mode="lines", name=ticker,
+        line=dict(width=1, color=COLORS[i % len(COLORS)]),
+        opacity=0.7,
+    ))
+fig_daily.add_hline(y=0, line_color="#e8e8e8")
+fig_daily.update_layout(
+    **kite_layout(height=350),
+    yaxis_title="Daily Return %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_daily, use_container_width=True)
+
+# --- Individual rolling volatility ---
+st.markdown("### Rolling Volatility (21-Day)")
+
+from core.regime_detector import calculate_rolling_volatility
+rolling_vol = calculate_rolling_volatility(returns, window=21)
+
+fig_vol = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_vol.add_trace(go.Scatter(
+        x=rolling_vol.index, y=rolling_vol[ticker] * 100,
+        mode="lines", name=ticker,
+        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+    ))
+fig_vol.update_layout(
+    **kite_layout(height=380),
+    yaxis_title="Annualized Volatility %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_vol, use_container_width=True)
+
+st.markdown(
+    f'<p class="muted">Data: {summary["date_range"]} &middot; Navigate to pages in sidebar for detailed analysis</p>',
+    unsafe_allow_html=True,
+)
