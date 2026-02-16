@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Hedging Platform",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ---------------------------------------------------------------------------
@@ -25,6 +25,8 @@ st.markdown("""
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .stApp { background-color: #ffffff; }
+
+    /* Sidebar styling */
     [data-testid="stSidebar"] { background-color: #1a1a2e; }
     [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
     [data-testid="stSidebar"] .stTextInput label,
@@ -38,12 +40,16 @@ st.markdown("""
         border-bottom: 1px solid #2d2d44; padding-bottom: 0.5rem;
     }
     [data-testid="stSidebar"] hr { border-color: #2d2d44; }
+
+    /* Topbar */
     .kite-topbar {
         display: flex; align-items: center; justify-content: space-between;
         border-bottom: 1px solid #e8e8e8; padding: 0.6rem 0; margin-bottom: 1.5rem;
     }
     .kite-logo { font-size: 1.4rem; font-weight: 700; color: #387ed1; letter-spacing: -0.02em; }
     .kite-logo span { color: #999; font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem; }
+
+    /* Metrics */
     [data-testid="stMetric"] {
         background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; padding: 1rem 1.2rem;
     }
@@ -54,18 +60,92 @@ st.markdown("""
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
         color: #333 !important; font-size: 1.4rem !important; font-weight: 600 !important;
     }
+
+    /* Headings */
     .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
         color: #333; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
         letter-spacing: 0.05em; border-bottom: 1px solid #e8e8e8;
         padding-bottom: 0.5rem; margin-top: 2rem;
     }
+
+    /* Utility classes */
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #d43725; font-weight: 600; }
     .muted { color: #999; font-size: 0.8rem; }
-    #MainMenu {visibility: hidden;}
+
+    /* Hide default Streamlit elements */
     footer {visibility: hidden;}
     header[data-testid="stHeader"] { background: #ffffff; border-bottom: 1px solid #e8e8e8; }
+
+    /* ---- MOBILE RESPONSIVE ---- */
+    @media (max-width: 768px) {
+        /* Reduce padding on mobile */
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-top: 1rem !important;
+        }
+
+        /* Topbar responsive */
+        .kite-topbar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.3rem;
+        }
+        .kite-logo { font-size: 1.1rem; }
+        .kite-logo span { font-size: 0.7rem; }
+
+        /* Metrics scale down */
+        [data-testid="stMetric"] {
+            padding: 0.6rem 0.8rem;
+        }
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 1.1rem !important;
+        }
+        [data-testid="stMetric"] label {
+            font-size: 0.6rem !important;
+        }
+
+        /* Columns stack on mobile */
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap;
+        }
+        [data-testid="stHorizontalBlock"] > div {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+
+        /* Tables scroll horizontally */
+        [data-testid="stDataFrame"] {
+            overflow-x: auto;
+        }
+
+        /* Headings smaller */
+        .stApp h2, .stApp h3 {
+            font-size: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        /* Charts responsive */
+        .js-plotly-plot {
+            width: 100% !important;
+        }
+
+        .muted { font-size: 0.7rem; }
+    }
+
+    /* Small phone */
+    @media (max-width: 480px) {
+        .block-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        .kite-logo { font-size: 1rem; }
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 0.95rem !important;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 

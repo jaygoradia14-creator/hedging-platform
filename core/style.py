@@ -86,8 +86,58 @@ PAGE_CSS = """
         border-bottom: 2px solid #387ed1; padding-bottom: 0.5rem;
         margin-bottom: 1.5rem;
     }
-    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
+    header[data-testid="stHeader"] { background: #ffffff; border-bottom: 1px solid #e8e8e8; }
+
+    /* ---- MOBILE RESPONSIVE ---- */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            padding-top: 1rem !important;
+        }
+        .page-header {
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        [data-testid="stMetric"] {
+            padding: 0.6rem 0.8rem;
+        }
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 1.1rem !important;
+        }
+        [data-testid="stMetric"] label {
+            font-size: 0.6rem !important;
+        }
+        [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap;
+        }
+        [data-testid="stHorizontalBlock"] > div {
+            flex: 1 1 100% !important;
+            min-width: 100% !important;
+        }
+        [data-testid="stDataFrame"] {
+            overflow-x: auto;
+        }
+        .stApp h2, .stApp h3 {
+            font-size: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        .js-plotly-plot {
+            width: 100% !important;
+        }
+        .muted { font-size: 0.7rem; }
+    }
+    @media (max-width: 480px) {
+        .block-container {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+        .page-header { font-size: 0.75rem; }
+        [data-testid="stMetric"] [data-testid="stMetricValue"] {
+            font-size: 0.95rem !important;
+        }
+    }
 </style>
 """
 
