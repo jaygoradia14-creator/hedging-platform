@@ -1,5 +1,5 @@
 """
-Stress Scenarios (Zerodha Kite style).
+Stress Scenarios - individual stock stress impact (Groww style).
 """
 
 import streamlit as st
@@ -8,8 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, RED, ORANGE, PURPLE
-from risk.monte_carlo import simulate_paths, simulation_statistics, percentile_bands
+from core.style import page_header, kite_layout, COLORS
 
 init_session_state()
 page_header("Stress Scenarios")
@@ -21,12 +20,11 @@ if not st.session_state.data_loaded:
 portfolio = st.session_state.portfolio
 returns = portfolio.returns
 weights = portfolio.weights
-
-N_SIMS = 1000
-N_DAYS = 252
+tickers = portfolio.tickers
 
 
-def _stressed_returns(ret, corr_mult=1.0, vol_mult=1.0, liquidity_haircut=0.0):
+def _stressed_returns(ret, corr_mult=1.0, vol_mult=1.0,
+                      liquidity_haircut=0.0):
     """Create stressed return distribution."""
     try:
         mu = ret.mean().values
@@ -40,10 +38,14 @@ def _stressed_returns(ret, corr_mult=1.0, vol_mult=1.0, liquidity_haircut=0.0):
 
         stressed_corr = corr_matrix.copy()
         if corr_mult > 1.0:
-            stressed_corr = corr_matrix + (1 - corr_matrix) * (1 - 1.0 / corr_mult)
+            stressed_corr = (
+                corr_matrix + (1 - corr_matrix) * (1 - 1.0 / corr_mult)
+            )
             np.fill_diagonal(stressed_corr, 1.0)
 
-        stressed_cov = np.outer(stressed_vols, stressed_vols) * stressed_corr
+        stressed_cov = (
+            np.outer(stressed_vols, stressed_vols) * stressed_corr
+        )
 
         eigvals = np.linalg.eigvalsh(stressed_cov)
         if eigvals.min() <= 0:
@@ -58,7 +60,9 @@ def _stressed_returns(ret, corr_mult=1.0, vol_mult=1.0, liquidity_haircut=0.0):
             z = np.random.randn(n)
             stressed[t] = stressed_mu + L @ z
 
-        return pd.DataFrame(stressed, index=ret.index, columns=ret.columns)
+        return pd.DataFrame(
+            stressed, index=ret.index, columns=ret.columns
+        )
     except Exception:
         return ret
 
@@ -66,104 +70,166 @@ def _stressed_returns(ret, corr_mult=1.0, vol_mult=1.0, liquidity_haircut=0.0):
 SCENARIOS = {
     "Correlation Shock": {
         "desc": "Correlations spike toward 1 - diversification fails",
-        "params": {"corr_mult": 3.0, "vol_mult": 1.0, "liquidity_haircut": 0.0},
-        "color": RED,
+        "params": {
+            "corr_mult": 3.0, "vol_mult": 1.0,
+            "liquidity_haircut": 0.0,
+        },
     },
     "Volatility Spike": {
         "desc": "Volatility doubles across all assets",
-        "params": {"corr_mult": 1.0, "vol_mult": 2.0, "liquidity_haircut": 0.0},
-        "color": ORANGE,
+        "params": {
+            "corr_mult": 1.0, "vol_mult": 2.0,
+            "liquidity_haircut": 0.0,
+        },
     },
     "Liquidity Stress": {
         "desc": "20% annual return haircut from spreads and slippage",
-        "params": {"corr_mult": 1.0, "vol_mult": 1.2, "liquidity_haircut": 0.20},
-        "color": PURPLE,
+        "params": {
+            "corr_mult": 1.0, "vol_mult": 1.2,
+            "liquidity_haircut": 0.20,
+        },
     },
     "Combined Crisis": {
-        "desc": "Corr shock + vol spike + liquidity stress simultaneously",
-        "params": {"corr_mult": 2.5, "vol_mult": 1.8, "liquidity_haircut": 0.15},
-        "color": "#1a1a2e",
+        "desc": "All three stresses simultaneously",
+        "params": {
+            "corr_mult": 2.5, "vol_mult": 1.8,
+            "liquidity_haircut": 0.15,
+        },
     },
 }
 
 try:
-    # Baseline
-    baseline_sims = simulate_paths(returns, weights, N_SIMS, N_DAYS, seed=42)
-    baseline_stats = simulation_statistics(baseline_sims)
-
-    results = {"Baseline": baseline_stats}
-    all_sims = {"Baseline": baseline_sims}
-
-    for name, cfg in SCENARIOS.items():
-        stressed = _stressed_returns(returns, **cfg["params"])
-        sims = simulate_paths(stressed, weights, N_SIMS, N_DAYS, seed=42)
-        results[name] = simulation_statistics(sims)
-        all_sims[name] = sims
-
-    # --- Per-stock stress impact table ---
+    # --- Per-stock volatility impact table ---
     st.markdown("### Per-Stock Stress Impact")
-    st.markdown('<p class="muted">Annualized volatility under each scenario vs baseline.</p>',
-                unsafe_allow_html=True)
+    st.markdown(
+        '<p class="muted">Annualized volatility: baseline vs each '
+        'stress scenario for every stock in your portfolio.</p>',
+        unsafe_allow_html=True,
+    )
 
-    stock_stress_rows = []
     baseline_vols = returns.std() * np.sqrt(252)
-    for ticker in portfolio.tickers:
-        row = {"Ticker": ticker, "Baseline Vol": f"{baseline_vols[ticker]:.2%}"}
-        for sname, scfg in SCENARIOS.items():
-            stressed = _stressed_returns(returns, **scfg["params"])
-            stressed_vol = float(stressed[ticker].std() * np.sqrt(252))
-            row[sname] = f"{stressed_vol:.2%}"
-        stock_stress_rows.append(row)
-    st.dataframe(pd.DataFrame(stock_stress_rows).set_index("Ticker"), use_container_width=True)
+    stock_rows = []
+    stressed_data = {}
+    for sname, scfg in SCENARIOS.items():
+        stressed_data[sname] = _stressed_returns(
+            returns, **scfg["params"]
+        )
 
-    # --- Summary table ---
-    st.markdown("### Scenario Comparison")
-    rows = []
-    for name, s in results.items():
-        rows.append({
-            "Scenario": name,
-            "Median": f"{s['p50']:.1%}",
-            "Mean": f"{s['mean']:.1%}",
-            "5th Pctl": f"{s['p5']:.1%}",
-            "Prob Loss": f"{s['prob_loss']:.1%}",
-            "Std Dev": f"{s['std']:.1%}",
-        })
-    st.dataframe(pd.DataFrame(rows).set_index("Scenario"), use_container_width=True)
+    for ticker in tickers:
+        row = {
+            "Ticker": ticker,
+            "Baseline": f"{baseline_vols[ticker]:.2%}",
+        }
+        for sname in SCENARIOS:
+            sv = float(
+                stressed_data[sname][ticker].std() * np.sqrt(252)
+            )
+            row[sname] = f"{sv:.2%}"
+        stock_rows.append(row)
 
-    # --- Tabs for each scenario ---
-    st.markdown("### Projections")
+    st.dataframe(
+        pd.DataFrame(stock_rows).set_index("Ticker"),
+        use_container_width=True,
+    )
+
+    # --- Individual stock charts per scenario ---
+    st.markdown("### Individual Stock Stress Returns")
+    st.markdown(
+        '<p class="muted">Cumulative returns for each stock under '
+        'baseline vs stressed conditions.</p>',
+        unsafe_allow_html=True,
+    )
+
     scenario_tabs = st.tabs(list(SCENARIOS.keys()))
 
-    for tab, (name, cfg) in zip(scenario_tabs, SCENARIOS.items()):
+    for tab, (sname, scfg) in zip(scenario_tabs, SCENARIOS.items()):
         with tab:
-            st.markdown(f'<p class="muted">{cfg["desc"]}</p>', unsafe_allow_html=True)
+            st.markdown(
+                f'<p class="muted">{scfg["desc"]}</p>',
+                unsafe_allow_html=True,
+            )
 
-            bands_base = percentile_bands(baseline_sims)
-            bands_stress = percentile_bands(all_sims[name])
-            days = np.arange(1, N_DAYS + 1)
+            stressed_ret = stressed_data[sname]
+
+            # Cumulative returns: baseline vs stressed for each stock
+            cum_base = (1 + returns).cumprod() - 1
+            cum_stress = (1 + stressed_ret).cumprod() - 1
 
             fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=days, y=bands_base["p50"] * 100, mode="lines",
-                name="Baseline", line=dict(color=BLUE, width=2, dash="dash"),
-            ))
-            fig.add_trace(go.Scatter(
-                x=days, y=bands_stress["p95"] * 100, mode="lines",
-                line=dict(width=0), showlegend=False,
-            ))
-            fig.add_trace(go.Scatter(
-                x=days, y=bands_stress["p5"] * 100, mode="lines",
-                line=dict(width=0), fill="tonexty",
-                fillcolor="rgba(212,55,37,0.1)", name=f"{name} 5-95th",
-            ))
-            fig.add_trace(go.Scatter(
-                x=days, y=bands_stress["p50"] * 100, mode="lines",
-                name=f"{name}", line=dict(color=cfg["color"], width=2),
-            ))
-            fig.update_layout(**kite_layout(height=400),
-                              xaxis_title="Trading Days",
-                              yaxis_title="Return %", yaxis_ticksuffix="%")
+
+            for i, ticker in enumerate(tickers):
+                color = COLORS[i % len(COLORS)]
+
+                # Baseline (dashed)
+                fig.add_trace(go.Scatter(
+                    x=cum_base.index,
+                    y=cum_base[ticker] * 100,
+                    mode="lines",
+                    name=f"{ticker} (baseline)",
+                    line=dict(
+                        width=1.5, color=color, dash="dash",
+                    ),
+                    legendgroup=ticker,
+                ))
+
+                # Stressed (solid)
+                fig.add_trace(go.Scatter(
+                    x=cum_stress.index,
+                    y=cum_stress[ticker] * 100,
+                    mode="lines",
+                    name=f"{ticker} (stressed)",
+                    line=dict(width=2, color=color),
+                    legendgroup=ticker,
+                ))
+
+            fig.update_layout(
+                **kite_layout(height=450),
+                yaxis_title="Cumulative Return %",
+                yaxis_ticksuffix="%",
+                hovermode="x unified",
+            )
             st.plotly_chart(fig, use_container_width=True)
 
+            # Per-stock metrics for this scenario
+            cols = st.columns(min(len(tickers), 4))
+            for i, ticker in enumerate(tickers):
+                bv = float(baseline_vols[ticker])
+                sv = float(
+                    stressed_ret[ticker].std() * np.sqrt(252)
+                )
+                change = ((sv / bv) - 1) * 100 if bv > 0 else 0
+                cols[i % len(cols)].metric(
+                    ticker,
+                    f"{sv:.1%} vol",
+                    f"{change:+.0f}% vs baseline",
+                    delta_color="inverse",
+                )
+
+    # --- Portfolio-level summary ---
+    st.markdown("### Portfolio Impact Summary")
+
+    port_ret = portfolio.portfolio_returns
+    port_vol_base = float(port_ret.std() * np.sqrt(252))
+
+    summary_rows = [{"Scenario": "Baseline", "Port Vol": f"{port_vol_base:.2%}",
+                     "Change": "-"}]
+    for sname in SCENARIOS:
+        stressed_port = (stressed_data[sname] * weights).sum(axis=1)
+        sv = float(stressed_port.std() * np.sqrt(252))
+        change = ((sv / port_vol_base) - 1) * 100
+        summary_rows.append({
+            "Scenario": sname,
+            "Port Vol": f"{sv:.2%}",
+            "Change": f"{change:+.1f}%",
+        })
+
+    st.dataframe(
+        pd.DataFrame(summary_rows).set_index("Scenario"),
+        use_container_width=True,
+    )
+
 except Exception:
-    st.warning("Stress scenario analysis requires at least 2 assets with sufficient historical data.")
+    st.warning(
+        "Stress scenario analysis requires at least 2 assets "
+        "with sufficient historical data."
+    )
