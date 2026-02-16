@@ -179,11 +179,10 @@ import plotly.graph_objects as go
 from core.style import COLORS, BLUE, GREEN, RED, kite_layout
 
 # --- Metrics row ---
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 c1.metric("Instruments", summary["n_assets"])
 c2.metric("Data Points", summary["data_points"])
 c3.metric("HHI", f"{summary['hhi']:.3f}")
-c4.metric("Effective N", f"{summary['effective_n']:.1f}")
 
 # --- Live Prices & Sectors ---
 st.markdown("### Live Prices & Sectors")

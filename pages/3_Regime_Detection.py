@@ -8,11 +8,12 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, heatmap_layout, REGIME_COLORS
+from core.style import page_header, kite_layout, heatmap_layout, REGIME_COLORS, COLORS
 from core.regime_detector import (
     MarketRegime,
     detect_regime,
     get_regime_statistics,
+    calculate_rolling_volatility,
 )
 from risk.correlation import calculate_correlation_heatmap_data
 
@@ -35,10 +36,22 @@ if regime_df is None:
 current = regime_df["regime"].iloc[-1]
 st.metric("Current Regime", current)
 
-# --- Timeline ---
+# --- Timeline with individual stock volatilities ---
 st.markdown("### Regime Timeline")
 
 fig = go.Figure()
+
+# Individual stock rolling volatilities
+rolling_vol = calculate_rolling_volatility(returns, window=21)
+for i, ticker in enumerate(portfolio.tickers):
+    fig.add_trace(go.Scatter(
+        x=rolling_vol.index, y=rolling_vol[ticker],
+        mode="lines", name=ticker,
+        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+        opacity=0.7,
+    ))
+
+# Regime markers on top
 for regime in MarketRegime:
     mask = regime_df["regime"] == regime.value
     if mask.any():
@@ -46,12 +59,12 @@ for regime in MarketRegime:
             x=regime_df.index[mask],
             y=regime_df["volatility"][mask],
             mode="markers",
-            name=regime.value,
-            marker=dict(color=REGIME_COLORS[regime.value], size=4),
+            name=f"Regime: {regime.value}",
+            marker=dict(color=REGIME_COLORS[regime.value], size=5, opacity=0.8),
         ))
 
-fig.update_layout(**kite_layout(height=400), yaxis_title="Avg Annualized Volatility",
-                  yaxis_tickformat=".0%")
+fig.update_layout(**kite_layout(height=450), yaxis_title="Annualized Volatility",
+                  yaxis_tickformat=".0%", hovermode="x unified")
 st.plotly_chart(fig, use_container_width=True)
 
 # --- Stats table ---

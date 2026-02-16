@@ -7,8 +7,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, heatmap_layout, BLUE
-from core.regime_detector import calculate_rolling_correlation as rolling_corr_regime
+from core.style import page_header, kite_layout, heatmap_layout, BLUE, COLORS
 from risk.correlation import (
     calculate_correlation_matrix,
     calculate_tail_correlation,
@@ -74,26 +73,8 @@ fig_a = go.Figure(data=go.Heatmap(
 fig_a.update_layout(**heatmap_layout(340))
 st.plotly_chart(fig_a, use_container_width=True)
 
-# --- Rolling correlation ---
-st.markdown("### Rolling Correlation")
-window = st.slider("Window (trading days)", 21, 126, 63, step=21)
-rolling_corr = rolling_corr_regime(returns, window=window)
-
-fig_rc = go.Figure()
-fig_rc.add_trace(go.Scatter(
-    x=rolling_corr.index, y=rolling_corr.values,
-    mode="lines", line=dict(color=BLUE, width=2),
-    name="Avg Pairwise",
-))
-fig_rc.add_hline(y=0.6, line_dash="dash", line_color="#d43725",
-                 annotation_text="Stress threshold (0.6)",
-                 annotation_font_color="#d43725")
-fig_rc.update_layout(**kite_layout(height=380),
-                     yaxis_title="Avg Pairwise Correlation",
-                     yaxis=dict(range=[-0.3, 1.0], gridcolor="#f0f0f0"))
-st.plotly_chart(fig_rc, use_container_width=True)
-
 # --- Stability ---
+window = 63
 st.markdown("### Correlation Stability")
 st.markdown('<p class="muted">Higher = more regime-dependent (less reliable diversification).</p>',
             unsafe_allow_html=True)

@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, GREEN, RED
+from core.style import page_header, kite_layout, BLUE, GREEN, RED, COLORS
 from risk.hedge_analysis import compare_hedges, optimal_hedge_ratio, var_impact
 
 init_session_state()
@@ -82,8 +82,8 @@ fig.update_layout(**kite_layout(height=350), barmode="group",
                   yaxis_title="Loss %", yaxis_ticksuffix="%")
 st.plotly_chart(fig, use_container_width=True)
 
-# --- Cumulative returns comparison ---
-st.markdown("### Performance: Unhedged vs Hedged")
+# --- Cumulative returns comparison with individual stocks ---
+st.markdown("### Performance: Unhedged vs Hedged vs Individual Stocks")
 hedged_ret = port_ret + opt_ratio * returns[best_hedge]
 common = port_ret.index.intersection(hedged_ret.index)
 
@@ -91,14 +91,27 @@ cum_orig = (1 + port_ret.loc[common]).cumprod() - 1
 cum_hedged = (1 + hedged_ret.loc[common]).cumprod() - 1
 
 fig2 = go.Figure()
+
+# Individual stock cumulative returns
+cum_individual = (1 + returns).cumprod() - 1
+for i, ticker in enumerate(portfolio.tickers):
+    fig2.add_trace(go.Scatter(
+        x=cum_individual.index, y=cum_individual[ticker] * 100,
+        mode="lines", name=ticker,
+        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+        opacity=0.6,
+    ))
+
+# Portfolio lines on top
 fig2.add_trace(go.Scatter(
     x=cum_orig.index, y=cum_orig.values * 100,
-    mode="lines", name="Unhedged", line=dict(color=RED, width=2),
+    mode="lines", name="Portfolio (Unhedged)", line=dict(color=RED, width=2.5),
 ))
 fig2.add_trace(go.Scatter(
     x=cum_hedged.index, y=cum_hedged.values * 100,
-    mode="lines", name="Hedged", line=dict(color=GREEN, width=2),
+    mode="lines", name="Portfolio (Hedged)", line=dict(color=GREEN, width=2.5),
 ))
-fig2.update_layout(**kite_layout(height=380),
-                   yaxis_title="Return %", yaxis_ticksuffix="%")
+fig2.update_layout(**kite_layout(height=420),
+                   yaxis_title="Return %", yaxis_ticksuffix="%",
+                   hovermode="x unified")
 st.plotly_chart(fig2, use_container_width=True)

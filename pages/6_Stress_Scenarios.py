@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, RED, ORANGE, PURPLE
+from core.style import page_header, kite_layout, BLUE, RED, ORANGE, PURPLE, COLORS
 from risk.monte_carlo import simulate_paths, simulation_statistics, percentile_bands
 
 init_session_state()
@@ -96,6 +96,21 @@ for name, cfg in SCENARIOS.items():
     results[name] = simulation_statistics(sims)
     all_sims[name] = sims
 
+# --- Per-stock stress impact table ---
+st.markdown("### Per-Stock Stress Impact")
+st.markdown('<p class="muted">Annualized volatility under each scenario vs baseline.</p>', unsafe_allow_html=True)
+
+stock_stress_rows = []
+baseline_vols = returns.std() * np.sqrt(252)
+for ticker in portfolio.tickers:
+    row = {"Ticker": ticker, "Baseline Vol": f"{baseline_vols[ticker]:.2%}"}
+    for name, cfg in SCENARIOS.items():
+        stressed = _stressed_returns(returns, **cfg["params"])
+        stressed_vol = float(stressed[ticker].std() * np.sqrt(252))
+        row[name] = f"{stressed_vol:.2%}"
+    stock_stress_rows.append(row)
+st.dataframe(pd.DataFrame(stock_stress_rows).set_index("Ticker"), use_container_width=True)
+
 # --- Summary table ---
 st.markdown("### Scenario Comparison")
 rows = []
@@ -144,3 +159,18 @@ for tab, (name, cfg) in zip(scenario_tabs, SCENARIOS.items()):
                           xaxis_title="Trading Days",
                           yaxis_title="Return %", yaxis_ticksuffix="%")
         st.plotly_chart(fig, use_container_width=True)
+
+        # Individual stock historical cumulative returns for context
+        st.markdown(f'<p class="muted">Historical individual stock returns for reference:</p>', unsafe_allow_html=True)
+        cum_ret = (1 + returns).cumprod() - 1
+        fig_stocks = go.Figure()
+        for i, ticker in enumerate(portfolio.tickers):
+            fig_stocks.add_trace(go.Scatter(
+                x=cum_ret.index, y=cum_ret[ticker] * 100,
+                mode="lines", name=ticker,
+                line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+            ))
+        fig_stocks.update_layout(**kite_layout(height=300),
+                                 yaxis_title="Cumulative Return %", yaxis_ticksuffix="%",
+                                 hovermode="x unified")
+        st.plotly_chart(fig_stocks, use_container_width=True)
