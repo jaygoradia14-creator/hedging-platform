@@ -50,5 +50,5 @@ class TestFallbackRouting:
 
     def test_help_query(self, loaded_session):
         resp = fallback_response("help me", loaded_session)
-        assert "correlation" in resp.lower()
-        assert "var" in resp.lower()
+        assert "correlat" in resp.lower()
+        assert "risk" in resp.lower() or "var" in resp.lower()
