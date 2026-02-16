@@ -1,9 +1,5 @@
 """Tests for risk/var_cvar.py - 6 tests."""
 
-import numpy as np
-import pandas as pd
-import pytest
-
 from risk.var_cvar import (
     historical_var,
     historical_cvar,

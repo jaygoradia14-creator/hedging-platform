@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, RED, ORANGE, PURPLE, COLORS
+from core.style import page_header, kite_layout, BLUE, RED, ORANGE, PURPLE
 from risk.monte_carlo import simulate_paths, simulation_statistics, percentile_bands
 
 init_session_state()

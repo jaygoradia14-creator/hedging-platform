@@ -3,12 +3,10 @@ Hedge Impact Analysis (Zerodha Kite style).
 """
 
 import streamlit as st
-import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, GREEN, RED, COLORS
+from core.style import page_header, kite_layout, GREEN, RED, COLORS
 from risk.hedge_analysis import compare_hedges, optimal_hedge_ratio, var_impact
 
 init_session_state()

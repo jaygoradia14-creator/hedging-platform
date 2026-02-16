@@ -5,7 +5,7 @@ Standard Cholesky decomposition and regime-aware simulation.
 
 import numpy as np
 import pandas as pd
-from typing import Optional, Tuple
+from typing import Optional
 
 
 def simulate_paths(

@@ -5,8 +5,7 @@ Fetches live prices, sector info, and computes returns.
 
 import pandas as pd
 import numpy as np
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+from typing import Dict, List
 
 
 # Sector mapping for common ETFs and stocks
@@ -105,7 +104,6 @@ def fetch_latest_prices(tickers: List[str]) -> pd.DataFrame:
     for ticker in tickers:
         try:
             tk = yf.Ticker(ticker)
-            info = tk.fast_info
             hist = tk.history(period="5d")
             if len(hist) < 2:
                 continue

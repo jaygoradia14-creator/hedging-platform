@@ -74,6 +74,6 @@ def get_response(user_message: str, session_state) -> str:
 
         return msg.content or "I couldn't generate a response."
 
-    except Exception as e:
+    except Exception:
         # Fall back on any API error
         return fallback_response(user_message, session_state)

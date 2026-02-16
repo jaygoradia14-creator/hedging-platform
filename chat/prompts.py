@@ -48,7 +48,6 @@ def build_analysis_context(session_state) -> str:
     portfolio = getattr(session_state, "portfolio", None)
     if portfolio is not None and portfolio.returns is not None:
         from risk.var_cvar import var_cvar_summary
-        import numpy as np
         try:
             s = var_cvar_summary(portfolio.returns, portfolio.weights, 0.95)
             parts.append(

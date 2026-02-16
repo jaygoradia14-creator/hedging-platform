@@ -4,7 +4,7 @@ Correlation analysis module with emphasis on tail dependence and regime-aware me
 
 import pandas as pd
 import numpy as np
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 
 
 def calculate_correlation_matrix(returns: pd.DataFrame) -> pd.DataFrame:
@@ -24,7 +24,7 @@ def calculate_rolling_correlation_matrix(
     """
     matrices = {}
     for i in range(window, len(returns)):
-        window_returns = returns.iloc[i-window:i]
+        window_returns = returns.iloc[i - window:i]
         matrices[returns.index[i]] = window_returns.corr()
     return matrices
 
@@ -163,12 +163,12 @@ def get_correlation_stability(
     stability_data = {}
 
     for i, col1 in enumerate(returns.columns):
-        for col2 in returns.columns[i+1:]:
+        for col2 in returns.columns[i + 1:]:
             pair_name = f"{col1}-{col2}"
             try:
                 pair_corr = rolling_corr.loc[:, col1].loc[:, col2]
                 stability_data[pair_name] = pair_corr.std()
-            except:
+            except Exception:
                 pass
 
     return pd.Series(stability_data).sort_values(ascending=False)

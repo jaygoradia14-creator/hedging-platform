@@ -3,7 +3,6 @@ OpenAI function-calling tool definitions and executor.
 """
 
 import json
-import numpy as np
 
 TOOL_DEFINITIONS = [
     {

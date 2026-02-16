@@ -2,7 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from risk.correlation import (
     calculate_correlation_matrix,

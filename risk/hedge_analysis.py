@@ -5,7 +5,6 @@ Compares hedging candidates, computes optimal hedge ratios, and measures VaR imp
 
 import numpy as np
 import pandas as pd
-from typing import List, Optional
 
 from risk.var_cvar import historical_var, historical_cvar
 

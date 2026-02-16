@@ -7,7 +7,7 @@ import numpy as np
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, heatmap_layout, BLUE, COLORS
+from core.style import page_header, kite_layout, heatmap_layout, BLUE
 from risk.correlation import (
     calculate_correlation_matrix,
     calculate_tail_correlation,

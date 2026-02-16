@@ -8,7 +8,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, BLUE, RED, GREEN, ORANGE, REGIME_COLORS, COLORS
+from core.style import page_header, kite_layout, REGIME_COLORS, COLORS
 from risk.var_cvar import var_cvar_summary, regime_conditional_var, historical_var, historical_cvar
 
 init_session_state()

@@ -1,14 +1,11 @@
 """Tests for risk/monte_carlo.py - 6 tests."""
 
 import numpy as np
-import pandas as pd
-import pytest
 
 from risk.monte_carlo import (
     simulate_paths,
     regime_aware_simulation,
     simulation_statistics,
-    percentile_bands,
 )
 
 

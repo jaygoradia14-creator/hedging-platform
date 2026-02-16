@@ -89,6 +89,45 @@ PAGE_CSS = """
     footer {visibility: hidden;}
     header[data-testid="stHeader"] { background: #ffffff; border-bottom: 1px solid #e8e8e8; }
 
+    /* Hamburger menu button */
+    [data-testid="stSidebarCollapsedControl"] {
+        top: 0.6rem;
+        left: 0.6rem;
+    }
+    [data-testid="stSidebarCollapsedControl"] button {
+        background: #ffffff !important;
+        border: 1px solid #e0e4eb !important;
+        border-radius: 8px !important;
+        padding: 8px 10px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    [data-testid="stSidebarCollapsedControl"] button:hover {
+        background: #f0f4f8 !important;
+        border-color: #387ed1 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button svg {
+        stroke: #387ed1 !important;
+        width: 22px !important;
+        height: 22px !important;
+    }
+    [data-testid="stSidebarNav"] a {
+        color: #c0c0d0 !important;
+        font-size: 0.85rem !important;
+        font-weight: 500 !important;
+        padding: 0.6rem 1rem !important;
+        border-radius: 6px !important;
+    }
+    [data-testid="stSidebarNav"] a:hover {
+        background: rgba(56, 126, 209, 0.15) !important;
+        color: #ffffff !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-selected="true"] {
+        background: rgba(56, 126, 209, 0.2) !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border-left: 3px solid #387ed1 !important;
+    }
+
     /* ---- MOBILE RESPONSIVE ---- */
     @media (max-width: 768px) {
         .block-container {

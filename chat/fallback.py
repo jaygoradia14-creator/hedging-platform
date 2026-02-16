@@ -45,17 +45,19 @@ def fallback_response(user_message: str, session_state) -> str:
                     f"- **{t1}-{t2} normal correlation:** {nv:.2f}\n"
                     f"- **{t1}-{t2} crash correlation:** {tv:.2f} ({spike:+.2f} spike)\n"
                     f"- **Diversification ratio:** {dr:.2f}\n\n"
-                    f"{'Correlations spike significantly during crashes - your diversification benefit erodes under stress.' if spike > 0.1 else 'Correlations are relatively stable across regimes.'} "
-                    f"A diversification ratio of {dr:.2f} means {'good diversification benefit' if dr > 1.3 else 'moderate diversification' if dr > 1.1 else 'limited diversification benefit'}.\n\n"
-                    f"Visit the **Correlation Analysis** page for heatmaps and rolling timeline."
+                    f"{'Corr spike in crashes.' if spike > 0.1 else 'Corr stable across regimes.'} "
+                    f"Diversification ratio of {dr:.2f} means "
+                    f"{'good' if dr > 1.3 else 'moderate' if dr > 1.1 else 'limited'} diversification.\n\n"
+                    f"Visit the **Correlation Analysis** page for heatmaps."
                 )
             return f"Your portfolio diversification ratio is {dr:.2f}. Visit the Correlation Analysis page for details."
         except Exception:
-            return "Visit the **Correlation Analysis** page to see how your assets correlate during normal and crash periods."
+            return ("Visit the **Correlation Analysis** page to see how "
+                    "your assets correlate during normal and crash periods.")
 
     # --- VaR queries ---
     if any(kw in msg for kw in ["var", "value at risk", "cvar", "expected shortfall",
-                                 "risk metric", "how much can i lose", "worst case", "downside risk"]):
+                                "risk metric", "how much can i lose", "worst case", "downside risk"]):
         try:
             from risk.var_cvar import var_cvar_summary, regime_conditional_var
             s = var_cvar_summary(returns, weights, 0.95)
@@ -75,16 +77,19 @@ def fallback_response(user_message: str, session_state) -> str:
                 if rv:
                     regime_lines = [f"  - {k}: {v:.2%}" for k, v in rv.items() if not (isinstance(v, float) and v != v)]
                     if regime_lines:
-                        response += f"\n\n**VaR by regime:**\n" + "\n".join(regime_lines)
+                        response += "\n\n**VaR by regime:**\n" + "\n".join(regime_lines)
 
-            response += "\n\nVisit the **Risk Metrics** page for Monte Carlo projections and regime-conditional analysis."
+            response += (
+                "\n\nVisit the **Risk Metrics** page for "
+                "regime-conditional analysis."
+            )
             return response
         except Exception:
             return "Visit the **Risk Metrics** page for VaR, CVaR, and Monte Carlo analysis."
 
     # --- Regime queries ---
     if any(kw in msg for kw in ["regime", "volatility", "crisis", "market state", "market condition",
-                                 "what phase", "which regime"]):
+                                "what phase", "which regime"]):
         if regime_df is not None and len(regime_df) > 0:
             current = regime_df["regime"].iloc[-1]
             from core.regime_detector import get_regime_statistics
@@ -93,16 +98,32 @@ def fallback_response(user_message: str, session_state) -> str:
             response = f"**Current Market Regime: {current}**\n\n"
 
             regime_descriptions = {
-                "Low Volatility": "Markets are calm with below-average volatility. Correlations tend to be lower, meaning diversification is working well.",
-                "Normal": "Standard market conditions with typical volatility and correlation levels.",
-                "High Volatility": "Elevated volatility but not yet at crisis levels. Watch for correlation spikes that could reduce diversification benefit.",
-                "Crisis": "Extreme volatility and/or high correlations. Diversification is likely failing - hedging instruments are critical.",
+                "Low Volatility": (
+                    "Markets are calm with below-average volatility. "
+                    "Correlations tend to be lower, diversification works well."
+                ),
+                "Normal": (
+                    "Standard market conditions with typical volatility "
+                    "and correlation levels."
+                ),
+                "High Volatility": (
+                    "Elevated volatility but not at crisis levels. "
+                    "Watch for correlation spikes reducing diversification."
+                ),
+                "Crisis": (
+                    "Extreme volatility and high correlations. "
+                    "Diversification is likely failing - hedging is critical."
+                ),
             }
             response += regime_descriptions.get(current, "") + "\n\n"
 
             response += "**Historical distribution:**\n"
             for name, s in stats.items():
-                response += f"- {name}: {s['pct_time']:.1f}% of time (avg vol: {s['avg_vol']:.2%}, avg corr: {s['avg_corr']:.2f})\n"
+                response += (
+                    f"- {name}: {s['pct_time']:.1f}% of time "
+                    f"(avg vol: {s['avg_vol']:.2%}, "
+                    f"avg corr: {s['avg_corr']:.2f})\n"
+                )
 
             response += "\nVisit the **Regime Detection** page for timeline and regime-conditional correlations."
             return response
@@ -110,7 +131,7 @@ def fallback_response(user_message: str, session_state) -> str:
 
     # --- Hedge queries ---
     if any(kw in msg for kw in ["hedge", "protect", "insurance", "downside", "reduce risk",
-                                 "best hedge", "hedge ratio", "which asset"]):
+                                "best hedge", "hedge ratio", "which asset"]):
         if len(tickers) > 1:
             try:
                 from risk.hedge_analysis import compare_hedges, optimal_hedge_ratio, var_impact
@@ -139,7 +160,11 @@ def fallback_response(user_message: str, session_state) -> str:
                     response += "**Other candidates:**\n"
                     for ticker in comparison.index[1:]:
                         row = comparison.loc[ticker]
-                        response += f"- {ticker}: variance reduction {row['variance_reduction']:.1%}, corr {row['correlation']:.3f}\n"
+                        response += (
+                            f"- {ticker}: var reduction "
+                            f"{row['variance_reduction']:.1%}, "
+                            f"corr {row['correlation']:.3f}\n"
+                        )
 
                 response += "\nVisit the **Hedge Impact** page for detailed comparison charts."
                 return response
@@ -149,7 +174,7 @@ def fallback_response(user_message: str, session_state) -> str:
 
     # --- Stress scenario queries ---
     if any(kw in msg for kw in ["stress", "scenario", "crash", "what if", "worst case scenario",
-                                 "black swan", "tail risk"]):
+                                "black swan", "tail risk"]):
         return (
             "**Stress Scenarios** test your portfolio against 4 extreme events:\n\n"
             "1. **Correlation Shock** - All correlations spike toward 1 (diversification fails)\n"
@@ -168,8 +193,9 @@ def fallback_response(user_message: str, session_state) -> str:
             return (
                 f"**HHI (Herfindahl-Hirschman Index)** measures portfolio concentration.\n\n"
                 f"- Ranges from 1/n (perfectly diversified) to 1 (single asset)\n"
-                f"- Your HHI: **{hhi:.4f}** (effective {portfolio.effective_n():.1f} assets)\n"
-                f"- {'Well diversified' if hhi < 0.3 else 'Moderately concentrated' if hhi < 0.5 else 'Highly concentrated'}"
+                f"- Your HHI: **{hhi:.4f}** "
+                f"(effective {portfolio.effective_n():.1f} assets)\n"
+                f"- {'Well diversified' if hhi < 0.3 else 'Moderate' if hhi < 0.5 else 'Highly concentrated'}"
             )
         if "sharpe" in msg:
             ann_ret = returns.mean() * 252

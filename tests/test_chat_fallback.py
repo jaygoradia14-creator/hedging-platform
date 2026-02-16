@@ -1,8 +1,7 @@
 """Tests for chat/fallback.py - 5 tests."""
 
 import numpy as np
-import pandas as pd
-import pytest
+import pytest  # noqa: F401
 from types import SimpleNamespace
 
 from chat.fallback import fallback_response

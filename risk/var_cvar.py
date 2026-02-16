@@ -5,7 +5,6 @@ Historical, parametric, and regime-conditional approaches.
 
 import numpy as np
 import pandas as pd
-from typing import Optional
 from scipy import stats as sp_stats
 
 

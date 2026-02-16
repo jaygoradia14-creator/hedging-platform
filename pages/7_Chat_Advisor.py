@@ -57,7 +57,10 @@ if st.session_state.data_loaded:
         f"<strong>Regime:</strong> {current_regime}",
     ]
     if var_s:
-        ctx_parts.append(f"<strong>95% VaR:</strong> {var_s['historical_var']:.2%} | <strong>CVaR:</strong> {var_s['historical_cvar']:.2%}")
+        ctx_parts.append(
+            f"<strong>95% VaR:</strong> {var_s['historical_var']:.2%} "
+            f"| <strong>CVaR:</strong> {var_s['historical_cvar']:.2%}"
+        )
     if div_ratio:
         ctx_parts.append(f"<strong>Diversification Ratio:</strong> {div_ratio:.2f}")
 
@@ -67,7 +70,8 @@ if st.session_state.data_loaded:
     )
 else:
     st.markdown(
-        '<div class="chat-context">No portfolio loaded. Load data from the sidebar to enable context-aware responses.</div>',
+        '<div class="chat-context">No portfolio loaded. '
+        'Load data from the sidebar to enable context-aware responses.</div>',
         unsafe_allow_html=True,
     )
 

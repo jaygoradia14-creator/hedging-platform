@@ -1,8 +1,6 @@
 """Tests for core/regime_detector.py - 8 tests."""
 
-import numpy as np
 import pandas as pd
-import pytest
 
 from core.regime_detector import (
     MarketRegime,

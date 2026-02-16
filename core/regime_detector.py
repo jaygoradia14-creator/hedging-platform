@@ -5,7 +5,7 @@ Identifies market regimes: Low Vol, Normal, High Vol, Crisis
 
 import pandas as pd
 import numpy as np
-from typing import Dict, Tuple, Optional
+from typing import Dict, Tuple
 from enum import Enum
 
 
@@ -36,7 +36,7 @@ def calculate_rolling_correlation(
 
     # Calculate average correlation at each timestamp
     avg_corr = []
-    dates = returns.index[window-1:]
+    dates = returns.index[window - 1:]
 
     for date in dates:
         try:
@@ -48,7 +48,7 @@ def calculate_rolling_correlation(
                 avg_corr.append(np.nanmean(upper_triangle))
             else:
                 avg_corr.append(np.nan)
-        except:
+        except Exception:
             avg_corr.append(np.nan)
 
     return pd.Series(avg_corr, index=dates, name='avg_correlation')

@@ -8,12 +8,11 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, heatmap_layout, REGIME_COLORS, COLORS
+from core.style import page_header, kite_layout, heatmap_layout, REGIME_COLORS
 from core.regime_detector import (
     MarketRegime,
     detect_regime,
     get_regime_statistics,
-    calculate_rolling_volatility,
 )
 from risk.correlation import calculate_correlation_heatmap_data
 

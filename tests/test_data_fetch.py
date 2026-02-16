@@ -2,12 +2,8 @@
 
 import numpy as np
 import pandas as pd
-import pytest
-from unittest.mock import patch, MagicMock
 
 from core.data_fetch import (
-    fetch_stock_data,
-    fetch_multi_asset_data,
     calculate_returns,
     ASSET_UNIVERSE,
     get_default_tickers,
@@ -60,7 +56,7 @@ class TestPortfolioDataclass:
     def test_default_weights(self):
         from core.portfolio import Portfolio
         p = Portfolio(tickers=["A", "B", "C"])
-        np.testing.assert_array_almost_equal(p.weights, [1/3, 1/3, 1/3])
+        np.testing.assert_array_almost_equal(p.weights, [1 / 3, 1 / 3, 1 / 3])
 
     def test_n_assets(self):
         from core.portfolio import Portfolio
