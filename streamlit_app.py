@@ -12,7 +12,7 @@ st.set_page_config(
     page_title="Hedging Platform",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
 
 # ---------------------------------------------------------------------------
@@ -26,121 +26,161 @@ st.markdown("""
     }
     .stApp { background-color: #ffffff; }
 
-    /* Sidebar styling */
-    [data-testid="stSidebar"] { background-color: #1a1a2e; }
-    [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
+    /* ========== GROWW-STYLE SIDEBAR ========== */
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e8e8e8;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1rem;
+    }
+    /* Sidebar text defaults */
     [data-testid="stSidebar"] .stTextInput label,
     [data-testid="stSidebar"] .stSelectbox label {
-        color: #9b9baf !important; font-size: 0.75rem;
-        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;
+        color: #8b8b8b !important; font-size: 0.7rem;
+        text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
     }
     [data-testid="stSidebar"] .stMarkdown h2 {
-        color: #ffffff !important; font-size: 0.85rem; text-transform: uppercase;
-        letter-spacing: 0.08em; font-weight: 600;
-        border-bottom: 1px solid #2d2d44; padding-bottom: 0.5rem;
+        color: #44475b !important; font-size: 0.75rem; text-transform: uppercase;
+        letter-spacing: 0.08em; font-weight: 700;
+        border-bottom: 1px solid #eef0f4; padding-bottom: 0.5rem;
     }
-    [data-testid="stSidebar"] hr { border-color: #2d2d44; }
+    [data-testid="stSidebar"] hr { border-color: #eef0f4; }
 
-    /* Topbar */
+    /* Sidebar page navigation - Groww style */
+    [data-testid="stSidebarNav"] {
+        padding-top: 0.5rem;
+        border-bottom: 1px solid #eef0f4;
+        padding-bottom: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    [data-testid="stSidebarNav"] li {
+        margin: 2px 8px;
+    }
+    [data-testid="stSidebarNav"] a {
+        color: #44475b !important;
+        font-size: 0.88rem !important;
+        font-weight: 500 !important;
+        padding: 0.55rem 0.8rem !important;
+        border-radius: 8px !important;
+        transition: all 0.15s ease !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+    [data-testid="stSidebarNav"] a span {
+        color: #44475b !important;
+    }
+    [data-testid="stSidebarNav"] a:hover {
+        background: #f0f7ff !important;
+        color: #5367ff !important;
+    }
+    [data-testid="stSidebarNav"] a:hover span {
+        color: #5367ff !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-selected="true"] {
+        background: #f0f7ff !important;
+        color: #5367ff !important;
+        font-weight: 600 !important;
+        border-left: 3px solid #5367ff !important;
+    }
+    [data-testid="stSidebarNav"] a[aria-selected="true"] span {
+        color: #5367ff !important;
+    }
+
+    /* Hamburger button - Groww style (top left) */
+    button[kind="header"] {
+        color: #44475b !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        top: 0.5rem;
+        left: 0.5rem;
+        z-index: 999;
+    }
+    [data-testid="stSidebarCollapsedControl"] button,
+    [data-testid="collapsedControl"] button {
+        background: #ffffff !important;
+        border: 1px solid #e0e4eb !important;
+        border-radius: 10px !important;
+        padding: 6px 8px !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.2s;
+    }
+    [data-testid="stSidebarCollapsedControl"] button:hover,
+    [data-testid="collapsedControl"] button:hover {
+        background: #f0f7ff !important;
+        border-color: #5367ff !important;
+        box-shadow: 0 2px 12px rgba(83,103,255,0.15);
+    }
+    [data-testid="stSidebarCollapsedControl"] button svg,
+    [data-testid="collapsedControl"] button svg {
+        stroke: #5367ff !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+    /* Close button inside sidebar */
+    [data-testid="stSidebarCollapseButton"] button {
+        color: #8b8b8b !important;
+        background: transparent !important;
+        border: none !important;
+    }
+    [data-testid="stSidebarCollapseButton"] button:hover {
+        color: #44475b !important;
+    }
+
+    /* ========== TOPBAR ========== */
     .kite-topbar {
         display: flex; align-items: center; justify-content: space-between;
         border-bottom: 1px solid #e8e8e8; padding: 0.6rem 0; margin-bottom: 1.5rem;
     }
-    .kite-logo { font-size: 1.4rem; font-weight: 700; color: #387ed1; letter-spacing: -0.02em; }
-    .kite-logo span { color: #999; font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem; }
+    .kite-logo {
+        font-size: 1.4rem; font-weight: 700; color: #5367ff;
+        letter-spacing: -0.02em;
+    }
+    .kite-logo span {
+        color: #999; font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;
+    }
 
-    /* Metrics */
+    /* ========== METRICS ========== */
     [data-testid="stMetric"] {
-        background: #fff; border: 1px solid #e8e8e8; border-radius: 4px; padding: 1rem 1.2rem;
+        background: #fff; border: 1px solid #e8e8e8;
+        border-radius: 8px; padding: 1rem 1.2rem;
     }
     [data-testid="stMetric"] label {
-        color: #999 !important; font-size: 0.7rem !important;
+        color: #8b8b8b !important; font-size: 0.7rem !important;
         text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600 !important;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #333 !important; font-size: 1.4rem !important; font-weight: 600 !important;
+        color: #44475b !important; font-size: 1.4rem !important; font-weight: 600 !important;
     }
 
-    /* Headings */
+    /* ========== HEADINGS ========== */
     .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
-        color: #333; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
+        color: #44475b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
         letter-spacing: 0.05em; border-bottom: 1px solid #e8e8e8;
         padding-bottom: 0.5rem; margin-top: 2rem;
     }
 
-    /* Utility classes */
+    /* ========== UTILITY ========== */
     .profit { color: #00b386; font-weight: 600; }
-    .loss { color: #d43725; font-weight: 600; }
-    .muted { color: #999; font-size: 0.8rem; }
+    .loss { color: #eb5b3c; font-weight: 600; }
+    .muted { color: #8b8b8b; font-size: 0.8rem; }
 
-    /* Hide default Streamlit elements */
-    footer {visibility: hidden;}
-    header[data-testid="stHeader"] { background: #ffffff; border-bottom: 1px solid #e8e8e8; }
-
-    /* Hamburger menu button (three dashes) */
-    [data-testid="stSidebarCollapsedControl"] {
-        top: 0.6rem;
-        left: 0.6rem;
-    }
-    [data-testid="stSidebarCollapsedControl"] button {
-        background: #ffffff !important;
-        border: 1px solid #e0e4eb !important;
-        border-radius: 8px !important;
-        padding: 8px 10px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-        transition: all 0.2s;
-    }
-    [data-testid="stSidebarCollapsedControl"] button:hover {
-        background: #f0f4f8 !important;
-        border-color: #387ed1 !important;
-    }
-    [data-testid="stSidebarCollapsedControl"] button svg {
-        stroke: #387ed1 !important;
-        width: 22px !important;
-        height: 22px !important;
-    }
-    /* Style the sidebar close button */
-    [data-testid="stSidebarNavCollapseIcon"],
-    [data-testid="stSidebarCollapseButton"] {
-        margin-top: 0.5rem;
-    }
-    [data-testid="stSidebarCollapseButton"] button {
-        color: #e0e0e0 !important;
-    }
-    /* Sidebar nav links styling */
-    [data-testid="stSidebarNav"] {
-        padding-top: 1rem;
-    }
-    [data-testid="stSidebarNav"] a {
-        color: #c0c0d0 !important;
-        font-size: 0.85rem !important;
-        font-weight: 500 !important;
-        padding: 0.6rem 1rem !important;
-        border-radius: 6px !important;
-        transition: all 0.2s !important;
-    }
-    [data-testid="stSidebarNav"] a:hover {
-        background: rgba(56, 126, 209, 0.15) !important;
-        color: #ffffff !important;
-    }
-    [data-testid="stSidebarNav"] a[aria-selected="true"] {
-        background: rgba(56, 126, 209, 0.2) !important;
-        color: #ffffff !important;
-        font-weight: 600 !important;
-        border-left: 3px solid #387ed1 !important;
+    /* ========== HEADER ========== */
+    footer { visibility: hidden; }
+    header[data-testid="stHeader"] {
+        background: #ffffff;
+        border-bottom: 1px solid #e8e8e8;
     }
 
-    /* ---- MOBILE RESPONSIVE ---- */
+    /* ========== MOBILE ========== */
     @media (max-width: 768px) {
-        /* Reduce padding on mobile */
         .block-container {
             padding-left: 1rem !important;
             padding-right: 1rem !important;
             padding-top: 1rem !important;
         }
-
-        /* Topbar responsive */
         .kite-topbar {
             flex-direction: column;
             align-items: flex-start;
@@ -148,47 +188,21 @@ st.markdown("""
         }
         .kite-logo { font-size: 1.1rem; }
         .kite-logo span { font-size: 0.7rem; }
-
-        /* Metrics scale down */
-        [data-testid="stMetric"] {
-            padding: 0.6rem 0.8rem;
-        }
+        [data-testid="stMetric"] { padding: 0.6rem 0.8rem; }
         [data-testid="stMetric"] [data-testid="stMetricValue"] {
             font-size: 1.1rem !important;
         }
-        [data-testid="stMetric"] label {
-            font-size: 0.6rem !important;
-        }
-
-        /* Columns stack on mobile */
-        [data-testid="stHorizontalBlock"] {
-            flex-wrap: wrap;
-        }
+        [data-testid="stMetric"] label { font-size: 0.6rem !important; }
+        [data-testid="stHorizontalBlock"] { flex-wrap: wrap; }
         [data-testid="stHorizontalBlock"] > div {
             flex: 1 1 100% !important;
             min-width: 100% !important;
         }
-
-        /* Tables scroll horizontally */
-        [data-testid="stDataFrame"] {
-            overflow-x: auto;
-        }
-
-        /* Headings smaller */
-        .stApp h2, .stApp h3 {
-            font-size: 0.75rem;
-            margin-top: 1.5rem;
-        }
-
-        /* Charts responsive */
-        .js-plotly-plot {
-            width: 100% !important;
-        }
-
+        [data-testid="stDataFrame"] { overflow-x: auto; }
+        .stApp h2, .stApp h3 { font-size: 0.75rem; margin-top: 1.5rem; }
+        .js-plotly-plot { width: 100% !important; }
         .muted { font-size: 0.7rem; }
     }
-
-    /* Small phone */
     @media (max-width: 480px) {
         .block-container {
             padding-left: 0.5rem !important;
