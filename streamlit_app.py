@@ -219,8 +219,10 @@ st.markdown("""
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
-from core.portfolio import init_session_state, Portfolio  # noqa: E402
-from core.data_fetch import fetch_multi_asset_data, calculate_returns, fetch_latest_prices, get_sectors  # noqa: E402
+from core.portfolio import init_session_state, Portfolio, add_holding, sell_holding, get_holdings_summary  # noqa: E402
+from core.data_fetch import (  # noqa: E402
+    fetch_multi_asset_data, calculate_returns, fetch_latest_prices, get_sectors, POPULAR_TICKERS,
+)
 from core.regime_detector import detect_regime  # noqa: E402
 
 init_session_state()
@@ -231,10 +233,11 @@ init_session_state()
 with st.sidebar:
     st.markdown("## Portfolio")
 
-    ticker_input = st.text_input(
+    tickers = st.multiselect(
         "INSTRUMENTS",
-        value=", ".join(st.session_state.portfolio.tickers),
-        help="Enter 2-8 ticker symbols (e.g. SPY, TLT, GLD, QQQ, EFA)",
+        options=POPULAR_TICKERS,
+        default=st.session_state.portfolio.tickers,
+        help="Search and select 2-8 ticker symbols",
     )
 
     period = st.selectbox(
@@ -243,8 +246,6 @@ with st.sidebar:
         index=2,
         format_func=lambda x: f"{x}Y",
     )
-
-    tickers = [t.strip().upper() for t in ticker_input.split(",") if t.strip()]
 
     load_clicked = st.button("Load Data", type="primary", use_container_width=True)
 
@@ -385,6 +386,97 @@ with col_table:
     }, index=portfolio.tickers)
     stats_df.index.name = "Instrument"
     st.dataframe(stats_df, use_container_width=True, height=300)
+
+# --- My Holdings ---
+st.markdown("### My Holdings")
+
+# Summary metrics (top of holdings)
+holdings = st.session_state.holdings
+if holdings:
+    # Gather current prices for held tickers
+    held_tickers = list(holdings.keys())
+    current_price_map = {}
+    if live_df is not None and not live_df.empty:
+        for _, row in live_df.iterrows():
+            if pd.notna(row.get("Price")):
+                current_price_map[row["Ticker"]] = row["Price"]
+    # Fetch prices for tickers not in live_df
+    missing = [t for t in held_tickers if t not in current_price_map]
+    if missing:
+        extra = fetch_latest_prices(missing)
+        for _, row in extra.iterrows():
+            if pd.notna(row.get("Price")):
+                current_price_map[row["Ticker"]] = row["Price"]
+
+    rows = get_holdings_summary(current_price_map)
+    if rows:
+        total_invested = sum(r["Shares"] * r["Buy Price"] for r in rows)
+        total_value = sum(r["Value"] for r in rows)
+        total_pnl = total_value - total_invested
+        total_pnl_pct = (total_pnl / total_invested * 100) if total_invested else 0.0
+
+        hc1, hc2, hc3, hc4 = st.columns(4)
+        hc1.metric("Total Invested", f"${total_invested:,.2f}")
+        hc2.metric("Current Value", f"${total_value:,.2f}")
+        hc3.metric("Total P&L", f"${total_pnl:+,.2f}")
+        hc4.metric("P&L %", f"{total_pnl_pct:+.2f}%")
+
+        # Holdings table with color-coded P&L
+        styled_rows = []
+        for r in rows:
+            styled_rows.append({
+                "Ticker": r["Ticker"],
+                "Shares": f"{r['Shares']:.2f}",
+                "Buy Price": f"${r['Buy Price']:,.2f}",
+                "Current Price": f"${r['Current Price']:,.2f}",
+                "Value": f"${r['Value']:,.2f}",
+                "P&L": f"${r['P&L']:+,.2f}",
+                "P&L %": f"{r['P&L %']:+.2f}%",
+            })
+        st.dataframe(pd.DataFrame(styled_rows).set_index("Ticker"), use_container_width=True)
+
+        # Sell per stock
+        for r in rows:
+            with st.expander(f"Sell {r['Ticker']}"):
+                max_shares = r["Shares"]
+                sell_qty = st.number_input(
+                    f"Shares to sell ({r['Ticker']})",
+                    min_value=0.0, max_value=float(max_shares),
+                    value=0.0, step=1.0, key=f"sell_{r['Ticker']}",
+                )
+                if st.button(f"Sell {r['Ticker']}", key=f"sell_btn_{r['Ticker']}"):
+                    if sell_qty > 0:
+                        sell_holding(r["Ticker"], sell_qty)
+                        st.success(f"Sold {sell_qty:.2f} shares of {r['Ticker']}")
+                        st.rerun()
+    else:
+        st.info("No holdings yet. Use the form below to add stocks.")
+else:
+    st.info("No holdings yet. Use the form below to add stocks.")
+
+# Add Stock form
+with st.expander("Add Stock to Holdings", expanded=not bool(holdings)):
+    add_col1, add_col2, add_col3 = st.columns(3)
+    with add_col1:
+        add_ticker = st.selectbox(
+            "Ticker", options=portfolio.tickers, key="add_ticker_select",
+        )
+    with add_col2:
+        add_shares = st.number_input("Shares", min_value=0.01, value=1.0, step=1.0, key="add_shares")
+    with add_col3:
+        # Default buy price = current price if available
+        default_price = 0.0
+        if live_df is not None and not live_df.empty:
+            match = live_df[live_df["Ticker"] == add_ticker]
+            if not match.empty and pd.notna(match.iloc[0]["Price"]):
+                default_price = float(match.iloc[0]["Price"])
+        add_price = st.number_input(
+            "Buy Price", min_value=0.01, value=max(default_price, 0.01), step=0.01, key="add_price",
+        )
+    if st.button("Add to Holdings", type="primary", key="add_holding_btn"):
+        add_holding(add_ticker, add_shares, add_price)
+        st.success(f"Added {add_shares:.2f} shares of {add_ticker} at ${add_price:,.2f}")
+        st.rerun()
 
 # --- Individual stock price charts ---
 st.markdown("### Individual Price History")

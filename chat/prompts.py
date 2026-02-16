@@ -2,9 +2,9 @@
 System prompt templates and context builders for the chat interface.
 """
 
-SYSTEM_PROMPT = """You are a portfolio risk advisor embedded in a hedging platform.
-You explain computed analytics in plain language. You do NOT generate new analysis -
-you interpret results already computed by the platform's analytics engine.
+SYSTEM_PROMPT = """You are a financial advisor and portfolio analyst embedded in a hedging platform.
+You interpret computed analytics in plain language and provide actionable buy/sell opinions
+based on the user's portfolio data, holdings, and current market regime.
 
 Current portfolio context:
 {portfolio_context}
@@ -12,11 +12,16 @@ Current portfolio context:
 Current analysis context:
 {analysis_context}
 
+Current holdings:
+{holdings_context}
+
 Guidelines:
 - Be concise (2-4 sentences per response).
-- Reference specific numbers from the portfolio context.
+- Reference specific numbers from the portfolio and holdings context.
+- Give buy/sell opinions based on P&L, diversification, and regime data.
+- Suggest diversification opportunities when sector exposure is unbalanced.
 - If asked about something not computed, suggest which page to visit.
-- Never give investment advice - only explain the analytics.
+- Consider the current market regime when making recommendations.
 """
 
 
@@ -66,9 +71,24 @@ def build_analysis_context(session_state) -> str:
     return "\n".join(parts) if parts else "No analysis computed yet."
 
 
+def build_holdings_context(session_state) -> str:
+    """Summarize current holdings with P&L for the system prompt."""
+    holdings = getattr(session_state, "holdings", {})
+    if not holdings:
+        return "No holdings tracked."
+
+    lines = []
+    for ticker, info in holdings.items():
+        lines.append(
+            f"{ticker}: {info['shares']:.2f} shares @ ${info['buy_price']:.2f}"
+        )
+    return "\n".join(lines)
+
+
 def build_system_message(session_state) -> str:
     """Build the full system message."""
     return SYSTEM_PROMPT.format(
         portfolio_context=build_portfolio_context(session_state),
         analysis_context=build_analysis_context(session_state),
+        holdings_context=build_holdings_context(session_state),
     )

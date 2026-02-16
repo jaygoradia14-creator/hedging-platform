@@ -85,6 +85,8 @@ def init_session_state():
         st.session_state.regime_df = None
     if "data_loaded" not in st.session_state:
         st.session_state.data_loaded = False
+    if "holdings" not in st.session_state:
+        st.session_state.holdings = {}  # {ticker: {shares: float, buy_price: float}}
 
 
 def update_portfolio(tickers: List[str], weights: Optional[np.ndarray] = None):
@@ -94,3 +96,64 @@ def update_portfolio(tickers: List[str], weights: Optional[np.ndarray] = None):
     st.session_state.portfolio = Portfolio(tickers=tickers, weights=weights)
     st.session_state.data_loaded = False
     st.session_state.regime_df = None
+
+
+def add_holding(ticker: str, shares: float, buy_price: float):
+    """Add or update a holding in session state."""
+    import streamlit as st
+
+    holdings = st.session_state.holdings
+    if ticker in holdings:
+        # Average cost basis
+        existing = holdings[ticker]
+        total_shares = existing["shares"] + shares
+        total_cost = (existing["shares"] * existing["buy_price"]) + (shares * buy_price)
+        holdings[ticker] = {"shares": total_shares, "buy_price": total_cost / total_shares}
+    else:
+        holdings[ticker] = {"shares": shares, "buy_price": buy_price}
+
+
+def sell_holding(ticker: str, shares_to_sell: float):
+    """Sell shares of a holding. Remove the holding if shares reach 0."""
+    import streamlit as st
+
+    holdings = st.session_state.holdings
+    if ticker not in holdings:
+        return
+    remaining = holdings[ticker]["shares"] - shares_to_sell
+    if remaining <= 0:
+        del holdings[ticker]
+    else:
+        holdings[ticker]["shares"] = remaining
+
+
+def get_holdings_summary(current_prices: dict) -> List[dict]:
+    """Build holdings summary with P&L using current prices.
+
+    Args:
+        current_prices: {ticker: current_price} mapping.
+
+    Returns:
+        List of dicts with ticker, shares, buy_price, current_price, value, pnl, pnl_pct.
+    """
+    import streamlit as st
+
+    rows = []
+    for ticker, info in st.session_state.holdings.items():
+        cur = current_prices.get(ticker)
+        if cur is None:
+            continue
+        value = info["shares"] * cur
+        cost = info["shares"] * info["buy_price"]
+        pnl = value - cost
+        pnl_pct = (pnl / cost * 100) if cost != 0 else 0.0
+        rows.append({
+            "Ticker": ticker,
+            "Shares": info["shares"],
+            "Buy Price": info["buy_price"],
+            "Current Price": cur,
+            "Value": value,
+            "P&L": pnl,
+            "P&L %": pnl_pct,
+        })
+    return rows

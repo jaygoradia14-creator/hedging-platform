@@ -22,6 +22,122 @@ def fallback_response(user_message: str, session_state) -> str:
     weights = portfolio.weights
     tickers = portfolio.tickers
 
+    # --- Buy advice ---
+    if any(kw in msg for kw in ["best stocks", "should i buy", "recommend", "invest in",
+                                "good stocks", "what to buy", "buy recommendation"]):
+        try:
+            from core.data_fetch import get_sectors
+            sector_counts = {}
+            for t in tickers:
+                sec = get_sectors([t])[t]
+                sector_counts[sec] = sector_counts.get(sec, 0) + 1
+
+            held = getattr(session_state, "holdings", {})
+            held_sectors = {}
+            for ht in held:
+                sec = get_sectors([ht])[ht]
+                held_sectors[sec] = held_sectors.get(sec, 0) + 1
+
+            regime_text = ""
+            if regime_df is not None and len(regime_df) > 0:
+                current = regime_df["regime"].iloc[-1]
+                regime_text = f"We are in a **{current}** regime. "
+
+            missing_sectors = [s for s in ["Technology", "Healthcare", "Energy", "Financials",
+                                           "Consumer Staples", "Gold", "Long-Term Treasury"]
+                               if s not in sector_counts and s not in held_sectors]
+
+            response = f"**Buy Suggestions based on your portfolio:**\n\n{regime_text}"
+            response += f"Your portfolio covers: {', '.join(sorted(sector_counts.keys()))}.\n\n"
+            if missing_sectors:
+                response += f"Consider diversifying into: **{', '.join(missing_sectors[:4])}**.\n\n"
+            if regime_df is not None and len(regime_df) > 0:
+                current = regime_df["regime"].iloc[-1]
+                if current in ("Crisis", "High Volatility"):
+                    response += ("In elevated-volatility regimes, consider defensive assets like "
+                                 "**TLT** (treasuries), **GLD** (gold), or **XLU** (utilities).\n")
+                else:
+                    response += ("In the current low-to-normal volatility environment, growth-oriented "
+                                 "assets like **QQQ** or sector ETFs may offer upside.\n")
+            return response
+        except Exception:
+            return "Load your portfolio first to get personalized buy suggestions."
+
+    # --- Sell advice ---
+    if any(kw in msg for kw in ["should i sell", "take profit", "cut losses", "exit position",
+                                "sell advice", "time to sell"]):
+        try:
+            held = getattr(session_state, "holdings", {})
+            if not held:
+                return ("You don't have any holdings tracked yet. "
+                        "Add stocks in the **My Holdings** section to get sell advice.")
+
+            import pandas as _pd
+            from core.data_fetch import fetch_latest_prices as _flp
+            held_tickers = list(held.keys())
+            live = _flp(held_tickers)
+            price_map = {}
+            for _, row in live.iterrows():
+                if _pd.notna(row.get("Price")):
+                    price_map[row["Ticker"]] = row["Price"]
+
+            from core.portfolio import get_holdings_summary
+            rows = get_holdings_summary(price_map)
+
+            regime_text = ""
+            if regime_df is not None and len(regime_df) > 0:
+                current = regime_df["regime"].iloc[-1]
+                regime_text = f"Current regime: **{current}**. "
+
+            response = f"**Sell Analysis for your holdings:**\n\n{regime_text}\n"
+            for r in rows:
+                pnl_label = "profit" if r["P&L"] >= 0 else "loss"
+                response += (f"- **{r['Ticker']}**: {r['Shares']:.1f} shares, "
+                             f"P&L ${r['P&L']:+,.2f} ({r['P&L %']:+.1f}%) — ")
+                if r["P&L %"] > 20:
+                    response += "Consider taking partial profit.\n"
+                elif r["P&L %"] < -15:
+                    response += "Significant {}, review your thesis.\n".format(pnl_label)
+                else:
+                    response += "Hold for now.\n"
+
+            if regime_df is not None and len(regime_df) > 0:
+                current = regime_df["regime"].iloc[-1]
+                if current == "Crisis":
+                    response += ("\nIn **Crisis** regime, consider reducing high-beta positions "
+                                 "and increasing defensive allocations.")
+                elif current == "High Volatility":
+                    response += "\nIn **High Volatility**, tighten stop-losses and watch for breakdowns."
+            return response
+        except Exception:
+            return "Add holdings in the **My Holdings** section to get personalized sell advice."
+
+    # --- Market outlook ---
+    if any(kw in msg for kw in ["market outlook", "sector performance", "market trend",
+                                "market forecast", "market direction"]):
+        try:
+            response = "**Market Outlook:**\n\n"
+            if regime_df is not None and len(regime_df) > 0:
+                current = regime_df["regime"].iloc[-1]
+                from core.regime_detector import get_regime_statistics
+                stats = get_regime_statistics(regime_df)
+                response += f"Current regime: **{current}**\n\n"
+                for name, s in stats.items():
+                    response += (f"- {name}: {s['pct_time']:.1f}% of time "
+                                 f"(vol: {s['avg_vol']:.2%}, corr: {s['avg_corr']:.2f})\n")
+                response += "\n"
+
+            import numpy as np
+            port_ret = portfolio.portfolio_returns
+            ann_ret = float(port_ret.mean() * 252)
+            ann_vol = float(port_ret.std() * np.sqrt(252))
+            response += (f"Portfolio annualized return: **{ann_ret:+.2%}**, "
+                         f"volatility: **{ann_vol:.2%}**.\n\n")
+            response += "Visit **Regime Detection** and **Risk Metrics** pages for deeper analysis."
+            return response
+        except Exception:
+            return "Load portfolio data to see market outlook analysis."
+
     # --- Correlation queries ---
     if any(kw in msg for kw in ["correlation", "corr", "diversif", "how correlated", "move together"]):
         try:

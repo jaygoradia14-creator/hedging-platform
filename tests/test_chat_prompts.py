@@ -24,12 +24,13 @@ def loaded_session(returns_data, price_data, regime_df):
         portfolio=portfolio,
         regime_df=regime_df,
         data_loaded=True,
+        holdings={},
     )
 
 
 @pytest.fixture
 def empty_session():
-    return SimpleNamespace(portfolio=None, regime_df=None, data_loaded=False)
+    return SimpleNamespace(portfolio=None, regime_df=None, data_loaded=False, holdings={})
 
 
 class TestContextBuilders:
@@ -52,5 +53,5 @@ class TestContextBuilders:
 
     def test_system_message_structure(self, loaded_session):
         msg = build_system_message(loaded_session)
-        assert "portfolio risk advisor" in msg.lower()
+        assert "financial advisor" in msg.lower()
         assert "SPY" in msg

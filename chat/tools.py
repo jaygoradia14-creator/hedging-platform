@@ -55,6 +55,14 @@ TOOL_DEFINITIONS = [
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_holdings",
+            "description": "Get current user holdings with P&L data (positions, prices, profit/loss).",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
 ]
 
 
@@ -101,5 +109,29 @@ def execute_tool(name: str, arguments: dict, session_state) -> str:
         current = regime_df["regime"].iloc[-1]
         stats = get_regime_statistics(regime_df)
         return json.dumps({"current_regime": current, "statistics": stats})
+
+    elif name == "get_holdings":
+        import pandas as pd
+        holdings = getattr(session_state, "holdings", {})
+        if not holdings:
+            return json.dumps({"holdings": [], "message": "No holdings tracked."})
+        from core.data_fetch import fetch_latest_prices
+        held_tickers = list(holdings.keys())
+        live = fetch_latest_prices(held_tickers)
+        price_map = {}
+        for _, row in live.iterrows():
+            if pd.notna(row.get("Price")):
+                price_map[row["Ticker"]] = row["Price"]
+        from core.portfolio import get_holdings_summary
+        rows = get_holdings_summary(price_map)
+        total_invested = sum(r["Shares"] * r["Buy Price"] for r in rows)
+        total_value = sum(r["Value"] for r in rows)
+        total_pnl = total_value - total_invested
+        return json.dumps({
+            "holdings": rows,
+            "total_invested": round(total_invested, 2),
+            "total_value": round(total_value, 2),
+            "total_pnl": round(total_pnl, 2),
+        })
 
     return json.dumps({"error": f"Unknown tool: {name}"})

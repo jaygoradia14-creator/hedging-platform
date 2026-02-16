@@ -22,12 +22,13 @@ def loaded_session(returns_data, price_data, regime_df):
         regime_df=regime_df,
         data_loaded=True,
         chat_history=[],
+        holdings={},
     )
 
 
 @pytest.fixture
 def empty_session():
-    return SimpleNamespace(portfolio=None, regime_df=None, data_loaded=False, chat_history=[])
+    return SimpleNamespace(portfolio=None, regime_df=None, data_loaded=False, chat_history=[], holdings={})
 
 
 class TestFallbackRouting:

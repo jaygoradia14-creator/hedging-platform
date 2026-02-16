@@ -39,6 +39,22 @@ SECTOR_MAP = {
 }
 
 
+# ~100 popular tickers for autocomplete (sorted, combines SECTOR_MAP + extras)
+POPULAR_TICKERS = sorted(set(list(SECTOR_MAP.keys()) + [
+    # Mega-cap / popular stocks not already in SECTOR_MAP
+    "NFLX", "AMD", "INTC", "CRM", "ORCL", "ADBE", "PYPL", "SQ", "SHOP",
+    "UBER", "ABNB", "COIN", "PLTR", "SNAP", "PINS",
+    "DIS", "NKE", "MCD", "SBUX", "KO", "PEP", "COST",
+    "HD", "LOW", "TGT", "BABA", "TSM", "ASML",
+    "UNH", "ABBV", "PFE", "MRK", "LLY", "TMO",
+    "GS", "MS", "C", "WFC", "BRK-B", "AXP", "SCHW",
+    "CAT", "DE", "BA", "LMT", "RTX", "GE", "HON",
+    "NEE", "SO", "DUK", "AEP",
+    "AMT", "PLD", "CCI",
+    "BTC-USD", "ETH-USD",
+]))
+
+
 def get_sector(ticker: str) -> str:
     """Get sector/category for a ticker."""
     return SECTOR_MAP.get(ticker.upper(), "Other")
