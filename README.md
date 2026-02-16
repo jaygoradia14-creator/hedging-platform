@@ -1,6 +1,8 @@
 # Hedging Platform
 
-[![CI](https://github.com/YOUR_USERNAME/hedging-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/hedging-platform/actions/workflows/ci.yml)
+[![CI](https://github.com/jaygoradia14-creator/hedging-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/jaygoradia14-creator/hedging-platform/actions/workflows/ci.yml)
+
+**[Live App](https://jaygoradia14-creator-hedging-platform.streamlit.app)** | **[GitHub Pages](https://jaygoradia14-creator.github.io/hedging-platform/)**
 
 **Portfolio risk analysis and hedging effectiveness platform.**
 
@@ -15,13 +17,14 @@ streamlit run streamlit_app.py
 
 ## Features
 
-### 6 Analysis Pages
+### 7 Analysis Pages
 1. **Dashboard** - Portfolio overview, HHI concentration, cumulative returns
 2. **Correlation Analysis** - Normal vs crash correlations, asymmetry, stability
 3. **Regime Detection** - Volatility-based regime timeline, conditional heatmaps
 4. **Hedge Impact** - Hedge effectiveness comparison, optimal ratio, VaR reduction
 5. **Risk Metrics** - VaR/CVaR gauges, Monte Carlo fan chart, terminal distribution
 6. **Stress Scenarios** - Correlation shock, vol spike, liquidity stress, combined crisis
+7. **Chat Advisor** - Full-page AI chat with portfolio context panel and suggested questions
 
 ### AI Chat Advisor
 - Sidebar chat that persists across all pages
@@ -51,7 +54,7 @@ pages/                    # 6 analysis pages (UI only)
 core/                     # Data fetch, regime detection, portfolio state
 risk/                     # Correlation, VaR/CVaR, Monte Carlo, hedge analysis
 chat/                     # LLM chat engine with fallback
-tests/                    # 52+ tests, synthetic data, zero network calls
+tests/                    # 69 tests, synthetic data, zero network calls
 docs/                     # DRIVER, REFLECT, AI Collaboration Log
 ```
 
@@ -66,7 +69,7 @@ All tests use seeded synthetic data - no network calls, fully deterministic.
 ## Configuration
 
 - **OpenAI API key** (optional): Set `OPENAI_API_KEY` in environment or `.streamlit/secrets.toml`
-- **Theme**: Dark theme configured in `.streamlit/config.toml`
+- **Theme**: Zerodha Kite-inspired light theme in `.streamlit/config.toml`
 
 ## Documentation
 
