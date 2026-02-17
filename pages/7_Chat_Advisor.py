@@ -34,17 +34,23 @@ st.markdown("""
 
 st.markdown('<div class="chat-header">Portfolio Advisor</div>', unsafe_allow_html=True)
 
-# --- API Key input ---
-if "user_api_key" not in st.session_state:
-    st.session_state.user_api_key = ""
-st.text_input(
-    "Paste your API key (OpenAI or Gemini)",
-    type="password",
-    key="user_api_key",
-    placeholder="Paste key here and press Enter",
-)
-if st.session_state.user_api_key:
-    st.caption("Key saved for this session.")
+# --- API Key input (sidebar so it stays across pages) ---
+with st.sidebar:
+    st.markdown("---")
+    st.markdown("**API Key**")
+    if "user_api_key" not in st.session_state:
+        st.session_state.user_api_key = ""
+    st.text_input(
+        "Paste your OpenAI or Gemini key",
+        type="password",
+        key="user_api_key",
+        placeholder="sk-... or AIza...",
+        label_visibility="collapsed",
+    )
+    if st.session_state.user_api_key:
+        st.success("Key active", icon="\u2705")
+    else:
+        st.info("Paste API key above to enable AI chat")
 
 # --- Portfolio context panel ---
 if st.session_state.data_loaded:
@@ -130,9 +136,8 @@ if len(st.session_state.page_chat_history) <= 1 and st.session_state.data_loaded
             try:
                 from chat.engine import get_response
                 reply = get_response(suggestion, st.session_state)
-            except Exception:
-                from chat.fallback import fallback_response
-                reply = fallback_response(suggestion, st.session_state)
+            except Exception as e:
+                reply = f"**Error:** {e}"
             st.session_state.page_chat_history.append({"role": "assistant", "content": reply})
             st.rerun()
 
@@ -153,9 +158,8 @@ if user_input:
             try:
                 from chat.engine import get_response
                 reply = get_response(user_input, st.session_state)
-            except Exception:
-                from chat.fallback import fallback_response
-                reply = fallback_response(user_input, st.session_state)
+            except Exception as e:
+                reply = f"**Error:** {e}"
 
         st.markdown(reply)
 

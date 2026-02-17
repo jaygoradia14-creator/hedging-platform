@@ -12,13 +12,13 @@ from chat.tools import TOOL_DEFINITIONS, execute_tool
 from chat.fallback import fallback_response
 
 
-def _get_user_key(prefix: str) -> Optional[str]:
-    """Check session_state for a user-pasted key matching prefix."""
+def _get_user_key() -> Optional[str]:
+    """Return whatever API key the user pasted in the UI."""
     try:
         import streamlit as st
         key = st.session_state.get("user_api_key", "")
-        if key and key.startswith(prefix):
-            return key
+        if key and key.strip():
+            return key.strip()
     except Exception:
         pass
     return None
@@ -26,8 +26,8 @@ def _get_user_key(prefix: str) -> Optional[str]:
 
 def _get_gemini_key() -> Optional[str]:
     """Resolve Gemini API key: user input -> secrets -> env."""
-    user_key = _get_user_key("AIza")
-    if user_key:
+    user_key = _get_user_key()
+    if user_key and user_key.startswith("AIza"):
         return user_key
     try:
         import streamlit as st
@@ -41,8 +41,8 @@ def _get_gemini_key() -> Optional[str]:
 
 def _get_openai_key() -> Optional[str]:
     """Resolve OpenAI API key: user input -> secrets -> env."""
-    user_key = _get_user_key("sk-")
-    if user_key:
+    user_key = _get_user_key()
+    if user_key and not user_key.startswith("AIza"):
         return user_key
     try:
         import streamlit as st
@@ -112,22 +112,28 @@ def _openai_response(user_message: str, session_state, api_key: str) -> str:
 
 
 def get_response(user_message: str, session_state) -> str:
-    """Get a chat response. Priority: Gemini (free) -> OpenAI -> fallback."""
-    # Try Gemini first (free tier)
-    gemini_key = _get_gemini_key()
-    if gemini_key:
-        try:
-            return _gemini_response(user_message, session_state, gemini_key)
-        except Exception:
-            pass
+    """Get a chat response. Priority: OpenAI -> Gemini -> fallback."""
+    errors = []
 
-    # Try OpenAI
+    # Try OpenAI first (most users have this)
     openai_key = _get_openai_key()
     if openai_key:
         try:
             return _openai_response(user_message, session_state, openai_key)
-        except Exception:
-            pass
+        except Exception as e:
+            errors.append(f"OpenAI error: {e}")
 
-    # Keyword fallback
+    # Try Gemini
+    gemini_key = _get_gemini_key()
+    if gemini_key:
+        try:
+            return _gemini_response(user_message, session_state, gemini_key)
+        except Exception as e:
+            errors.append(f"Gemini error: {e}")
+
+    # If keys were provided but failed, show the error
+    if errors:
+        return "**API Error:** " + " | ".join(errors)
+
+    # No key at all — keyword fallback
     return fallback_response(user_message, session_state)
