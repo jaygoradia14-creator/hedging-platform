@@ -99,25 +99,32 @@ PAGE_CSS = """
         box-shadow: 2px 0 12px rgba(0,0,0,0.06);
     }
 
-    /* Hamburger button */
-    [data-testid="stSidebarCollapsedControl"] {
-        top: 0.5rem; left: 0.5rem; z-index: 999;
+    /* Hamburger button - always visible */
+    [data-testid="stSidebarCollapsedControl"],
+    [data-testid="collapsedControl"] {
+        top: 0.5rem !important; left: 0.5rem !important; z-index: 999 !important;
+        display: block !important; visibility: visible !important;
     }
     [data-testid="stSidebarCollapsedControl"] button,
-    [data-testid="collapsedControl"] button {
+    [data-testid="collapsedControl"] button,
+    button[kind="header"] {
         background: #ffffff !important;
         border: 1px solid #e0e4eb !important;
         border-radius: 10px !important;
         padding: 6px 8px !important;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        visibility: visible !important;
+        display: flex !important;
     }
     [data-testid="stSidebarCollapsedControl"] button:hover,
-    [data-testid="collapsedControl"] button:hover {
+    [data-testid="collapsedControl"] button:hover,
+    button[kind="header"]:hover {
         background: #f0f7ff !important;
         border-color: #5367ff !important;
     }
     [data-testid="stSidebarCollapsedControl"] button svg,
-    [data-testid="collapsedControl"] button svg {
+    [data-testid="collapsedControl"] button svg,
+    button[kind="header"] svg {
         stroke: #5367ff !important;
         width: 20px !important; height: 20px !important;
     }

@@ -34,23 +34,29 @@ st.markdown("""
 
 st.markdown('<div class="chat-header">Portfolio Advisor</div>', unsafe_allow_html=True)
 
-# --- API Key input (sidebar so it stays across pages) ---
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("**API Key**")
-    if "user_api_key" not in st.session_state:
-        st.session_state.user_api_key = ""
-    st.text_input(
-        "Paste your OpenAI or Gemini key",
-        type="password",
-        key="user_api_key",
-        placeholder="sk-... or AIza...",
-        label_visibility="collapsed",
-    )
-    if st.session_state.user_api_key:
-        st.success("Key active", icon="\u2705")
-    else:
-        st.info("Paste API key above to enable AI chat")
+# --- Check if API key exists (secrets, env, or session) ---
+_has_saved_key = False
+try:
+    if st.secrets.get("OPENAI_API_KEY") or st.secrets.get("GEMINI_API_KEY"):
+        _has_saved_key = True
+except Exception:
+    pass
+
+if not _has_saved_key:
+    with st.sidebar:
+        st.markdown("---")
+        st.markdown("**API Key**")
+        if "user_api_key" not in st.session_state:
+            st.session_state.user_api_key = ""
+        st.text_input(
+            "Paste your OpenAI or Gemini key",
+            type="password",
+            key="user_api_key",
+            placeholder="sk-... or AIza...",
+            label_visibility="collapsed",
+        )
+        if st.session_state.user_api_key:
+            st.success("Key active", icon="\u2705")
 
 # --- Portfolio context panel ---
 if st.session_state.data_loaded:
