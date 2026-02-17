@@ -12,8 +12,23 @@ from chat.tools import TOOL_DEFINITIONS, execute_tool
 from chat.fallback import fallback_response
 
 
+def _get_user_key(prefix: str) -> Optional[str]:
+    """Check session_state for a user-pasted key matching prefix."""
+    try:
+        import streamlit as st
+        key = st.session_state.get("user_api_key", "")
+        if key and key.startswith(prefix):
+            return key
+    except Exception:
+        pass
+    return None
+
+
 def _get_gemini_key() -> Optional[str]:
-    """Resolve Gemini API key from Streamlit secrets or environment."""
+    """Resolve Gemini API key: user input -> secrets -> env."""
+    user_key = _get_user_key("AIza")
+    if user_key:
+        return user_key
     try:
         import streamlit as st
         key = st.secrets.get("GEMINI_API_KEY", None)
@@ -25,7 +40,10 @@ def _get_gemini_key() -> Optional[str]:
 
 
 def _get_openai_key() -> Optional[str]:
-    """Resolve OpenAI API key from Streamlit secrets or environment."""
+    """Resolve OpenAI API key: user input -> secrets -> env."""
+    user_key = _get_user_key("sk-")
+    if user_key:
+        return user_key
     try:
         import streamlit as st
         key = st.secrets.get("OPENAI_API_KEY", None)

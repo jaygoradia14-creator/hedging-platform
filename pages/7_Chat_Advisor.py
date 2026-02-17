@@ -34,6 +34,19 @@ st.markdown("""
 
 st.markdown('<div class="chat-header">Portfolio Advisor</div>', unsafe_allow_html=True)
 
+# --- API Key input ---
+api_key = st.text_input(
+    "Paste your API key (OpenAI or Gemini)",
+    type="password",
+    value=st.session_state.get("user_api_key", ""),
+    placeholder="sk-... or AIza...",
+)
+if api_key:
+    st.session_state.user_api_key = api_key
+    st.caption("Key saved for this session.")
+elif "user_api_key" in st.session_state:
+    del st.session_state["user_api_key"]
+
 # --- Portfolio context panel ---
 if st.session_state.data_loaded:
     portfolio = st.session_state.portfolio
