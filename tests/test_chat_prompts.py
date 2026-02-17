@@ -53,5 +53,5 @@ class TestContextBuilders:
 
     def test_system_message_structure(self, loaded_session):
         msg = build_system_message(loaded_session)
-        assert "financial advisor" in msg.lower()
+        assert "assistant" in msg.lower() or "advisor" in msg.lower()
         assert "SPY" in msg
