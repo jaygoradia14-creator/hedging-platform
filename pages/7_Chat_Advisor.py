@@ -79,14 +79,19 @@ else:
 if "page_chat_history" not in st.session_state:
     st.session_state.page_chat_history = [
         {"role": "assistant", "content": (
-            "Welcome to the Portfolio Advisor. I can help you understand your portfolio's "
-            "risk metrics, correlations, regime analysis, and hedging strategies.\n\n"
-            "Try asking:\n"
-            "- *What is my current Value-at-Risk?*\n"
+            "Hey! I'm your financial advisor. Ask me **anything** about finance!\n\n"
+            "**Investment Advice:**\n"
+            "- *What stocks should I invest in?*\n"
+            "- *Where should I put my money?*\n"
+            "- *Should I sell my holdings?*\n\n"
+            "**General Finance:**\n"
+            "- *What is a stock / bond / ETF / option?*\n"
+            "- *Explain inflation / interest rates / P/E ratio*\n"
+            "- *Tell me about value investing / technical analysis*\n\n"
+            "**Your Portfolio:**\n"
+            "- *What is my Value-at-Risk?*\n"
             "- *How correlated are my assets?*\n"
-            "- *What regime are we in?*\n"
-            "- *How can I hedge my portfolio?*\n"
-            "- *Explain my diversification ratio*"
+            "- *What market regime are we in?*"
         )}
     ]
 
@@ -99,12 +104,12 @@ for msg in st.session_state.page_chat_history:
 if len(st.session_state.page_chat_history) <= 1 and st.session_state.data_loaded:
     st.markdown("**Quick questions:**")
     suggestions = [
-        "What is my portfolio's Value-at-Risk?",
-        "How do correlations change during crashes?",
+        "What stocks should I invest in?",
+        "What is my Value-at-Risk?",
+        "Explain options trading",
         "What market regime are we in?",
-        "Which asset is the best hedge?",
-        "How diversified is my portfolio?",
-        "What happens under stress scenarios?",
+        "Tell me about value investing",
+        "Should I sell my holdings?",
     ]
     cols = st.columns(3)
     for i, suggestion in enumerate(suggestions):
@@ -120,7 +125,7 @@ if len(st.session_state.page_chat_history) <= 1 and st.session_state.data_loaded
             st.rerun()
 
 # --- Chat input ---
-user_input = st.chat_input("Ask about your portfolio...")
+user_input = st.chat_input("Ask anything about finance, investing, or your portfolio...")
 
 if user_input:
     st.session_state.page_chat_history.append({"role": "user", "content": user_input})

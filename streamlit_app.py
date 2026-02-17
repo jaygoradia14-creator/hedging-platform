@@ -293,7 +293,7 @@ with st.sidebar:
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
-    user_msg = st.chat_input("Ask about your portfolio...", key="sidebar_chat")
+    user_msg = st.chat_input("Ask anything about finance...", key="sidebar_chat")
     if user_msg:
         st.session_state.chat_history.append({"role": "user", "content": user_msg})
         try:
@@ -460,26 +460,31 @@ if holdings:
 else:
     st.info("No holdings yet. Use the form below to add stocks.")
 
-# Add Stock form
-with st.expander("Add Stock to Holdings", expanded=not bool(holdings)):
-    add_col1, add_col2, add_col3 = st.columns(3)
-    with add_col1:
-        add_ticker = st.selectbox(
-            "Ticker", options=portfolio.tickers, key="add_ticker_select",
-        )
-    with add_col2:
-        add_shares = st.number_input("Shares", min_value=0.01, value=1.0, step=1.0, key="add_shares")
-    with add_col3:
-        # Default buy price = current price if available
-        default_price = 0.0
-        if live_df is not None and not live_df.empty:
-            match = live_df[live_df["Ticker"] == add_ticker]
-            if not match.empty and pd.notna(match.iloc[0]["Price"]):
-                default_price = float(match.iloc[0]["Price"])
-        add_price = st.number_input(
-            "Buy Price", min_value=0.01, value=max(default_price, 0.01), step=0.01, key="add_price",
-        )
-    if st.button("Add to Holdings", type="primary", key="add_holding_btn"):
+# Add Stock form — always visible
+st.markdown("#### Add Stock")
+add_col1, add_col2, add_col3, add_col4 = st.columns([2, 1.5, 1.5, 1])
+with add_col1:
+    add_ticker = st.selectbox(
+        "Ticker", options=portfolio.tickers, key="add_ticker_select",
+        label_visibility="collapsed",
+    )
+with add_col2:
+    add_shares = st.number_input(
+        "Shares", min_value=0.01, value=1.0, step=1.0, key="add_shares",
+    )
+with add_col3:
+    default_price = 0.0
+    if live_df is not None and not live_df.empty:
+        match = live_df[live_df["Ticker"] == add_ticker]
+        if not match.empty and pd.notna(match.iloc[0]["Price"]):
+            default_price = float(match.iloc[0]["Price"])
+    add_price = st.number_input(
+        "Buy Price", min_value=0.01, value=max(default_price, 0.01),
+        step=0.01, key="add_price",
+    )
+with add_col4:
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
         add_holding(add_ticker, add_shares, add_price)
         st.success(f"Added {add_shares:.2f} shares of {add_ticker} at ${add_price:,.2f}")
         st.rerun()
