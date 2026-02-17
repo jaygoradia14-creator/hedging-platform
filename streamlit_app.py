@@ -435,20 +435,26 @@ if holdings:
             })
         st.dataframe(pd.DataFrame(styled_rows).set_index("Ticker"), use_container_width=True)
 
-        # Sell per stock
+        # Sell per stock — inline form for each holding
+        st.markdown("#### Sell Stocks")
         for r in rows:
-            with st.expander(f"Sell {r['Ticker']}"):
-                max_shares = r["Shares"]
+            sc1, sc2, sc3 = st.columns([2, 2, 1])
+            with sc1:
+                st.markdown(f"**{r['Ticker']}** — {r['Shares']:.2f} shares")
+            with sc2:
                 sell_qty = st.number_input(
-                    f"Shares to sell ({r['Ticker']})",
-                    min_value=0.0, max_value=float(max_shares),
+                    "Qty", min_value=0.0, max_value=float(r["Shares"]),
                     value=0.0, step=1.0, key=f"sell_{r['Ticker']}",
+                    label_visibility="collapsed",
                 )
-                if st.button(f"Sell {r['Ticker']}", key=f"sell_btn_{r['Ticker']}"):
+            with sc3:
+                if st.button("Sell", key=f"sell_btn_{r['Ticker']}", type="primary"):
                     if sell_qty > 0:
                         sell_holding(r["Ticker"], sell_qty)
                         st.success(f"Sold {sell_qty:.2f} shares of {r['Ticker']}")
                         st.rerun()
+                    else:
+                        st.warning("Enter shares to sell")
     else:
         st.info("No holdings yet. Use the form below to add stocks.")
 else:

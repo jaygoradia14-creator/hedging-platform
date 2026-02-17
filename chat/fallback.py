@@ -1,6 +1,7 @@
 """
 Rules-based fallback chat — general financial advisor + portfolio analytics.
-Keyword matching routes to educational content and context-aware portfolio responses.
+Intent-first routing: action intents (buy/sell/invest) checked BEFORE
+educational keyword matching to avoid "what stocks to invest in" -> "What is a Stock?"
 """
 
 
@@ -8,7 +9,6 @@ Keyword matching routes to educational content and context-aware portfolio respo
 # General finance knowledge base (no portfolio data needed)
 # ---------------------------------------------------------------------------
 GENERAL_KNOWLEDGE = {
-    # --- Stocks & Equities ---
     "stock": (
         "**What is a Stock?**\n\n"
         "A stock (or equity/share) represents ownership in a company. When you buy a stock, "
@@ -115,7 +115,6 @@ GENERAL_KNOWLEDGE = {
         "- High-dividend ETFs: VYM, SCHD, DVY, HDV\n"
         "- Dividend reinvestment (DRIP) compounds returns over time"
     ),
-    # --- Trading strategies ---
     "day trading": (
         "**Day Trading**\n\n"
         "Day trading involves buying and selling securities within the same trading day, "
@@ -146,7 +145,7 @@ GENERAL_KNOWLEDGE = {
         "- Focus on fundamentals: earnings, book value, cash flow, moats\n"
         "- Long-term horizon (years, not months)\n"
         "- Value ETFs: VTV, IWD, VLUE\n"
-        "- *\"Price is what you pay. Value is what you get.\"* — Warren Buffett"
+        '- *"Price is what you pay. Value is what you get."* — Warren Buffett'
     ),
     "growth investing": (
         "**Growth Investing**\n\n"
@@ -159,7 +158,6 @@ GENERAL_KNOWLEDGE = {
         "- Growth ETFs: VUG, IWF, QQQ, ARKK\n"
         "- Dominated by tech: AAPL, MSFT, GOOGL, AMZN, NVDA"
     ),
-    # --- Technical analysis ---
     "technical analysis": (
         "**Technical Analysis**\n\n"
         "Technical analysis studies price patterns and trading volume to forecast future price "
@@ -193,7 +191,6 @@ GENERAL_KNOWLEDGE = {
         "- Price above 200-day SMA = long-term uptrend\n"
         "- Common periods: 10, 20, 50, 100, 200 days"
     ),
-    # --- Economics & Macro ---
     "inflation": (
         "**Inflation**\n\n"
         "Inflation is the rate at which the general price level of goods and services rises, "
@@ -249,12 +246,12 @@ GENERAL_KNOWLEDGE = {
         "Average bear market lasts ~11 months with ~36% decline.\n\n"
         "Markets spend about 78% of the time in bull markets historically."
     ),
-    # --- Personal finance ---
     "retirement": (
         "**Retirement Planning**\n\n"
         "Key retirement accounts and strategies:\n\n"
         "- **401(k)**: Employer-sponsored, pre-tax contributions, $23,500 limit (2025)\n"
-        "- **IRA**: Individual, $7,000 limit. Traditional (pre-tax) or Roth (post-tax, tax-free growth)\n"
+        "- **IRA**: Individual, $7,000 limit. Traditional (pre-tax) or Roth (post-tax, "
+        "tax-free growth)\n"
         "- **Roth IRA**: Best if you expect higher taxes in retirement\n"
         "- **Rule of 72**: Years to double = 72 / annual return rate\n"
         "- **4% rule**: Withdraw 4% of portfolio annually in retirement\n"
@@ -281,7 +278,6 @@ GENERAL_KNOWLEDGE = {
         "- Purpose: Job loss, medical emergency, car repair, unexpected expenses\n"
         "- Money market funds (like SPAXX, VMFXX) are also good options"
     ),
-    # --- Portfolio concepts ---
     "asset allocation": (
         "**Asset Allocation**\n\n"
         "Asset allocation is dividing your portfolio among different asset classes to balance "
@@ -347,29 +343,75 @@ GENERAL_KNOWLEDGE = {
         "- **Micro-cap**: <$300M — very speculative, low liquidity\n"
         "- Diversify across market caps for balanced exposure"
     ),
+    "short selling": (
+        "**Short Selling**\n\n"
+        "Short selling means borrowing shares and selling them, hoping to buy back at a "
+        "lower price for profit.\n\n"
+        "- **How it works**: Borrow shares → sell high → buy back low → return shares\n"
+        "- **Unlimited loss potential** (price can go to infinity)\n"
+        "- Requires a margin account\n"
+        "- Short interest: % of shares sold short (high = bearish sentiment)\n"
+        "- **Short squeeze**: Shorts forced to buy back, spiking the price (e.g., GME 2021)\n"
+        "- Most retail investors should avoid short selling due to risk"
+    ),
+    "risk management": (
+        "**Risk Management in Investing**\n\n"
+        "Risk management is about protecting your capital while pursuing returns.\n\n"
+        "- **Position sizing**: Never risk more than 1-2% of portfolio on a single trade\n"
+        "- **Stop-loss orders**: Automatically sell when price drops to a set level\n"
+        "- **Diversification**: Don't put all eggs in one basket\n"
+        "- **Asset allocation**: Match risk level to your time horizon\n"
+        "- **Hedging**: Use bonds, gold, or options to offset equity risk\n"
+        "- **Rebalancing**: Maintain target allocations as markets move\n"
+        "- **Risk metrics**: VaR, CVaR, Sharpe ratio, max drawdown"
+    ),
+    "index investing": (
+        "**Index Investing**\n\n"
+        "Index investing means buying funds that track a market index instead of picking "
+        "individual stocks.\n\n"
+        "- **S&P 500 funds**: SPY, VOO, IVV — track the 500 largest US companies\n"
+        "- **Total market**: VTI, ITOT — entire US stock market\n"
+        "- **International**: VXUS, IXUS — non-US developed + emerging markets\n"
+        "- **Fees**: Ultra-low (0.03-0.1% vs 1-2% for active funds)\n"
+        "- Warren Buffett recommends index funds for most investors\n"
+        "- Beats ~90% of active managers over 15+ years"
+    ),
+    "sector": (
+        "**Stock Market Sectors**\n\n"
+        "The market is divided into 11 GICS sectors:\n\n"
+        "- **Technology** (XLK): AAPL, MSFT, NVDA — growth, high beta\n"
+        "- **Healthcare** (XLV): UNH, JNJ, LLY — defensive + growth\n"
+        "- **Financials** (XLF): JPM, BRK-B, GS — rate-sensitive\n"
+        "- **Consumer Discretionary** (XLY): AMZN, TSLA — cyclical\n"
+        "- **Consumer Staples** (XLP): PG, KO, PEP — defensive\n"
+        "- **Energy** (XLE): XOM, CVX — commodity-linked\n"
+        "- **Utilities** (XLU): NEE, DUK — bond-like, defensive\n"
+        "- **Industrials** (XLI): CAT, HON — economic bellwether\n"
+        "- **Materials** (XLB), **Real Estate** (XLRE), **Communication** (XLC)"
+    ),
 }
 
-# Mapping keywords to knowledge base keys
+# Keywords that ONLY match for educational queries (prefixed with "what is", "explain", etc.)
 KEYWORD_TO_TOPIC = {
-    "stock": "stock", "equity": "stock", "equities": "stock", "share": "stock",
+    "stock": "stock", "equity": "stock", "equities": "stock", "shares": "stock",
     "bond": "bond", "fixed income": "bond", "treasury": "bond", "treasuries": "bond",
-    "debt": "bond",
-    "etf": "etf", "exchange traded": "etf", "index fund": "etf",
+    "debt instrument": "bond",
+    "etf": "etf", "exchange traded": "etf", "index fund": "index investing",
     "mutual fund": "mutual fund",
     "option": "option", "call option": "option", "put option": "option",
-    "options trading": "option", "greeks": "option", "delta": "option",
-    "theta": "option", "strike price": "option",
+    "options trading": "option", "greeks": "option",
+    "strike price": "option",
     "futures": "futures", "futures contract": "futures",
     "crypto": "cryptocurrency", "bitcoin": "cryptocurrency",
-    "btc": "cryptocurrency", "ethereum": "cryptocurrency", "eth": "cryptocurrency",
+    "btc": "cryptocurrency", "ethereum": "cryptocurrency",
     "blockchain": "cryptocurrency",
-    "forex": "forex", "currency": "forex", "exchange rate": "forex", "fx": "forex",
+    "forex": "forex", "foreign exchange": "forex", "exchange rate": "forex",
     "ipo": "ipo", "initial public offering": "ipo", "going public": "ipo",
-    "dividend": "dividend", "yield": "dividend", "payout": "dividend",
+    "dividend": "dividend",
     "day trad": "day trading", "day-trad": "day trading", "scalping": "day trading",
     "swing trad": "swing trading", "swing-trad": "swing trading",
     "value invest": "value investing", "warren buffett": "value investing",
-    "benjamin graham": "value investing", "undervalued": "value investing",
+    "benjamin graham": "value investing",
     "growth invest": "growth investing",
     "technical analysis": "technical analysis", "chart pattern": "technical analysis",
     "candlestick": "technical analysis", "support and resistance": "technical analysis",
@@ -377,19 +419,17 @@ KEYWORD_TO_TOPIC = {
     "moving average": "moving average", "sma": "moving average", "ema": "moving average",
     "golden cross": "moving average", "death cross": "moving average", "macd": "moving average",
     "inflation": "inflation", "cpi": "inflation", "purchasing power": "inflation",
-    "interest rate": "interest rate", "fed": "interest rate",
+    "interest rate": "interest rate", "fed fund": "interest rate",
     "federal reserve": "interest rate", "rate hike": "interest rate",
     "rate cut": "interest rate", "monetary policy": "interest rate", "fomc": "interest rate",
     "recession": "recession", "economic downturn": "recession",
-    "gdp": "gdp", "gross domestic product": "gdp", "economic growth": "gdp",
+    "gdp": "gdp", "gross domestic product": "gdp",
     "bull market": "bull market", "bear market": "bull market",
-    "bull": "bull market", "bear": "bull market",
     "retirement": "retirement", "401k": "retirement", "401(k)": "retirement",
     "ira": "retirement", "roth": "retirement", "pension": "retirement",
     "retire": "retirement",
-    "tax": "tax", "capital gains": "tax", "tax loss": "tax", "wash sale": "tax",
-    "emergency fund": "emergency fund", "savings": "emergency fund",
-    "rainy day": "emergency fund",
+    "capital gains": "tax", "tax loss": "tax", "wash sale": "tax",
+    "emergency fund": "emergency fund", "rainy day": "emergency fund",
     "asset allocation": "asset allocation", "portfolio allocation": "asset allocation",
     "60/40": "asset allocation", "80/20": "asset allocation",
     "rebalance": "rebalancing", "rebalancing": "rebalancing",
@@ -401,162 +441,429 @@ KEYWORD_TO_TOPIC = {
     "valuation": "p/e ratio",
     "market cap": "market cap", "large cap": "market cap", "small cap": "market cap",
     "mid cap": "market cap", "mega cap": "market cap", "micro cap": "market cap",
+    "short sell": "short selling", "shorting": "short selling",
+    "short squeeze": "short selling",
+    "risk manage": "risk management", "position sizing": "risk management",
+    "stop loss": "risk management", "stop-loss": "risk management",
+    "index invest": "index investing", "passive invest": "index investing",
+    "bogle": "index investing",
+    "sector": "sector", "gics": "sector",
 }
 
 
 def _match_general_topic(msg: str):
-    """Try to match user message to a general knowledge topic."""
-    for keyword, topic in KEYWORD_TO_TOPIC.items():
+    """Match message to a general knowledge topic. Longer keywords first."""
+    # Sort by length descending so "futures contract" matches before "futures"
+    for keyword in sorted(KEYWORD_TO_TOPIC, key=len, reverse=True):
         if keyword in msg:
+            topic = KEYWORD_TO_TOPIC[keyword]
             return GENERAL_KNOWLEDGE.get(topic)
     return None
 
 
+def _has_action_intent(msg: str) -> bool:
+    """Check if the user wants investment advice (buy/sell/invest) vs. education."""
+    action_phrases = [
+        "invest in", "should i buy", "should i sell", "what to buy", "what to sell",
+        "best stocks", "good stocks", "recommend", "buy recommendation",
+        "where to invest", "where should i", "what should i invest",
+        "stocks to invest", "stocks to buy", "which stock",
+        "take profit", "cut losses", "exit position", "sell advice",
+        "time to sell", "time to buy", "worth buying", "worth investing",
+        "start investing", "how to invest", "where to put money",
+        "best investment", "good investment", "safe investment",
+        "how much to invest", "invest my money", "grow my money",
+        "market outlook", "market trend", "market forecast", "market direction",
+        "sector performance", "how is the market",
+    ]
+    return any(phrase in msg for phrase in action_phrases)
+
+
+def _has_educational_intent(msg: str) -> bool:
+    """Check if the user is asking an educational / definitional question."""
+    prefixes = [
+        "what is ", "what are ", "what does ", "what do ",
+        "explain ", "define ", "meaning of ", "tell me about ",
+        "how does ", "how do ", "describe ", "teach me ",
+    ]
+    return any(msg.startswith(p) for p in prefixes)
+
+
 def fallback_response(user_message: str, session_state) -> str:
-    """Generate a rules-based response using keyword matching and portfolio context."""
+    """Generate a rules-based response — intent-first routing."""
     msg = user_message.lower().strip()
 
+    portfolio = getattr(session_state, "portfolio", None)
+    data_loaded = getattr(session_state, "data_loaded", False)
+
+    # ---------------------------------------------------------------
+    # 1. Greetings (quick, always works)
+    # ---------------------------------------------------------------
+    if any(kw in msg for kw in ["hello", "hi ", "hey", "good morning",
+                                "good evening", "howdy", "greetings"]):
+        if msg.strip() in ("hi", "hey", "hello", "howdy", "greetings"):
+            return (
+                "Hey! I'm your financial advisor. Ask me anything about:\n\n"
+                "- **Investing**: Stocks, bonds, ETFs, crypto, options\n"
+                "- **Your portfolio**: Risk, correlations, hedging, P&L\n"
+                "- **Finance concepts**: P/E ratio, Sharpe, inflation, interest rates\n"
+                "- **Strategies**: Value investing, swing trading, DCA\n\n"
+                "What would you like to know?"
+            )
+
+    # ---------------------------------------------------------------
+    # 2. Thank you
+    # ---------------------------------------------------------------
+    if any(kw in msg for kw in ["thank", "thanks", "appreciate", "great answer"]):
+        return "You're welcome! Feel free to ask anything else about finance or your portfolio."
+
+    # ---------------------------------------------------------------
+    # 3. Help
+    # ---------------------------------------------------------------
+    if any(kw in msg for kw in ["help", "what can you", "capabilities", "menu"]):
+        return (
+            "I'm your financial advisor! I can help with:\n\n"
+            "**General Finance:**\n"
+            "- *What is a stock/bond/ETF/option?*\n"
+            "- *Explain P/E ratio / beta / Sharpe ratio*\n"
+            "- *How does inflation affect investments?*\n"
+            "- *What is dollar cost averaging?*\n"
+            "- *Tell me about value investing*\n\n"
+            "**Your Portfolio:**\n"
+            "- *How correlated are my assets?*\n"
+            "- *What is my Value-at-Risk?*\n"
+            "- *What market regime are we in?*\n"
+            "- *Which asset is the best hedge?*\n"
+            "- *Should I buy/sell?*\n\n"
+            "**Investment Advice:**\n"
+            "- *What stocks should I invest in?*\n"
+            "- *Where should I put my money?*\n"
+            "- *Best stocks to buy right now?*\n"
+            "- *Should I sell my holdings?*\n\n"
+            "Ask me anything about finance!"
+        )
+
+    # ---------------------------------------------------------------
+    # 4. ACTION INTENTS — buy/sell/invest advice (BEFORE education!)
+    #    This is the critical fix: "what stocks to invest in" routes here,
+    #    NOT to the "What is a Stock?" definition.
+    # ---------------------------------------------------------------
+    if _has_action_intent(msg):
+        return _handle_action_intent(msg, session_state)
+
+    # ---------------------------------------------------------------
+    # 5. EDUCATIONAL INTENTS — "what is X", "explain X", "tell me about X"
+    #    Only match general knowledge when user clearly wants education.
+    # ---------------------------------------------------------------
+    if _has_educational_intent(msg):
+        general = _match_general_topic(msg)
+        if general:
+            return general
+
+    # ---------------------------------------------------------------
+    # 6. Portfolio-specific analysis queries (need data loaded)
+    # ---------------------------------------------------------------
+    if data_loaded and portfolio is not None:
+        portfolio_answer = _handle_portfolio_query(msg, session_state)
+        if portfolio_answer:
+            return portfolio_answer
+
+    # ---------------------------------------------------------------
+    # 7. General knowledge as broad fallback (no educational prefix needed)
+    #    e.g. "inflation", "crypto", "rsi" on their own
+    # ---------------------------------------------------------------
+    general = _match_general_topic(msg)
+    if general:
+        return general
+
+    # ---------------------------------------------------------------
+    # 8. No data loaded and nothing matched
+    # ---------------------------------------------------------------
+    if not data_loaded or portfolio is None:
+        return (
+            "I can answer any finance question! Try asking:\n\n"
+            "- *What is a stock/bond/ETF?*\n"
+            "- *Explain options / futures / crypto*\n"
+            "- *How does inflation work?*\n"
+            "- *What stocks should I invest in?*\n"
+            "- *Tell me about value investing*\n\n"
+            "For portfolio analysis, load data using the sidebar."
+        )
+
+    # ---------------------------------------------------------------
+    # 9. Default catch-all with portfolio summary
+    # ---------------------------------------------------------------
+    summary = portfolio.summary()
+    port_ret = portfolio.portfolio_returns
+    import numpy as np
+    ann_ret = float(port_ret.mean() * 252)
+    ann_vol = float(port_ret.std() * np.sqrt(252))
+
+    return (
+        f"Great question! Here's what I can help with:\n\n"
+        f"**Your Portfolio:** {', '.join(summary['tickers'][:5])} "
+        f"({summary['n_assets']} instruments)\n"
+        f"**Return:** {ann_ret:+.2%} | **Vol:** {ann_vol:.2%}\n\n"
+        f"Try asking:\n"
+        f"- *What stocks should I invest in?*\n"
+        f"- *Should I sell my holdings?*\n"
+        f"- *What is my VaR?* / *Market outlook*\n"
+        f"- *Explain options* / *What is inflation?*\n"
+        f"- *Tell me about technical analysis*"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Action intent handler — buy/sell/invest advice
+# ---------------------------------------------------------------------------
+def _handle_action_intent(msg: str, session_state) -> str:
+    """Handle investment action queries (buy/sell/where to invest)."""
+    # --- Investment / Buy advice ---
+    buy_keywords = [
+        "invest in", "should i buy", "what to buy", "best stocks",
+        "good stocks", "recommend", "buy recommendation", "where to invest",
+        "where should i", "what should i invest", "stocks to invest",
+        "stocks to buy", "which stock", "worth buying", "worth investing",
+        "start investing", "how to invest", "where to put money",
+        "best investment", "good investment", "safe investment",
+        "how much to invest", "invest my money", "grow my money",
+        "time to buy",
+    ]
+    if any(kw in msg for kw in buy_keywords):
+        return _buy_advice(msg, session_state)
+
+    # --- Sell advice ---
+    sell_keywords = [
+        "should i sell", "take profit", "cut losses", "exit position",
+        "sell advice", "time to sell", "what to sell",
+    ]
+    if any(kw in msg for kw in sell_keywords):
+        return _sell_advice(msg, session_state)
+
+    # --- Market outlook ---
+    return _market_outlook(msg, session_state)
+
+
+def _buy_advice(msg: str, session_state) -> str:
+    """Generate buy/investment advice."""
     portfolio = getattr(session_state, "portfolio", None)
     regime_df = getattr(session_state, "regime_df", None)
     data_loaded = getattr(session_state, "data_loaded", False)
 
-    # --- General finance knowledge (works even without portfolio) ---
-    general = _match_general_topic(msg)
-    if general and not _is_portfolio_specific(msg):
-        return general
+    # Generic investment advice (works without portfolio)
+    generic = (
+        "**Investment Suggestions:**\n\n"
+        "**For Beginners:**\n"
+        "- Start with broad index funds: **SPY** (S&P 500), **VTI** (Total US Market)\n"
+        "- Add international exposure: **VXUS** (International stocks)\n"
+        "- Bond allocation for stability: **BND** (Total Bond Market)\n\n"
+        "**By Risk Tolerance:**\n"
+        "- **Conservative**: 60% bonds (BND/TLT), 30% stocks (SPY), 10% gold (GLD)\n"
+        "- **Moderate**: 60% stocks (SPY/QQQ), 30% bonds (BND), 10% alternatives (GLD)\n"
+        "- **Aggressive**: 80% stocks (QQQ/VTI), 10% crypto (BTC-USD), 10% growth\n\n"
+        "**Top Sector ETFs to Consider:**\n"
+        "- Tech: **QQQ**, **XLK** | Healthcare: **XLV** | Financials: **XLF**\n"
+        "- Energy: **XLE** | Consumer: **XLY** | Utilities: **XLU** (defensive)\n\n"
+        "**Key Principles:**\n"
+        "- Diversify across sectors and asset classes\n"
+        "- Dollar-cost average rather than timing the market\n"
+        "- Only invest money you won't need for 5+ years\n"
+        "- Keep an emergency fund (3-6 months expenses) first"
+    )
 
     if not data_loaded or portfolio is None:
-        # Still try general knowledge
-        if general:
-            return general
+        return generic
+
+    # Personalized advice with portfolio context
+    try:
+        from core.data_fetch import get_sectors
+        tickers = portfolio.tickers
+        sector_counts = {}
+        for t in tickers:
+            sec = get_sectors([t])[t]
+            sector_counts[sec] = sector_counts.get(sec, 0) + 1
+
+        held = getattr(session_state, "holdings", {})
+        held_sectors = {}
+        for ht in held:
+            sec = get_sectors([ht])[ht]
+            held_sectors[sec] = held_sectors.get(sec, 0) + 1
+
+        regime_text = ""
+        if regime_df is not None and len(regime_df) > 0:
+            current = regime_df["regime"].iloc[-1]
+            regime_text = f"Current regime: **{current}**. "
+
+        all_sectors = {**sector_counts, **held_sectors}
+        target_sectors = [
+            "Technology", "Healthcare", "Energy", "Financials",
+            "Consumer Staples", "Gold", "Long-Term Treasury",
+        ]
+        missing = [s for s in target_sectors if s not in all_sectors]
+
+        response = f"**Personalized Buy Suggestions:**\n\n{regime_text}\n\n"
+        response += f"Your portfolio covers: **{', '.join(sorted(sector_counts.keys()))}**.\n\n"
+
+        if missing:
+            response += "**Diversification gaps** — consider adding: "
+            response += "**{}**.\n\n".format(', '.join(missing[:4]))
+
+        # Regime-specific advice
+        if regime_df is not None and len(regime_df) > 0:
+            current = regime_df["regime"].iloc[-1]
+            if current in ("Crisis", "High Volatility"):
+                response += (
+                    "**Regime advice**: In elevated volatility, favor defensive assets:\n"
+                    "- **TLT** (treasuries), **GLD** (gold), **XLU** (utilities)\n"
+                    "- Reduce exposure to high-beta growth stocks\n"
+                    "- Consider increasing cash position\n"
+                )
+            else:
+                response += (
+                    "**Regime advice**: In low-to-normal volatility, growth assets may "
+                    "offer upside:\n"
+                    "- **QQQ** (tech), **XLY** (consumer), sector ETFs\n"
+                    "- Good time to add equity exposure via DCA\n"
+                )
+
+        response += (
+            "\n**General tips:**\n"
+            "- Dollar-cost average into positions\n"
+            "- Don't put more than 10-15% in any single stock\n"
+            "- Review your holdings monthly"
+        )
+        return response
+    except Exception:
+        return generic
+
+
+def _sell_advice(msg: str, session_state) -> str:
+    """Generate sell advice based on holdings."""
+    regime_df = getattr(session_state, "regime_df", None)
+    held = getattr(session_state, "holdings", {})
+
+    if not held:
         return (
-            "I can answer any finance question! Try asking about stocks, bonds, ETFs, "
-            "options, crypto, inflation, interest rates, or trading strategies.\n\n"
-            "For portfolio-specific analysis, load data using the sidebar controls."
+            "**Sell Decision Framework:**\n\n"
+            "You don't have any holdings tracked yet. Add stocks in the "
+            "**My Holdings** section to get personalized sell advice.\n\n"
+            "**General rules for when to sell:**\n"
+            "- Take partial profit when a position is up 20%+\n"
+            "- Cut losses if a stock drops 10-15% below your thesis\n"
+            "- Sell if your original investment thesis has changed\n"
+            "- Reduce positions when market regime turns to Crisis\n"
+            "- Rebalance when any position exceeds 15% of portfolio\n"
+            "- Don't sell just because of short-term volatility"
         )
 
+    try:
+        import pandas as _pd
+        from core.data_fetch import fetch_latest_prices as _flp
+        held_tickers = list(held.keys())
+        live = _flp(held_tickers)
+        price_map = {}
+        for _, row in live.iterrows():
+            if _pd.notna(row.get("Price")):
+                price_map[row["Ticker"]] = row["Price"]
+
+        from core.portfolio import get_holdings_summary
+        rows = get_holdings_summary(price_map)
+
+        regime_text = ""
+        if regime_df is not None and len(regime_df) > 0:
+            current = regime_df["regime"].iloc[-1]
+            regime_text = f"Current regime: **{current}**. "
+
+        response = f"**Sell Analysis for your holdings:**\n\n{regime_text}\n"
+        for r in rows:
+            pnl_label = "profit" if r["P&L"] >= 0 else "loss"
+            response += (
+                f"- **{r['Ticker']}**: {r['Shares']:.1f} shares, "
+                f"P&L ${r['P&L']:+,.2f} ({r['P&L %']:+.1f}%) — "
+            )
+            if r["P&L %"] > 20:
+                response += "Consider taking partial profit.\n"
+            elif r["P&L %"] < -15:
+                fmt = "Significant {}, review your thesis.\n"
+                response += fmt.format(pnl_label)
+            else:
+                response += "Hold for now.\n"
+
+        if regime_df is not None and len(regime_df) > 0:
+            current = regime_df["regime"].iloc[-1]
+            if current == "Crisis":
+                response += (
+                    "\nIn **Crisis** regime, consider reducing high-beta positions "
+                    "and increasing defensive allocations."
+                )
+            elif current == "High Volatility":
+                response += (
+                    "\nIn **High Volatility**, tighten stop-losses "
+                    "and watch for breakdowns."
+                )
+        return response
+    except Exception:
+        return "Add holdings in the **My Holdings** section to get personalized sell advice."
+
+
+def _market_outlook(msg: str, session_state) -> str:
+    """Generate market outlook response."""
+    portfolio = getattr(session_state, "portfolio", None)
+    regime_df = getattr(session_state, "regime_df", None)
+
+    if portfolio is None or portfolio.returns is None:
+        return (
+            "**General Market Outlook Tips:**\n\n"
+            "- Check the **VIX** (fear index) — below 15 is calm, above 30 is fearful\n"
+            "- Monitor the **yield curve** — inversion signals recession risk\n"
+            "- Watch **Fed policy** — rate cuts boost stocks, hikes slow growth\n"
+            "- Track **earnings season** — actual vs expected drives moves\n\n"
+            "Load portfolio data for personalized regime-based analysis."
+        )
+
+    try:
+        response = "**Market Outlook:**\n\n"
+        if regime_df is not None and len(regime_df) > 0:
+            current = regime_df["regime"].iloc[-1]
+            from core.regime_detector import get_regime_statistics
+            stats = get_regime_statistics(regime_df)
+            response += f"Current regime: **{current}**\n\n"
+            for name, s in stats.items():
+                response += (
+                    f"- {name}: {s['pct_time']:.1f}% of time "
+                    f"(vol: {s['avg_vol']:.2%}, corr: {s['avg_corr']:.2f})\n"
+                )
+            response += "\n"
+
+        import numpy as np
+        port_ret = portfolio.portfolio_returns
+        ann_ret = float(port_ret.mean() * 252)
+        ann_vol = float(port_ret.std() * np.sqrt(252))
+        response += (
+            f"Portfolio annualized return: **{ann_ret:+.2%}**, "
+            f"volatility: **{ann_vol:.2%}**.\n\n"
+        )
+        response += "Visit **Regime Detection** and **Risk Metrics** for deeper analysis."
+        return response
+    except Exception:
+        return "Load portfolio data to see market outlook analysis."
+
+
+# ---------------------------------------------------------------------------
+# Portfolio-specific query handler
+# ---------------------------------------------------------------------------
+def _handle_portfolio_query(msg: str, session_state) -> str:
+    """Handle portfolio-specific analysis queries. Returns None if no match."""
+    portfolio = session_state.portfolio
+    regime_df = getattr(session_state, "regime_df", None)
     returns = portfolio.returns
     weights = portfolio.weights
     tickers = portfolio.tickers
 
-    # --- Buy advice ---
-    if any(kw in msg for kw in ["best stocks", "should i buy", "recommend", "invest in",
-                                "good stocks", "what to buy", "buy recommendation"]):
-        try:
-            from core.data_fetch import get_sectors
-            sector_counts = {}
-            for t in tickers:
-                sec = get_sectors([t])[t]
-                sector_counts[sec] = sector_counts.get(sec, 0) + 1
-
-            held = getattr(session_state, "holdings", {})
-            held_sectors = {}
-            for ht in held:
-                sec = get_sectors([ht])[ht]
-                held_sectors[sec] = held_sectors.get(sec, 0) + 1
-
-            regime_text = ""
-            if regime_df is not None and len(regime_df) > 0:
-                current = regime_df["regime"].iloc[-1]
-                regime_text = f"We are in a **{current}** regime. "
-
-            missing_sectors = [s for s in ["Technology", "Healthcare", "Energy", "Financials",
-                                           "Consumer Staples", "Gold", "Long-Term Treasury"]
-                               if s not in sector_counts and s not in held_sectors]
-
-            response = f"**Buy Suggestions based on your portfolio:**\n\n{regime_text}"
-            response += f"Your portfolio covers: {', '.join(sorted(sector_counts.keys()))}.\n\n"
-            if missing_sectors:
-                response += f"Consider diversifying into: **{', '.join(missing_sectors[:4])}**.\n\n"
-            if regime_df is not None and len(regime_df) > 0:
-                current = regime_df["regime"].iloc[-1]
-                if current in ("Crisis", "High Volatility"):
-                    response += ("In elevated-volatility regimes, consider defensive assets like "
-                                 "**TLT** (treasuries), **GLD** (gold), or **XLU** (utilities).\n")
-                else:
-                    response += ("In the current low-to-normal volatility environment, growth-oriented "
-                                 "assets like **QQQ** or sector ETFs may offer upside.\n")
-            return response
-        except Exception:
-            return "Load your portfolio first to get personalized buy suggestions."
-
-    # --- Sell advice ---
-    if any(kw in msg for kw in ["should i sell", "take profit", "cut losses", "exit position",
-                                "sell advice", "time to sell"]):
-        try:
-            held = getattr(session_state, "holdings", {})
-            if not held:
-                return ("You don't have any holdings tracked yet. "
-                        "Add stocks in the **My Holdings** section to get sell advice.")
-
-            import pandas as _pd
-            from core.data_fetch import fetch_latest_prices as _flp
-            held_tickers = list(held.keys())
-            live = _flp(held_tickers)
-            price_map = {}
-            for _, row in live.iterrows():
-                if _pd.notna(row.get("Price")):
-                    price_map[row["Ticker"]] = row["Price"]
-
-            from core.portfolio import get_holdings_summary
-            rows = get_holdings_summary(price_map)
-
-            regime_text = ""
-            if regime_df is not None and len(regime_df) > 0:
-                current = regime_df["regime"].iloc[-1]
-                regime_text = f"Current regime: **{current}**. "
-
-            response = f"**Sell Analysis for your holdings:**\n\n{regime_text}\n"
-            for r in rows:
-                pnl_label = "profit" if r["P&L"] >= 0 else "loss"
-                response += (f"- **{r['Ticker']}**: {r['Shares']:.1f} shares, "
-                             f"P&L ${r['P&L']:+,.2f} ({r['P&L %']:+.1f}%) — ")
-                if r["P&L %"] > 20:
-                    response += "Consider taking partial profit.\n"
-                elif r["P&L %"] < -15:
-                    response += "Significant {}, review your thesis.\n".format(pnl_label)
-                else:
-                    response += "Hold for now.\n"
-
-            if regime_df is not None and len(regime_df) > 0:
-                current = regime_df["regime"].iloc[-1]
-                if current == "Crisis":
-                    response += ("\nIn **Crisis** regime, consider reducing high-beta positions "
-                                 "and increasing defensive allocations.")
-                elif current == "High Volatility":
-                    response += "\nIn **High Volatility**, tighten stop-losses and watch for breakdowns."
-            return response
-        except Exception:
-            return "Add holdings in the **My Holdings** section to get personalized sell advice."
-
-    # --- Market outlook ---
-    if any(kw in msg for kw in ["market outlook", "sector performance", "market trend",
-                                "market forecast", "market direction"]):
-        try:
-            response = "**Market Outlook:**\n\n"
-            if regime_df is not None and len(regime_df) > 0:
-                current = regime_df["regime"].iloc[-1]
-                from core.regime_detector import get_regime_statistics
-                stats = get_regime_statistics(regime_df)
-                response += f"Current regime: **{current}**\n\n"
-                for name, s in stats.items():
-                    response += (f"- {name}: {s['pct_time']:.1f}% of time "
-                                 f"(vol: {s['avg_vol']:.2%}, corr: {s['avg_corr']:.2f})\n")
-                response += "\n"
-
-            import numpy as np
-            port_ret = portfolio.portfolio_returns
-            ann_ret = float(port_ret.mean() * 252)
-            ann_vol = float(port_ret.std() * np.sqrt(252))
-            response += (f"Portfolio annualized return: **{ann_ret:+.2%}**, "
-                         f"volatility: **{ann_vol:.2%}**.\n\n")
-            response += "Visit **Regime Detection** and **Risk Metrics** pages for deeper analysis."
-            return response
-        except Exception:
-            return "Load portfolio data to see market outlook analysis."
-
-    # --- Correlation queries ---
-    if any(kw in msg for kw in ["correlation", "corr", "diversif", "how correlated", "move together"]):
+    # --- Correlation ---
+    if any(kw in msg for kw in [
+        "correlation", "corr", "diversif", "how correlated", "move together",
+    ]):
         try:
             from risk.correlation import (
                 calculate_correlation_matrix,
@@ -572,275 +879,171 @@ def fallback_response(user_message: str, session_state) -> str:
                 nv = normal.loc[t1, t2]
                 tv = tail.loc[t1, t2]
                 spike = tv - nv
-
                 return (
                     f"**Correlation Analysis:**\n\n"
                     f"- **{t1}-{t2} normal correlation:** {nv:.2f}\n"
-                    f"- **{t1}-{t2} crash correlation:** {tv:.2f} ({spike:+.2f} spike)\n"
+                    f"- **{t1}-{t2} crash correlation:** {tv:.2f} "
+                    f"({spike:+.2f} spike)\n"
                     f"- **Diversification ratio:** {dr:.2f}\n\n"
-                    f"{'Corr spike in crashes.' if spike > 0.1 else 'Corr stable across regimes.'} "
+                    f"{'Corr spike in crashes.' if spike > 0.1 else 'Stable.'} "
                     f"Diversification ratio of {dr:.2f} means "
-                    f"{'good' if dr > 1.3 else 'moderate' if dr > 1.1 else 'limited'} diversification.\n\n"
+                    f"{'good' if dr > 1.3 else 'moderate' if dr > 1.1 else 'limited'}"
+                    f" diversification.\n\n"
                     f"Visit the **Correlation Analysis** page for heatmaps."
                 )
             return (
-                f"Your portfolio diversification ratio is {dr:.2f}. "
-                f"Visit the Correlation Analysis page for details."
+                f"Diversification ratio: {dr:.2f}. "
+                f"Visit Correlation Analysis page for details."
             )
         except Exception:
-            return ("Visit the **Correlation Analysis** page to see how "
-                    "your assets correlate during normal and crash periods.")
+            return (
+                "Visit the **Correlation Analysis** page to see how "
+                "your assets correlate."
+            )
 
-    # --- VaR queries ---
-    if any(kw in msg for kw in ["value at risk", "cvar", "expected shortfall",
-                                "risk metric", "how much can i lose", "worst case",
-                                "downside risk"]):
+    # --- VaR ---
+    if any(kw in msg for kw in [
+        "value at risk", " var", "cvar", "expected shortfall",
+        "risk metric", "how much can i lose", "worst case", "downside risk",
+    ]):
         try:
             from risk.var_cvar import var_cvar_summary, regime_conditional_var
             s = var_cvar_summary(returns, weights, 0.95)
-
             response = (
                 f"**Risk Metrics (95% confidence):**\n\n"
                 f"- **Historical VaR:** {s['historical_var']:.2%} daily\n"
-                f"- **CVaR (Expected Shortfall):** {s['historical_cvar']:.2%} daily\n"
-                f"- **Parametric VaR:** {s['parametric_var']:.2%} daily\n\n"
-                f"This means on the worst 5% of trading days, you can expect to lose at least "
-                f"**{s['historical_var']:.2%}** of portfolio value. The average loss on those worst days is "
-                f"**{s['historical_cvar']:.2%}** (CVaR)."
+                f"- **CVaR (Expected Shortfall):** {s['historical_cvar']:.2%}\n"
+                f"- **Parametric VaR:** {s['parametric_var']:.2%}\n\n"
+                f"Worst 5% of days: lose at least **{s['historical_var']:.2%}**. "
+                f"Average loss on those days: **{s['historical_cvar']:.2%}**."
             )
-
             if regime_df is not None:
                 rv = regime_conditional_var(returns, weights, regime_df, 0.95)
                 if rv:
-                    regime_lines = [
+                    lines = [
                         f"  - {k}: {v:.2%}" for k, v in rv.items()
-                        if not (isinstance(v, float) and v != v)
+                        if isinstance(v, float) and v == v
                     ]
-                    if regime_lines:
-                        response += "\n\n**VaR by regime:**\n" + "\n".join(regime_lines)
-
-            response += "\n\nVisit the **Risk Metrics** page for regime-conditional analysis."
+                    if lines:
+                        response += "\n\n**VaR by regime:**\n" + "\n".join(lines)
+            response += "\n\nVisit **Risk Metrics** for full analysis."
             return response
         except Exception:
-            return "Visit the **Risk Metrics** page for VaR, CVaR, and Monte Carlo analysis."
+            return "Visit **Risk Metrics** for VaR and CVaR analysis."
 
-    # --- Regime queries ---
-    if any(kw in msg for kw in ["regime", "crisis", "market state", "market condition",
-                                "what phase", "which regime"]):
+    # --- Regime ---
+    if any(kw in msg for kw in [
+        "regime", "crisis", "market state", "market condition",
+        "what phase", "which regime",
+    ]):
         if regime_df is not None and len(regime_df) > 0:
             current = regime_df["regime"].iloc[-1]
             from core.regime_detector import get_regime_statistics
             stats = get_regime_statistics(regime_df)
-
-            response = f"**Current Market Regime: {current}**\n\n"
-
-            regime_descriptions = {
-                "Low Volatility": (
-                    "Markets are calm with below-average volatility. "
-                    "Correlations tend to be lower, diversification works well."
-                ),
-                "Normal": (
-                    "Standard market conditions with typical volatility "
-                    "and correlation levels."
-                ),
-                "High Volatility": (
-                    "Elevated volatility but not at crisis levels. "
-                    "Watch for correlation spikes reducing diversification."
-                ),
-                "Crisis": (
-                    "Extreme volatility and high correlations. "
-                    "Diversification is likely failing - hedging is critical."
-                ),
+            descs = {
+                "Low Volatility": "Markets calm, diversification works well.",
+                "Normal": "Standard conditions, typical volatility.",
+                "High Volatility": "Elevated vol, watch for correlation spikes.",
+                "Crisis": "Extreme vol + high correlations. Hedging critical.",
             }
-            response += regime_descriptions.get(current, "") + "\n\n"
-
+            response = f"**Current Regime: {current}**\n\n"
+            response += descs.get(current, "") + "\n\n"
             response += "**Historical distribution:**\n"
             for name, s in stats.items():
                 response += (
                     f"- {name}: {s['pct_time']:.1f}% of time "
-                    f"(avg vol: {s['avg_vol']:.2%}, "
-                    f"avg corr: {s['avg_corr']:.2f})\n"
+                    f"(vol: {s['avg_vol']:.2%}, corr: {s['avg_corr']:.2f})\n"
                 )
-
-            response += "\nVisit the **Regime Detection** page for timeline."
+            response += "\nVisit **Regime Detection** for timeline."
             return response
-        return "Visit the **Regime Detection** page to see current market regime analysis."
+        return "Visit **Regime Detection** for regime analysis."
 
-    # --- Hedge queries ---
-    if any(kw in msg for kw in ["hedge", "protect", "insurance", "reduce risk",
-                                "best hedge", "hedge ratio", "which asset"]):
+    # --- Hedge ---
+    if any(kw in msg for kw in [
+        "hedge", "protect", "insurance", "reduce risk",
+        "best hedge", "hedge ratio",
+    ]):
         if len(tickers) > 1:
             try:
-                from risk.hedge_analysis import compare_hedges, optimal_hedge_ratio, var_impact
+                from risk.hedge_analysis import (
+                    compare_hedges, optimal_hedge_ratio, var_impact,
+                )
                 port_ret = portfolio.portfolio_returns
                 candidates = tickers[1:]
                 hedge_df = returns[candidates]
                 comparison = compare_hedges(port_ret, hedge_df)
-
                 best = comparison.index[0]
-                best_metrics = comparison.iloc[0]
+                best_m = comparison.iloc[0]
                 opt_ratio = optimal_hedge_ratio(port_ret, returns[best])
                 impact = var_impact(port_ret, returns[best], opt_ratio)
-
                 response = (
                     f"**Hedge Analysis:**\n\n"
-                    f"**Best hedge candidate: {best}**\n"
-                    f"- Correlation with portfolio: {best_metrics['correlation']:.3f}\n"
-                    f"- Tail correlation: {best_metrics['tail_correlation']:.3f}\n"
-                    f"- Variance reduction: {best_metrics['variance_reduction']:.1%}\n"
-                    f"- Optimal hedge ratio: {opt_ratio:.3f}\n\n"
-                    f"**VaR impact at optimal ratio:**\n"
-                    f"- Before: {impact['var_before']:.2%} -> After: {impact['var_after']:.2%}\n"
-                    f"- **VaR reduction: {impact['reduction_pct']:.1%}**\n\n"
+                    f"**Best hedge: {best}**\n"
+                    f"- Corr: {best_m['correlation']:.3f}, "
+                    f"Tail corr: {best_m['tail_correlation']:.3f}\n"
+                    f"- Variance reduction: {best_m['variance_reduction']:.1%}\n"
+                    f"- Optimal ratio: {opt_ratio:.3f}\n\n"
+                    f"**VaR impact:**\n"
+                    f"- Before: {impact['var_before']:.2%} → "
+                    f"After: {impact['var_after']:.2%}\n"
+                    f"- **Reduction: {impact['reduction_pct']:.1%}**"
                 )
                 if len(comparison) > 1:
-                    response += "**Other candidates:**\n"
-                    for ticker in comparison.index[1:]:
-                        row = comparison.loc[ticker]
+                    response += "\n\n**Other candidates:**\n"
+                    for t in comparison.index[1:]:
+                        r = comparison.loc[t]
                         response += (
-                            f"- {ticker}: var reduction "
-                            f"{row['variance_reduction']:.1%}, "
-                            f"corr {row['correlation']:.3f}\n"
+                            f"- {t}: reduction {r['variance_reduction']:.1%}, "
+                            f"corr {r['correlation']:.3f}\n"
                         )
-
-                response += "\nVisit the **Hedge Impact** page for detailed charts."
+                response += "\nVisit **Hedge Impact** for charts."
                 return response
             except Exception:
                 pass
-        return "Add more assets to analyze hedging. Visit the **Hedge Impact** page."
+        return "Add more assets to analyze hedging. Visit **Hedge Impact**."
 
-    # --- Stress scenario queries ---
-    if any(kw in msg for kw in ["stress", "scenario", "what if", "worst case scenario",
-                                "black swan", "tail risk"]):
+    # --- Stress ---
+    if any(kw in msg for kw in [
+        "stress", "scenario", "black swan", "tail risk",
+    ]):
         return (
-            "**Stress Scenarios** test your portfolio against 4 extreme events:\n\n"
-            "1. **Correlation Shock** - All correlations spike toward 1\n"
-            "2. **Volatility Spike** - Vol doubles across all assets\n"
-            "3. **Liquidity Stress** - 20% return haircut from spreads\n"
-            "4. **Combined Crisis** - All three simultaneously\n\n"
-            "Visit the **Stress Scenarios** page to see projected outcomes."
+            "**Stress Scenarios** test your portfolio against 4 extremes:\n\n"
+            "1. **Correlation Shock** — correlations spike toward 1\n"
+            "2. **Volatility Spike** — vol doubles across all assets\n"
+            "3. **Liquidity Stress** — 20% return haircut\n"
+            "4. **Combined Crisis** — all three simultaneously\n\n"
+            "Visit **Stress Scenarios** for projected outcomes."
         )
 
-    # --- Explain / educational queries ---
-    if any(kw in msg for kw in ["explain", "what is", "what does", "how does",
-                                "define", "meaning", "what are"]):
-        # Check general knowledge first
-        if general:
-            return general
+    # --- Explain HHI / Sharpe / Monte Carlo / VaR (educational + portfolio) ---
+    if any(kw in msg for kw in ["explain", "what is", "what does", "what are"]):
         if "hhi" in msg:
             hhi = portfolio.hhi_concentration()
             return (
-                f"**HHI (Herfindahl-Hirschman Index)** measures portfolio concentration.\n\n"
-                f"- Ranges from 1/n (perfectly diversified) to 1 (single asset)\n"
+                f"**HHI (Herfindahl-Hirschman Index)** measures concentration.\n\n"
+                f"- Range: 1/n (diversified) to 1 (single asset)\n"
                 f"- Your HHI: **{hhi:.4f}** "
                 f"(effective {portfolio.effective_n():.1f} assets)\n"
                 f"- {'Well diversified' if hhi < 0.3 else 'Moderate' if hhi < 0.5 else 'Concentrated'}"
             )
         if "sharpe" in msg:
             ann_ret = returns.mean() * 252
-            ann_vol = returns.std() * 252**0.5
             port_sharpe = float(
-                (ann_ret * weights).sum() / (portfolio.portfolio_returns.std() * 252**0.5)
+                (ann_ret * weights).sum()
+                / (portfolio.portfolio_returns.std() * 252**0.5)
             )
             return (
-                f"**Sharpe Ratio** = (Return - Risk-Free Rate) / Volatility\n\n"
-                f"It measures risk-adjusted return. Higher is better.\n"
+                f"**Sharpe Ratio** = (Return - Risk-Free) / Volatility\n\n"
                 f"- Your portfolio Sharpe: **{port_sharpe:.2f}**\n"
                 f"- Above 1.0 = good, above 2.0 = excellent"
             )
         if "monte carlo" in msg or "simulation" in msg:
             return (
-                "**Monte Carlo Simulation** generates thousands of possible future return paths "
-                "using your portfolio's historical mean returns and covariance.\n\n"
-                "- **Standard MC** uses Cholesky decomposition for correlated random returns\n"
-                "- **Regime-Aware MC** uses per-regime parameters + transition probabilities\n\n"
-                "Visit the **Risk Metrics** page to run simulations."
+                "**Monte Carlo Simulation** generates thousands of possible "
+                "future return paths using historical stats.\n\n"
+                "- **Standard MC**: Cholesky decomposition for correlated returns\n"
+                "- **Regime-Aware MC**: Per-regime parameters + transitions\n\n"
+                "Visit **Risk Metrics** to run simulations."
             )
-        if "var" in msg:
-            return (
-                "**Value at Risk (VaR)** estimates the maximum expected loss over a given "
-                "time period at a certain confidence level.\n\n"
-                "- **95% daily VaR of 2%** means: on 95% of days, you lose less than 2%\n"
-                "- **Historical VaR**: Based on actual past returns\n"
-                "- **Parametric VaR**: Assumes normal distribution\n"
-                "- **CVaR (Expected Shortfall)**: Average loss beyond VaR threshold\n"
-                "- CVaR is considered a better risk measure as it captures tail risk"
-            )
-        return (
-            "I can explain many finance concepts! Try asking about:\n"
-            "stocks, bonds, ETFs, options, futures, crypto, forex, inflation, "
-            "interest rates, P/E ratio, beta, Sharpe ratio, VaR, "
-            "technical analysis, RSI, moving averages, and more."
-        )
 
-    # --- Help / general ---
-    if any(kw in msg for kw in ["help", "what can", "how do", "menu",
-                                "options", "capabilities"]):
-        return (
-            "I'm your financial advisor! I can help with:\n\n"
-            "**General Finance:**\n"
-            "- *What is a stock/bond/ETF/option?*\n"
-            "- *Explain P/E ratio / beta / Sharpe ratio*\n"
-            "- *How does inflation affect investments?*\n"
-            "- *What is dollar cost averaging?*\n"
-            "- *Tell me about value investing*\n\n"
-            "**Your Portfolio:**\n"
-            "- *How correlated are my assets?*\n"
-            "- *What is my Value-at-Risk?*\n"
-            "- *What market regime are we in?*\n"
-            "- *Which asset is the best hedge?*\n"
-            "- *Should I buy/sell?*\n\n"
-            "**Trading & Strategies:**\n"
-            "- *Explain technical analysis / RSI / MACD*\n"
-            "- *What is swing trading?*\n"
-            "- *How do options work?*\n\n"
-            "Ask me anything about finance!"
-        )
-
-    # --- Greetings ---
-    if any(kw in msg for kw in ["hello", "hi", "hey", "good morning", "good evening",
-                                "what's up", "howdy", "greetings"]):
-        return (
-            "Hey! I'm your financial advisor. Ask me anything about:\n\n"
-            "- **Investing**: Stocks, bonds, ETFs, crypto, options\n"
-            "- **Your portfolio**: Risk, correlations, hedging, P&L\n"
-            "- **Finance concepts**: P/E ratio, Sharpe, inflation, interest rates\n"
-            "- **Strategies**: Value investing, swing trading, DCA\n\n"
-            "What would you like to know?"
-        )
-
-    # --- Thank you ---
-    if any(kw in msg for kw in ["thank", "thanks", "appreciate", "great answer"]):
-        return "You're welcome! Feel free to ask anything else about finance or your portfolio."
-
-    # --- Try general knowledge as last resort before default ---
-    if general:
-        return general
-
-    # --- Default: intelligent catch-all ---
-    summary = portfolio.summary()
-    port_ret = portfolio.portfolio_returns
-    import numpy as np
-    ann_ret = float(port_ret.mean() * 252)
-    ann_vol = float(port_ret.std() * np.sqrt(252))
-
-    return (
-        f"I'm not sure I understood that, but I can help with a lot! Here's a quick summary:\n\n"
-        f"**Your Portfolio:** {', '.join(summary['tickers'][:5])} "
-        f"({summary['n_assets']} instruments)\n"
-        f"**Return:** {ann_ret:+.2%} | **Vol:** {ann_vol:.2%}\n\n"
-        f"Try asking me about:\n"
-        f"- General finance: *What is an ETF?*, *Explain inflation*, *How do options work?*\n"
-        f"- Your portfolio: *What's my VaR?*, *Should I sell?*, *Market outlook*\n"
-        f"- Strategies: *Value investing*, *Dollar cost averaging*, *Technical analysis*"
-    )
-
-
-def _is_portfolio_specific(msg: str) -> bool:
-    """Check if the message is specifically about the user's portfolio."""
-    portfolio_keywords = [
-        "my portfolio", "my holdings", "my assets", "my stocks",
-        "my position", "my risk", "my return", "my var",
-        "should i buy", "should i sell", "my allocation",
-    ]
-    return any(kw in msg for kw in portfolio_keywords)
+    return None
