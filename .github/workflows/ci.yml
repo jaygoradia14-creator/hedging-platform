@@ -28,4 +28,4 @@ jobs:
               flake8 core/ risk/ chat/ tests/ --max-line-length=120 --ignore=E501,W503,E402                                                                                                                                                   
           - name: Run tests with coverage                                                                                                                                                                                                     
             run: |                                                                                                                                                                                                                            
-              pytest tests/ -v --cov=core --cov=risk --cov=chat --cov-report=term-missing --cov-fail-under=50
+              pytest tests/ -v --cov=core --cov=risk --cov=chat --cov-report=term-missing --cov-fail-under=75
