@@ -116,6 +116,70 @@ Added mobile breakpoints (768px, 480px) via custom CSS. Columns stack vertically
 
 ---
 
+## Iteration 8: No Holdings Tracking -> Groww-Style Portfolio Tracker
+
+### Represent (What I Thought)
+The dashboard shows portfolio weights and analytics — that's enough for users to understand their allocation.
+
+### Implement (What Actually Happened)
+Users had no way to track actual stock purchases, see P&L, or simulate selling positions. The app felt like an analytics tool, not a trading platform. Users couldn't answer: "How much money have I made or lost?"
+
+### Pivot
+Added a full holdings system: buy stocks with quantity and price, live P&L tracking with current prices, sell functionality with share quantity, average cost basis calculation, and a summary bar showing Total Invested / Current Value / Total P&L. Sell controls are inline per stock row — no separate page.
+
+### What I Learned
+**Real portfolio tracking creates emotional engagement.** Seeing green/red P&L makes the risk analytics feel urgent and relevant. The holdings system also provides context for the chatbot's buy/sell advice.
+
+---
+
+## Iteration 9: Combined Regime Chart -> Per-Regime Dropdown
+
+### Represent (What I Thought)
+Show all 4 regimes (Low Vol, Normal, High Vol, Crisis) on a single timeline chart with overlapping rolling volatility lines.
+
+### Implement (What Actually Happened)
+The combined chart was unreadable — 5+ overlapping colored lines (one per stock per regime), cluttered x-axis with date labels, no way to focus on a specific regime. Users couldn't answer: "What does volatility look like specifically during crisis periods?"
+
+### Pivot
+Replaced the combined chart with a `st.selectbox` dropdown for regime selection. Each regime shows only its own dates and per-stock volatility lines. Users pick the regime they care about and see a clean, focused chart.
+
+### What I Learned
+**User control > information density.** A dropdown that shows one thing clearly is better than a chart that shows everything at once. This is the same principle as Iteration 6 (feature removal) applied to data visualization.
+
+---
+
+## Iteration 10: No Optimization Guidance -> Efficient Frontier
+
+### Represent (What I Thought)
+Users can see their portfolio's risk metrics — they can figure out optimal allocation themselves.
+
+### Implement (What Actually Happened)
+Users had no reference point. They could see their portfolio's return and volatility but couldn't answer: "Is this the best I can do with these assets? Am I taking on too much risk for my return?"
+
+### Pivot
+Built a full Efficient Frontier page with Markowitz mean-variance optimization. Shows random portfolios as a scatter plot (colored by Sharpe ratio), the efficient frontier curve, and marks the current portfolio, minimum variance, and maximum Sharpe portfolios. Includes a weight comparison table and bar chart.
+
+### What I Learned
+**Context makes metrics actionable.** Showing the current portfolio's position relative to the efficient frontier immediately tells users whether they're over-/under-allocated. The visual gap between "where you are" and "where you could be" is more persuasive than any number.
+
+---
+
+## Iteration 11: Silent Chat Failure -> Error Transparency + Multi-Provider
+
+### Represent (What I Thought)
+If the OpenAI API call fails, silently fall back to keyword-based responses — the user shouldn't see errors.
+
+### Implement (What Actually Happened)
+Users pasted their API key and the chatbot still gave generic keyword responses. The `except Exception: pass` block swallowed all errors — authentication failures, rate limits, network errors — and users had no idea why the LLM wasn't working. They thought the chatbot was broken.
+
+### Pivot
+Replaced silent fallback with error transparency: errors are collected and displayed to the user ("OpenAI error: Invalid API key"). Added Gemini as a second LLM provider (auto-detected by AIza prefix). Priority chain: OpenAI → Gemini → keyword fallback. Only falls back to keywords when no API key is provided at all.
+
+### What I Learned
+**Silent failure is worse than visible failure.** Users can fix "Invalid API key" — they can't fix "it just doesn't work." Error transparency also revealed that the original key detection logic was wrong (treating all non-sk keys as invalid). Debugging in the open is better than hiding problems.
+
+---
+
 ## Summary: The R-I Loop in Practice
 
 The **Represent -> Implement loop** is not a methodology step you do once. It's a continuous feedback mechanism:
@@ -127,6 +191,6 @@ The **Represent -> Implement loop** is not a methodology step you do once. It's 
 5. **Go back to Represent** with new understanding
 6. **Implement** the revision
 
-I went through this loop **7 documented times** during this project. The most valuable iterations were #3 (sidebar chat), #5 (synthetic tests), and #6 (feature removal) — because they challenged my initial assumptions most directly.
+I went through this loop **11 documented times** during this project. The most valuable iterations were #3 (sidebar chat), #5 (synthetic tests), #6 (feature removal), #9 (regime dropdown), and #11 (error transparency) — because they challenged my initial assumptions most directly.
 
 **Key takeaway**: The quality of the final product is proportional to the number of R-I loops, not the number of features.

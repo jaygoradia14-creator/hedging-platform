@@ -124,3 +124,87 @@ Reflection: [What was learned]
 - Added future enhancement ideas to DRIVER Evolve section
 
 **Reflection:** The REFLECT log is most useful when it captures the *why* behind pivots, not just the *what*. Documenting "sidebar chat > page chat because context preservation" is more valuable than listing file changes.
+
+---
+
+## Entry 7: Holdings System & Sell Functionality
+
+**Date:** 2026-02-16
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Build Groww-style portfolio tracker with buy/sell, P&L tracking, and live prices
+
+**Prompt:** Add holdings tracking to the dashboard — users should be able to add stocks with share quantity and buy price, see live P&L, and sell partial or full positions. Make it feel like a real trading app.
+
+**AI Output:** Extended `core/portfolio.py` with `add_holding`, `sell_holding`, and `get_holdings_summary` functions. Built holdings UI in `streamlit_app.py` with Add Stock form, holdings table with color-coded P&L, inline sell controls per row, and summary metrics bar (Total Invested / Current Value / Total P&L).
+
+**Modifications:**
+- Moved Add Stock form above the holdings table (was below, making it invisible on first use)
+- Merged sell controls into each stock row instead of a separate "Sell Stocks" section
+- Added average cost basis calculation when buying same stock multiple times
+- Added guard for selling more shares than owned (removes holding entirely)
+
+**Reflection:** The initial sell UI was buried below the holdings table — users couldn't find it. Moving controls inline (per row) follows the principle of "actions where the data is." This is the same UX lesson as sidebar chat (#3): proximity to context matters.
+
+---
+
+## Entry 8: Efficient Frontier & Markowitz Optimizer
+
+**Date:** 2026-02-16
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Implement mean-variance portfolio optimization with efficient frontier visualization
+
+**Prompt:** Build an Efficient Frontier page using Markowitz optimization. Show random portfolios scatter colored by Sharpe, the efficient frontier curve, and mark current portfolio, min variance, and max Sharpe portfolios. Include weight comparison.
+
+**AI Output:** Created `risk/optimizer.py` with 5 functions: `portfolio_performance`, `min_variance_portfolio`, `max_sharpe_portfolio`, `efficient_frontier`, `random_portfolios`. Built `pages/8_Efficient_Frontier.py` with interactive Plotly scatter, frontier curve, special portfolio markers, and weight comparison bar chart. Used `scipy.optimize.minimize` with SLSQP, bounds (0,1), and sum-to-1 constraint.
+
+**Modifications:**
+- Added risk-free rate slider (default 2%) so users can adjust Sharpe calculation
+- Used `np.random.default_rng(seed)` instead of `np.random.seed()` for modern random generation
+- Added comparison table showing Current vs Min Variance vs Max Sharpe metrics side-by-side
+
+**Reflection:** The efficient frontier visualization makes the abstract concept of "optimal allocation" concrete. Seeing your current portfolio's dot relative to the frontier is immediately actionable — you can see if you're taking excess risk. The Viridis colorscale on the scatter (colored by Sharpe) creates an intuitive "hotter = better" visual.
+
+---
+
+## Entry 9: Test Coverage Expansion (69 → 164 Tests)
+
+**Date:** 2026-02-16
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Expand test suite from 69 to 164 tests to cover new modules and increase coverage to 78%
+
+**Prompt:** Write tests for the new optimizer module, portfolio holdings functions, chat engine key resolution, chat tools execution, and expand fallback response tests. All tests must use synthetic data — zero network calls.
+
+**AI Output:** Created 4 new test files and expanded 1 existing file:
+- `tests/test_optimizer.py` (12 tests): portfolio performance, min variance, max Sharpe, efficient frontier, random portfolios
+- `tests/test_portfolio.py` (18 tests): Portfolio class, holdings add/sell, summary, HHI, effective N
+- `tests/test_chat_engine.py` (9 tests): key resolution for user, OpenAI, Gemini keys, fallback routing
+- `tests/test_chat_tools.py` (12 tests): tool execution for correlation, regime, VaR, hedge tools
+- `tests/test_chat_fallback.py` expanded (5 → 33 tests): all keyword categories, buy/sell advice, portfolio-aware responses
+
+**Modifications:**
+- Fixed `test_regime_status` — numpy int64 not JSON serializable, added float conversion in `chat/tools.py`
+- Used `MockState(dict)` pattern for Streamlit session state instead of `unittest.mock`
+- Used `SimpleNamespace` for lightweight session state mocking in chat tests
+- Removed unused imports flagged by flake8 (numpy, pytest, pandas in some test files)
+
+**Reflection:** Going from 69 to 164 tests exposed real bugs: the numpy int64 serialization issue would have crashed the chat in production. The test expansion also proved the synthetic data fixtures from conftest.py scale well — all new test files import the same fixtures without modification.
+
+---
+
+## Entry 10: Chat Engine Rewrite — Multi-Provider + Error Transparency
+
+**Date:** 2026-02-16
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Fix chatbot giving generic responses despite valid API key. Add Gemini support and in-app key input.
+
+**Prompt:** The chatbot silently falls back to keyword responses when the API call fails. Fix error handling to show actual errors. Add Gemini as a second LLM provider. Let users paste their API key in the app (auto-detect OpenAI vs Gemini by prefix).
+
+**AI Output:** Rewrote `chat/engine.py` with three key changes: (1) Error collection instead of `except: pass` — errors shown to user as "API Error: [details]". (2) Multi-provider support: `_get_openai_key()` and `_get_gemini_key()` check user input → st.secrets → environment variables. (3) Auto-detection: AIza prefix → Gemini, everything else → OpenAI. Added API key text input to sidebar in `pages/7_Chat_Advisor.py`.
+
+**Modifications:**
+- Changed `st.text_input` from `value=` to `key=` parameter binding — `value=` prevented paste on Streamlit Cloud
+- Added `st.secrets` check to hide the text input when keys are stored in deployment secrets
+- Made key detection simpler: any non-AIza key → OpenAI (removed overly strict sk- prefix check)
+- Strengthened hamburger button CSS in `core/style.py` to ensure sidebar toggle always visible
+
+**Reflection:** The biggest lesson: **silent error handling is the enemy of debugging.** The original `except Exception: pass` hid 3 separate bugs (wrong key detection, st.text_input binding issue, and an actual API auth failure). Making errors visible fixed all three in sequence because each error message pointed to the next issue.
