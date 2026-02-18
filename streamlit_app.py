@@ -390,77 +390,7 @@ with col_table:
 # --- My Holdings ---
 st.markdown("### My Holdings")
 
-# Summary metrics (top of holdings)
-holdings = st.session_state.holdings
-if holdings:
-    # Gather current prices for held tickers
-    held_tickers = list(holdings.keys())
-    current_price_map = {}
-    if live_df is not None and not live_df.empty:
-        for _, row in live_df.iterrows():
-            if pd.notna(row.get("Price")):
-                current_price_map[row["Ticker"]] = row["Price"]
-    # Fetch prices for tickers not in live_df
-    missing = [t for t in held_tickers if t not in current_price_map]
-    if missing:
-        extra = fetch_latest_prices(missing)
-        for _, row in extra.iterrows():
-            if pd.notna(row.get("Price")):
-                current_price_map[row["Ticker"]] = row["Price"]
-
-    rows = get_holdings_summary(current_price_map)
-    if rows:
-        total_invested = sum(r["Shares"] * r["Buy Price"] for r in rows)
-        total_value = sum(r["Value"] for r in rows)
-        total_pnl = total_value - total_invested
-        total_pnl_pct = (total_pnl / total_invested * 100) if total_invested else 0.0
-
-        hc1, hc2, hc3, hc4 = st.columns(4)
-        hc1.metric("Total Invested", f"${total_invested:,.2f}")
-        hc2.metric("Current Value", f"${total_value:,.2f}")
-        hc3.metric("Total P&L", f"${total_pnl:+,.2f}")
-        hc4.metric("P&L %", f"{total_pnl_pct:+.2f}%")
-
-        # Holdings table with color-coded P&L
-        styled_rows = []
-        for r in rows:
-            styled_rows.append({
-                "Ticker": r["Ticker"],
-                "Shares": f"{r['Shares']:.2f}",
-                "Buy Price": f"${r['Buy Price']:,.2f}",
-                "Current Price": f"${r['Current Price']:,.2f}",
-                "Value": f"${r['Value']:,.2f}",
-                "P&L": f"${r['P&L']:+,.2f}",
-                "P&L %": f"{r['P&L %']:+.2f}%",
-            })
-        st.dataframe(pd.DataFrame(styled_rows).set_index("Ticker"), use_container_width=True)
-
-        # Sell per stock — inline form for each holding
-        st.markdown("#### Sell Stocks")
-        for r in rows:
-            sc1, sc2, sc3 = st.columns([2, 2, 1])
-            with sc1:
-                st.markdown(f"**{r['Ticker']}** — {r['Shares']:.2f} shares")
-            with sc2:
-                sell_qty = st.number_input(
-                    "Qty", min_value=0.0, max_value=float(r["Shares"]),
-                    value=0.0, step=1.0, key=f"sell_{r['Ticker']}",
-                    label_visibility="collapsed",
-                )
-            with sc3:
-                if st.button("Sell", key=f"sell_btn_{r['Ticker']}", type="primary"):
-                    if sell_qty > 0:
-                        sell_holding(r["Ticker"], sell_qty)
-                        st.success(f"Sold {sell_qty:.2f} shares of {r['Ticker']}")
-                        st.rerun()
-                    else:
-                        st.warning("Enter shares to sell")
-    else:
-        st.info("No holdings yet. Use the form below to add stocks.")
-else:
-    st.info("No holdings yet. Use the form below to add stocks.")
-
-# Add Stock form — always visible
+# Add Stock form — at the top so it's always visible
 st.markdown("#### Add Stock")
 add_col1, add_col2, add_col3, add_col4 = st.columns([2, 1.5, 1.5, 1])
 with add_col1:
@@ -486,8 +416,67 @@ with add_col4:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
         add_holding(add_ticker, add_shares, add_price)
-        st.success(f"Added {add_shares:.2f} shares of {add_ticker} at ${add_price:,.2f}")
         st.rerun()
+
+# Holdings with integrated sell buttons
+holdings = st.session_state.holdings
+if holdings:
+    held_tickers = list(holdings.keys())
+    current_price_map = {}
+    if live_df is not None and not live_df.empty:
+        for _, row in live_df.iterrows():
+            if pd.notna(row.get("Price")):
+                current_price_map[row["Ticker"]] = row["Price"]
+    missing = [t for t in held_tickers if t not in current_price_map]
+    if missing:
+        extra = fetch_latest_prices(missing)
+        for _, row in extra.iterrows():
+            if pd.notna(row.get("Price")):
+                current_price_map[row["Ticker"]] = row["Price"]
+
+    rows = get_holdings_summary(current_price_map)
+    if rows:
+        total_invested = sum(r["Shares"] * r["Buy Price"] for r in rows)
+        total_value = sum(r["Value"] for r in rows)
+        total_pnl = total_value - total_invested
+        total_pnl_pct = (total_pnl / total_invested * 100) if total_invested else 0.0
+
+        hc1, hc2, hc3, hc4 = st.columns(4)
+        hc1.metric("Total Invested", f"${total_invested:,.2f}")
+        hc2.metric("Current Value", f"${total_value:,.2f}")
+        hc3.metric("Total P&L", f"${total_pnl:+,.2f}")
+        hc4.metric("P&L %", f"{total_pnl_pct:+.2f}%")
+
+        # Each holding: info + sell in one row
+        for r in rows:
+            pnl_color = "profit" if r["P&L"] >= 0 else "loss"
+            st.markdown(
+                f'**{r["Ticker"]}** &mdash; {r["Shares"]:.2f} shares @ '
+                f'${r["Buy Price"]:,.2f} &rarr; ${r["Current Price"]:,.2f} '
+                f'&nbsp;&nbsp; <span class="{pnl_color}">'
+                f'P&L: ${r["P&L"]:+,.2f} ({r["P&L %"]:+.2f}%)</span>',
+                unsafe_allow_html=True,
+            )
+            sc1, sc2 = st.columns([3, 1])
+            with sc1:
+                sell_qty = st.number_input(
+                    "Shares to sell", min_value=0.0, max_value=float(r["Shares"]),
+                    value=0.0, step=1.0, key=f"sell_{r['Ticker']}",
+                    label_visibility="collapsed",
+                    placeholder="Shares to sell",
+                )
+            with sc2:
+                if st.button(
+                    f"Sell {r['Ticker']}", key=f"sell_btn_{r['Ticker']}",
+                    type="primary", use_container_width=True,
+                ):
+                    if sell_qty > 0:
+                        sell_holding(r["Ticker"], sell_qty)
+                        st.rerun()
+                    else:
+                        st.warning("Enter shares to sell")
+else:
+    st.info("No holdings yet. Add stocks above.")
 
 # --- Individual stock price charts ---
 st.markdown("### Individual Price History")

@@ -36,37 +36,46 @@ if regime_df is None:
 current = regime_df["regime"].iloc[-1]
 st.metric("Current Regime", current)
 
-# --- Timeline: individual stock volatility + regime shading ---
+# --- Timeline: per-regime stock volatility ---
 st.markdown("### Regime Timeline")
 
-fig = go.Figure()
+regime_names = [r.value for r in MarketRegime]
+selected_regime = st.selectbox("Select Regime", options=regime_names, key="regime_select")
 
-# Individual stock rolling volatilities
 rolling_vol = calculate_rolling_volatility(returns, window=21)
-for i, ticker in enumerate(portfolio.tickers):
-    fig.add_trace(go.Scatter(
-        x=rolling_vol.index, y=rolling_vol[ticker],
-        mode="lines", name=ticker,
-        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
-        opacity=0.8,
-    ))
+mask = regime_df["regime"] == selected_regime
+regime_dates = regime_df.index[mask]
 
-# Regime markers on top (average volatility)
-for regime in MarketRegime:
-    mask = regime_df["regime"] == regime.value
-    if mask.any():
-        fig.add_trace(go.Scatter(
-            x=regime_df.index[mask],
-            y=regime_df["volatility"][mask],
-            mode="markers",
-            name=f"Regime: {regime.value}",
-            marker=dict(color=REGIME_COLORS[regime.value], size=4, opacity=0.6),
-            showlegend=True,
-        ))
+if len(regime_dates) > 0:
+    # Filter rolling vol to only dates in this regime
+    vol_filtered = rolling_vol.loc[rolling_vol.index.isin(regime_dates)]
 
-fig.update_layout(**kite_layout(height=450), yaxis_title="Annualized Volatility",
-                  yaxis_tickformat=".0%", hovermode="x unified")
-st.plotly_chart(fig, use_container_width=True)
+    regime_color = REGIME_COLORS.get(selected_regime, "#999")
+    st.markdown(
+        f'<span style="color:{regime_color}; font-weight:600; font-size:0.9rem;">'
+        f'{selected_regime} — {len(regime_dates)} days '
+        f'({len(regime_dates) / len(regime_df) * 100:.1f}% of total)</span>',
+        unsafe_allow_html=True,
+    )
+
+    fig = go.Figure()
+    for i, ticker in enumerate(portfolio.tickers):
+        if ticker in vol_filtered.columns:
+            fig.add_trace(go.Scatter(
+                x=vol_filtered.index, y=vol_filtered[ticker],
+                mode="lines", name=ticker,
+                line=dict(width=2, color=COLORS[i % len(COLORS)]),
+            ))
+
+    fig.update_layout(
+        **kite_layout(height=420),
+        yaxis_title="Annualized Volatility",
+        yaxis_tickformat=".0%",
+        hovermode="x unified",
+    )
+    st.plotly_chart(fig, use_container_width=True)
+else:
+    st.info(f"No data available for {selected_regime} regime.")
 
 # --- Stats table ---
 st.markdown("### Regime Statistics")
