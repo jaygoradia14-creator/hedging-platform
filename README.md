@@ -2,11 +2,11 @@
 
 [![CI](https://github.com/jaygoradia14-creator/hedging-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/jaygoradia14-creator/hedging-platform/actions/workflows/ci.yml)
 
-**[Live App](https://jaygoradia14-creator-hedging-platform.streamlit.app)** | **[GitHub Pages](https://jaygoradia14-creator.github.io/hedging-platform/)**
+**[Live App](https://hedging-platform-gy7wnwczncisnsbxeatg4l.streamlit.app/)** | **[GitHub Pages](https://jaygoradia14-creator.github.io/hedging-platform/)**
 
-**Portfolio risk analysis and hedging effectiveness platform.**
+**Portfolio risk analysis, optimization, and hedging effectiveness platform.**
 
-Analyzes how portfolio correlations spike during market crashes, detects market regimes, computes VaR/CVaR with Monte Carlo simulation, and evaluates hedging strategies - with an AI-powered chat advisor.
+Analyzes how portfolio correlations spike during market crashes, detects market regimes, computes VaR/CVaR with Monte Carlo simulation, evaluates hedging strategies, and optimizes portfolios using Markowitz efficient frontier - with an AI-powered chat advisor.
 
 ## Quick Start
 
@@ -17,44 +17,48 @@ streamlit run streamlit_app.py
 
 ## Features
 
-### 7 Analysis Pages
-1. **Dashboard** - Portfolio overview, HHI concentration, cumulative returns
+### 8 Analysis Pages
+1. **Dashboard** - Portfolio overview, live prices, holdings tracker with buy/sell, cumulative returns with S&P 500 benchmark, downloadable CSV reports
 2. **Correlation Analysis** - Normal vs crash correlations, asymmetry, stability
-3. **Regime Detection** - Volatility-based regime timeline, conditional heatmaps
+3. **Regime Detection** - Per-regime volatility timeline with dropdown, conditional heatmaps
 4. **Hedge Impact** - Hedge effectiveness comparison, optimal ratio, VaR reduction
 5. **Risk Metrics** - VaR/CVaR gauges, Monte Carlo fan chart, terminal distribution
 6. **Stress Scenarios** - Correlation shock, vol spike, liquidity stress, combined crisis
-7. **Chat Advisor** - Full-page AI chat with portfolio context panel and suggested questions
+7. **Chat Advisor** - General-purpose AI chat (OpenAI/Gemini) with portfolio context
+8. **Efficient Frontier** - Markowitz mean-variance optimization, min variance & max Sharpe portfolios
+
+### Portfolio Tracker
+- Add/sell stocks with live price lookup
+- P&L tracking with color-coded profit/loss per position
+- Total invested, current value, and portfolio-level P&L metrics
 
 ### AI Chat Advisor
-- Sidebar chat that persists across all pages
-- Uses OpenAI `gpt-4o-mini` with function-calling to reference real computed metrics
+- Supports OpenAI (`gpt-4o-mini`) and Google Gemini (`gemini-2.0-flash`)
+- Function-calling to reference real computed portfolio metrics
+- In-app API key input or persistent Streamlit secrets
 - Graceful fallback to rules-based responses when no API key is present
+
+### Efficient Frontier
+- Random portfolio scatter plot colored by Sharpe ratio
+- Efficient frontier curve with min variance and max Sharpe portfolios
+- Side-by-side weight comparison (current vs optimal allocations)
+- Adjustable risk-free rate parameter
 
 ### Real Analytics
 - All computations use real market data from Yahoo Finance
 - Regime-aware Monte Carlo simulation with transition probabilities
 - Historical, parametric, and regime-conditional VaR/CVaR
-
-## Project Evolution
-
-| Commit | R->I Moment |
-|--------|-------------|
-| Initial | Single-page correlation demo (`correlation_crash_course.py`) |
-| Restructure | Multi-page architecture with shared `core/` and `risk/` modules |
-| Analytics | VaR/CVaR, Monte Carlo, hedge analysis modules |
-| Chat | LLM-powered sidebar advisor with function-calling |
-| CI/CD | GitHub Actions, 70% coverage threshold, documentation |
+- S&P 500 benchmark comparison on cumulative returns
 
 ## Architecture
 
 ```
-streamlit_app.py          # Entry point + sidebar chat
-pages/                    # 6 analysis pages (UI only)
+streamlit_app.py          # Entry point, dashboard, holdings tracker
+pages/                    # 7 analysis pages (UI only)
 core/                     # Data fetch, regime detection, portfolio state
-risk/                     # Correlation, VaR/CVaR, Monte Carlo, hedge analysis
-chat/                     # LLM chat engine with fallback
-tests/                    # 69 tests, synthetic data, zero network calls
+risk/                     # Correlation, VaR/CVaR, Monte Carlo, hedge analysis, optimizer
+chat/                     # LLM chat engine (OpenAI + Gemini) with fallback
+tests/                    # 164 tests, 78% coverage, synthetic data, zero network calls
 docs/                     # DRIVER, REFLECT, AI Collaboration Log
 ```
 
@@ -64,11 +68,13 @@ docs/                     # DRIVER, REFLECT, AI Collaboration Log
 pytest tests/ -v --cov=core --cov=risk --cov=chat --cov-report=term-missing
 ```
 
-All tests use seeded synthetic data - no network calls, fully deterministic.
+- **164 tests**, **78% code coverage**
+- All tests use seeded synthetic data - no network calls, fully deterministic
+- CI runs on Python 3.11 and 3.12 via GitHub Actions
 
 ## Configuration
 
-- **OpenAI API key** (optional): Set `OPENAI_API_KEY` in environment or `.streamlit/secrets.toml`
+- **API Keys** (optional): Paste OpenAI or Gemini key in-app, or set `OPENAI_API_KEY` / `GEMINI_API_KEY` in `.streamlit/secrets.toml`
 - **Theme**: Zerodha Kite-inspired light theme in `.streamlit/config.toml`
 
 ## Documentation
@@ -77,11 +83,17 @@ All tests use seeded synthetic data - no network calls, fully deterministic.
 - [REFLECT Log](docs/REFLECT.md) - Represent -> Implement iterations
 - [AI Collaboration Log](docs/AI_COLLAB_LOG.md) - AI usage with prompts and reflections
 
-## Legacy
+## Project Evolution
 
-- `correlation_crash_course.py` - Original single-page app (deprecated, kept for reference)
-- `app.py` - Original entry point (deprecated, replaced by `streamlit_app.py`)
-- `index.html` - GitHub Pages visualization (separate, untouched)
+| Phase | Description |
+|-------|-------------|
+| Initial | Single-page correlation demo |
+| Restructure | Multi-page architecture with shared `core/` and `risk/` modules |
+| Analytics | VaR/CVaR, Monte Carlo, hedge analysis, stress scenarios |
+| Chat | LLM-powered advisor with OpenAI function-calling + Gemini |
+| Holdings | Portfolio tracker with buy/sell, live P&L, CSV export |
+| Optimization | Markowitz efficient frontier, min variance, max Sharpe |
+| CI/CD | GitHub Actions, 78% coverage, flake8 linting |
 
 ---
 

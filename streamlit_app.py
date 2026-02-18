@@ -497,7 +497,7 @@ fig_prices.update_layout(
 )
 st.plotly_chart(fig_prices, use_container_width=True)
 
-# --- Individual cumulative returns ---
+# --- Individual cumulative returns with benchmark ---
 st.markdown("### Cumulative Returns")
 
 cum_ret = (1 + returns).cumprod() - 1
@@ -515,6 +515,26 @@ fig_cum.add_trace(go.Scatter(
     mode="lines", name="Portfolio",
     line=dict(color="#1a1a2e", width=3),
 ))
+
+# Benchmark: S&P 500 (SPY) — if not already in portfolio
+if "SPY" not in portfolio.tickers:
+    try:
+        bench_prices = fetch_multi_asset_data(
+            ["SPY"],
+            str(portfolio.prices.index[0].date()),
+            str(portfolio.prices.index[-1].date()),
+        )
+        if not bench_prices.empty:
+            bench_ret = calculate_returns(bench_prices)
+            bench_cum = (1 + bench_ret["SPY"]).cumprod() - 1
+            fig_cum.add_trace(go.Scatter(
+                x=bench_cum.index, y=bench_cum.values * 100,
+                mode="lines", name="S&P 500 (Benchmark)",
+                line=dict(color="#999", width=2, dash="dash"),
+            ))
+    except Exception:
+        pass
+
 fig_cum.update_layout(
     **kite_layout(height=420),
     yaxis_title="Return %", yaxis_ticksuffix="%",
@@ -560,6 +580,72 @@ fig_vol.update_layout(
     hovermode="x unified",
 )
 st.plotly_chart(fig_vol, use_container_width=True)
+
+# --- Download Report ---
+st.markdown("### Download Report")
+
+from risk.var_cvar import var_cvar_summary  # noqa: E402
+from risk.correlation import calculate_diversification_ratio  # noqa: E402
+
+try:
+    var_s = var_cvar_summary(returns, portfolio.weights, 0.95)
+    div_ratio = calculate_diversification_ratio(returns, portfolio.weights)
+except Exception:
+    var_s = {}
+    div_ratio = None
+
+report_rows = []
+for i, t in enumerate(portfolio.tickers):
+    report_rows.append({
+        "Ticker": t,
+        "Sector": sectors[t],
+        "Weight": f"{portfolio.weights[i]:.2%}",
+        "Ann Return": f"{(returns[t].mean() * 252):.2%}",
+        "Ann Vol": f"{(returns[t].std() * np.sqrt(252)):.2%}",
+        "Sharpe": f"{(returns[t].mean() * 252) / (returns[t].std() * np.sqrt(252)):.2f}",
+    })
+report_df = pd.DataFrame(report_rows)
+
+# Add summary row
+summary_row = {
+    "Ticker": "PORTFOLIO",
+    "Sector": "",
+    "Weight": "100%",
+    "Ann Return": f"{(portfolio.portfolio_returns.mean() * 252):.2%}",
+    "Ann Vol": f"{(portfolio.portfolio_returns.std() * np.sqrt(252)):.2%}",
+    "Sharpe": f"{(portfolio.portfolio_returns.mean() * 252) / (portfolio.portfolio_returns.std() * np.sqrt(252)):.2f}",
+}
+report_df = pd.concat([report_df, pd.DataFrame([summary_row])], ignore_index=True)
+
+# Add risk metrics as extra rows
+risk_rows = []
+if var_s:
+    risk_rows.append({"Ticker": "95% VaR", "Sector": f"{var_s.get('historical_var', 0):.2%}"})
+    risk_rows.append({"Ticker": "95% CVaR", "Sector": f"{var_s.get('historical_cvar', 0):.2%}"})
+if div_ratio:
+    risk_rows.append({"Ticker": "Div Ratio", "Sector": f"{div_ratio:.2f}"})
+risk_rows.append({"Ticker": "HHI", "Sector": f"{summary['hhi']:.4f}"})
+if risk_rows:
+    report_df = pd.concat([report_df, pd.DataFrame(risk_rows)], ignore_index=True)
+
+dl1, dl2 = st.columns(2)
+with dl1:
+    st.download_button(
+        "Download Portfolio Report (CSV)",
+        report_df.to_csv(index=False),
+        file_name="portfolio_report.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
+with dl2:
+    # Returns data download
+    st.download_button(
+        "Download Returns Data (CSV)",
+        returns.to_csv(),
+        file_name="returns_data.csv",
+        mime="text/csv",
+        use_container_width=True,
+    )
 
 st.markdown(
     f'<p class="muted">Data: {summary["date_range"]} &middot; Navigate to pages in sidebar for detailed analysis</p>',

@@ -108,7 +108,11 @@ def execute_tool(name: str, arguments: dict, session_state) -> str:
         from core.regime_detector import get_regime_statistics
         current = regime_df["regime"].iloc[-1]
         stats = get_regime_statistics(regime_df)
-        return json.dumps({"current_regime": current, "statistics": stats})
+        # Convert numpy types to native Python for JSON serialization
+        clean_stats = {}
+        for k, v in stats.items():
+            clean_stats[k] = {sk: float(sv) for sk, sv in v.items()}
+        return json.dumps({"current_regime": current, "statistics": clean_stats})
 
     elif name == "get_holdings":
         import pandas as pd
