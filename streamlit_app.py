@@ -630,20 +630,24 @@ if risk_rows:
 
 dl1, dl2 = st.columns(2)
 with dl1:
+    import io
+    buf1 = io.BytesIO()
+    report_df.to_excel(buf1, index=False, engine="openpyxl")
     st.download_button(
-        "Download Portfolio Report (CSV)",
-        report_df.to_csv(index=False),
-        file_name="portfolio_report.csv",
-        mime="text/csv",
+        "Download Portfolio Report",
+        buf1.getvalue(),
+        file_name="portfolio_report.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True,
     )
 with dl2:
-    # Returns data download
+    buf2 = io.BytesIO()
+    returns.to_excel(buf2, engine="openpyxl")
     st.download_button(
-        "Download Returns Data (CSV)",
-        returns.to_csv(),
-        file_name="returns_data.csv",
-        mime="text/csv",
+        "Download Returns Data",
+        buf2.getvalue(),
+        file_name="returns_data.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True,
     )
 
