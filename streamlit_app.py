@@ -408,10 +408,24 @@ with add_col3:
         match = live_df[live_df["Ticker"] == add_ticker]
         if not match.empty and pd.notna(match.iloc[0]["Price"]):
             default_price = float(match.iloc[0]["Price"])
-    add_price = st.number_input(
-        "Buy Price", min_value=0.01, value=max(default_price, 0.01),
-        step=0.01, key="add_price",
-    )
+    if default_price > 0:
+        # Build price options in steps of 15, centered around current price
+        center = round(default_price / 15) * 15
+        options = sorted(set(
+            max(15, center + i * 15) for i in range(-5, 6)
+        ))
+        # Pick the closest option to actual price as default
+        closest = min(options, key=lambda x: abs(x - default_price))
+        add_price = st.selectbox(
+            "Buy Price", options=[float(o) for o in options],
+            index=options.index(closest), key="add_price_select",
+            format_func=lambda x: f"${x:,.0f}",
+        )
+    else:
+        add_price = st.number_input(
+            "Buy Price", min_value=0.01, value=0.01,
+            step=0.01, key="add_price",
+        )
 with add_col4:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
