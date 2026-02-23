@@ -1,9 +1,13 @@
 """Tests for core/portfolio.py - Portfolio class and holdings management."""
 
+import json
 import numpy as np
 import pytest
 
-from core.portfolio import Portfolio, get_holdings_summary, add_holding, sell_holding
+from core.portfolio import (
+    Portfolio, get_holdings_summary, add_holding, sell_holding,
+    save_holdings, load_holdings,
+)
 
 
 class MockState(dict):
@@ -159,3 +163,49 @@ class TestHoldings:
     def test_get_holdings_summary_empty(self, mock_session_state):
         rows = get_holdings_summary({"SPY": 460.0})
         assert len(rows) == 0
+
+
+class TestHoldingsPersistence:
+    """Test save/load holdings to/from JSON."""
+
+    def test_save_and_load_roundtrip(self, mock_session_state, tmp_path, monkeypatch):
+        import core.portfolio as pm
+        test_file = tmp_path / "holdings.json"
+        monkeypatch.setattr(pm, "_holdings_path", lambda: test_file)
+
+        add_holding("SPY", 10, 450.0)
+        add_holding("AAPL", 5, 180.0)
+        save_holdings()
+
+        assert test_file.exists()
+        loaded = json.loads(test_file.read_text())
+        assert "SPY" in loaded
+        assert loaded["AAPL"]["shares"] == 5
+
+    def test_load_empty_when_no_file(self, tmp_path, monkeypatch):
+        import core.portfolio as pm
+        test_file = tmp_path / "nonexistent.json"
+        monkeypatch.setattr(pm, "_holdings_path", lambda: test_file)
+
+        result = load_holdings()
+        assert result == {}
+
+    def test_load_handles_corrupt_json(self, tmp_path, monkeypatch):
+        import core.portfolio as pm
+        test_file = tmp_path / "bad.json"
+        test_file.write_text("{not valid json")
+        monkeypatch.setattr(pm, "_holdings_path", lambda: test_file)
+
+        result = load_holdings()
+        assert result == {}
+
+    def test_save_handles_readonly(self, mock_session_state, tmp_path, monkeypatch):
+        import core.portfolio as pm
+        readonly_dir = tmp_path / "readonly"
+        readonly_dir.mkdir()
+        readonly_dir.chmod(0o444)
+        test_file = readonly_dir / "holdings.json"
+        monkeypatch.setattr(pm, "_holdings_path", lambda: test_file)
+
+        add_holding("SPY", 10, 450.0)
+        save_holdings()  # should not raise

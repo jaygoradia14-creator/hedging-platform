@@ -140,10 +140,10 @@ User Input (tickers, period)
 ## V — Validate
 
 ### Test Strategy
-- **186 test cases** across 14 test files (including 22 Black-Scholes tests)
+- **206 test cases** across 16 test files (including 22 Black-Scholes tests)
 - **Zero network calls**: all tests use seeded synthetic data (504 trading days, 5 assets)
 - **Deterministic**: `np.random.seed(42)` ensures reproducibility
-- **Coverage**: 78% across core/, risk/, and chat/ modules (above 75% threshold)
+- **Coverage**: 80% across core/, risk/, and chat/ modules (above 75% threshold)
 - **`risk/black_scholes.py` at 100% coverage**: put-call parity, monotonicity, Greeks, protective put cost
 
 ### Validation Criteria Met
@@ -166,7 +166,7 @@ User Input (tickers, period)
 - Coverage dropped to 51% after adding optimizer and holdings modules. **Fixed**: added 95 new tests across optimizer, portfolio holdings, chat engine, chat tools, and expanded fallback tests. Reached 78%.
 - `test_regime_status` failed due to numpy int64 not JSON serializable. **Fixed**: added explicit float conversion in `chat/tools.py`.
 - Historical crisis data returned empty on Streamlit Cloud due to yfinance rate limiting. **Fixed**: added `@st.cache_data(ttl=3600)`, `dropna(how='all')` instead of `dropna()`, forward-fill, and per-ticker fallback.
-- `save_holdings()` crashed on Streamlit Cloud (read-only filesystem). **Fixed**: wrapped in `try/except OSError`.
+- `save_holdings()` crashed on Streamlit Cloud (read-only filesystem). **Fixed**: writable path detection (`/tmp/` fallback) and `try/except OSError`.
 - `np.random.seed(99)` in stress scenarios polluted global RNG state. **Fixed**: replaced with `np.random.default_rng(99)` (local RNG instance).
 
 ---
@@ -186,7 +186,7 @@ User Input (tickers, period)
 - **Multi-provider chatbot**: OpenAI + Gemini support with in-app API key input and error transparency
 - **Financial advisor mode**: Buy/sell advice routing based on holdings P&L, regime context, and sector exposure
 - **Regime dropdown**: Per-regime volatility charts replacing messy combined timeline
-- **Test coverage expansion**: 69 → 186 tests, 74% → 78% coverage across 14 test files
+- **Test coverage expansion**: 69 → 206 tests, 74% → 80% coverage across 16 test files
 - **Holdings persistence**: JSON save/load so positions survive app restarts
 - **Historical Crisis Replay**: Real 2008 GFC, 2020 COVID, 2022 Rate Hike data from yfinance with drawdown charts, crisis volatility, and crisis correlation matrices
 - **Holdings-weighted analysis**: Hedge Impact and Efficient Frontier pages use actual holdings weights instead of equal-weight when holdings exist
@@ -211,7 +211,7 @@ Every significant improvement in this project came from the **Represent -> Imple
 | 2 | Pages duplicated functions | Shared core/ and risk/ modules | Zero duplication, single source of truth |
 | 3 | Chat page loses context | Sidebar chat | Chat persists, always has analysis context |
 | 4 | Simulated data isn't useful | Real yfinance analytics | Every number computed from real market data |
-| 5 | No tests = fragile | Synthetic data test suite | 164 tests, 78% coverage, CI-ready |
+| 5 | No tests = fragile | Synthetic data test suite | 206 tests, 80% coverage, CI-ready |
 | 6 | Monte Carlo clutters risk page | Removed, kept VaR tables | Cleaner UX, more actionable information |
 | 7 | Regime timeline too messy | Per-regime dropdown with individual charts | Clean, focused, user-controlled |
 | 8 | No portfolio tracking | Holdings system with buy/sell and P&L | Feels like a real trading app |

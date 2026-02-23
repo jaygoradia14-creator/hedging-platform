@@ -10,7 +10,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
 
-HOLDINGS_FILE = Path("holdings.json")
+
+def _holdings_path() -> Path:
+    """Return writable path for holdings persistence."""
+    local = Path("holdings.json")
+    try:
+        local.touch(exist_ok=True)
+        return local
+    except OSError:
+        return Path("/tmp/holdings.json")
 
 
 @dataclass
@@ -78,10 +86,11 @@ class Portfolio:
 
 
 def save_holdings():
-    """Save holdings to JSON file."""
+    """Save holdings to JSON file (uses /tmp on Streamlit Cloud)."""
     import streamlit as st
     try:
-        with open(HOLDINGS_FILE, "w") as f:
+        path = _holdings_path()
+        with open(path, "w") as f:
             json.dump(st.session_state.holdings, f)
     except OSError:
         pass
@@ -90,8 +99,9 @@ def save_holdings():
 def load_holdings():
     """Load holdings from JSON file if it exists."""
     try:
-        if HOLDINGS_FILE.exists():
-            with open(HOLDINGS_FILE) as f:
+        path = _holdings_path()
+        if path.exists():
+            with open(path) as f:
                 return json.load(f)
     except (OSError, json.JSONDecodeError):
         pass
