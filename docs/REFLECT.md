@@ -180,6 +180,70 @@ Replaced silent fallback with error transparency: errors are collected and displ
 
 ---
 
+## Iteration 12: Equal-Weight Assumptions -> Holdings-Weighted Analysis
+
+### Represent (What I Thought)
+The Hedge Impact page and Efficient Frontier page use equal-weight portfolio returns — `portfolio.portfolio_returns` divides equally across all tickers. This is fine because the weights are shown on the Dashboard.
+
+### Implement (What Actually Happened)
+Professor feedback: "Connect hedge analysis to actual holdings." The hedge effectiveness metrics, VaR impact, and efficient frontier's "Current Portfolio" dot were all computed from equal weights — even when the user had added holdings with very different allocations. A user with 80% SPY and 20% GLD would see analysis for a 50/50 portfolio. The gap between "what the user owns" and "what the app analyzes" undermined every recommendation.
+
+### Pivot
+Both pages now check `st.session_state.holdings`. If holdings exist, compute actual weights from `shares * buy_price / total_value`. The Hedge Impact page shows "Using actual holdings weights" and the Efficient Frontier labels the dot "Current (Holdings)" instead of "Current (Equal-Weight)". Falls back to equal-weight with an info message when no holdings exist.
+
+### What I Learned
+**Analysis that doesn't reflect reality is worse than no analysis.** Equal-weight assumptions are a convenient default, but the moment a user tells you their actual allocation, the app must use it. This is the difference between a demo and a tool.
+
+---
+
+## Iteration 13: Synthetic Stress Scenarios -> Historical Crisis Replay
+
+### Represent (What I Thought)
+The stress scenario page uses covariance matrix perturbation (correlation shock, vol spike, liquidity stress) to simulate crisis conditions. This is a standard approach from academic risk management.
+
+### Implement (What Actually Happened)
+Professor feedback: "Use actual historical crisis data." The synthetic scenarios had two problems: (1) `np.random.seed(99)` polluted global RNG state, affecting other computations, and (2) the stressed returns were generated from a perturbed covariance matrix — not from what actually happened during real crises. Users couldn't answer: "What would my portfolio have done in 2008?"
+
+### Pivot
+Added a "Historical Crisis Replay" section above the parametric scenarios. Fetches actual price data from yfinance for three crises (2008 GFC, 2020 COVID, 2022 Rate Hike). Shows cumulative drawdown charts, crisis vs baseline volatility comparison, and crisis correlation matrices. Fixed the global RNG issue by switching to `np.random.default_rng(99)`. Added `@st.cache_data` with per-ticker fallback to handle yfinance rate limiting on Streamlit Cloud.
+
+### What I Learned
+**Real data is more persuasive than synthetic data.** Seeing SPY's actual -50% drawdown during the GFC is more compelling than a synthetic "correlation shock" that produces an abstract volatility increase. The parametric scenarios still serve a purpose (what-if analysis), but the historical replay grounds the analysis in reality.
+
+---
+
+## Iteration 14: No Options Pricing -> Black-Scholes Protective Puts
+
+### Represent (What I Thought)
+The hedge analysis page shows variance reduction, optimal hedge ratios, and VaR impact — that's sufficient for understanding downside protection.
+
+### Implement (What Actually Happened)
+Professor feedback: "Add Black-Scholes put pricing for options hedging." The existing hedge analysis answered "which asset hedges best?" but not "how much does protection actually cost?" For a practical hedging decision, users need to know: "If I buy puts on my SPY position, what's the premium? How many contracts do I need? What percentage of my position does that cost?"
+
+### Pivot
+Created `risk/black_scholes.py` with European put/call pricing (standard BS formula), `protective_put_cost` (contracts = ceil(shares/100)), and `put_greeks` (delta, gamma, daily theta, vega per 1% vol). Added a Protective Put Pricing section to the Hedge Impact page with 11 strike options (20% ITM through 20% OTM) and 6 expiry choices (1 month to 1 year). Uses historical volatility from returns data as sigma. Shows per-ticker pricing with total hedge cost and cost as percentage of position value.
+
+### What I Learned
+**Quantitative tools need to end in a dollar amount.** Variance reduction percentages and optimal hedge ratios are academically useful but don't answer the practical question: "How much will this cost me?" The protective put pricing section bridges theory and practice — users can see that hedging their SPY position costs ~1.5% of position value for 3-month ATM protection.
+
+---
+
+## Iteration 15: Volatile Session State -> Persistent Holdings
+
+### Represent (What I Thought)
+Holdings are stored in `st.session_state` — they persist as long as the browser tab is open. That's enough for a demo.
+
+### Implement (What Actually Happened)
+Professor feedback: "Add holdings persistence." Every time the Streamlit Cloud app restarted (which happens frequently due to idle timeouts), all holdings were lost. Users would add positions, navigate away, come back — and find an empty portfolio. The app felt unreliable.
+
+### Pivot
+Added `save_holdings()` and `load_holdings()` using JSON file persistence. `init_session_state()` loads from disk on startup. Every add/sell operation saves immediately. Added `try/except OSError` for Streamlit Cloud where the filesystem may be read-only — holdings gracefully degrade to session-only storage instead of crashing.
+
+### What I Learned
+**State that disappears is state that doesn't exist.** The persistence layer is trivial (JSON save/load), but its impact on user trust is significant. The error handling lesson was also important: Streamlit Cloud has a read-only filesystem, so the `save_holdings` must fail silently rather than crash the entire app.
+
+---
+
 ## Summary: The R-I Loop in Practice
 
 The **Represent -> Implement loop** is not a methodology step you do once. It's a continuous feedback mechanism:
@@ -191,6 +255,6 @@ The **Represent -> Implement loop** is not a methodology step you do once. It's 
 5. **Go back to Represent** with new understanding
 6. **Implement** the revision
 
-I went through this loop **11 documented times** during this project. The most valuable iterations were #3 (sidebar chat), #5 (synthetic tests), #6 (feature removal), #9 (regime dropdown), and #11 (error transparency) — because they challenged my initial assumptions most directly.
+I went through this loop **15 documented times** during this project. The most valuable iterations were #3 (sidebar chat), #5 (synthetic tests), #6 (feature removal), #13 (historical crisis replay), and #14 (Black-Scholes pricing) — because they challenged my initial assumptions most directly. Iterations 12-15 came directly from professor feedback, demonstrating that the R-I loop extends beyond self-review to external critique.
 
-**Key takeaway**: The quality of the final product is proportional to the number of R-I loops, not the number of features.
+**Key takeaway**: The quality of the final product is proportional to the number of R-I loops, not the number of features. External feedback (professor review) triggered 4 additional loops that pushed the project from 94 to 100.

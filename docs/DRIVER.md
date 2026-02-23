@@ -48,13 +48,14 @@ Portfolio diversification breaks down during market crises. Standard correlation
 ```
 User Input (tickers, period)
   -> core/data_fetch.py (yfinance prices, returns, sectors, live prices)
-    -> core/portfolio.py (Portfolio dataclass, session state)
+    -> core/portfolio.py (Portfolio dataclass, session state, JSON persistence)
     -> core/regime_detector.py (rolling vol + corr -> regime classification)
     -> risk/correlation.py (normal, tail, asymmetric correlations)
     -> risk/var_cvar.py (VaR, CVaR, regime-conditional)
     -> risk/monte_carlo.py (standard + regime-aware simulations)
     -> risk/hedge_analysis.py (effectiveness, optimal ratio, VaR impact)
     -> risk/optimizer.py (Markowitz efficient frontier, min variance, max Sharpe)
+    -> risk/black_scholes.py (put/call pricing, Greeks, protective put cost)
       -> Streamlit pages (visualization layer — NO computation)
       -> chat/ module (LLM-powered explanations grounded in computed metrics)
 ```
@@ -120,24 +121,43 @@ User Input (tickers, period)
 
 **R-I Pivot**: Originally planned a simple holdings table. Evolved to include inline sell controls per stock row, color-coded P&L, and a summary metrics bar — making it feel like a real trading app (Groww-style).
 
+### Phase 6: Professor Feedback — Push to 100 (R-I Loop: Completeness)
+**Represent**: Professor scored 94/100 with 5 specific improvements: holdings persistence, real crisis data, holdings-weighted analysis, real portfolio weights in frontier, and Black-Scholes put pricing.
+**Implement**:
+- Added JSON persistence for holdings (`save_holdings`/`load_holdings`) with Streamlit Cloud error handling
+- Built Historical Crisis Replay section with real 2008 GFC, 2020 COVID, 2022 Rate Hike data from yfinance (drawdown charts, crisis volatility comparison, crisis correlation matrices)
+- Connected hedge analysis to actual holdings weights — portfolio returns now reflect real allocation, not equal-weight
+- Efficient frontier uses holdings-derived weights — "Current (Holdings)" dot shows the real gap to optimal
+- Created `risk/black_scholes.py` module: European put/call pricing, protective put cost calculator, full Greeks (delta, gamma, theta, vega)
+- Added Protective Put Pricing section to Hedge Impact page with 11 strike options (ITM + OTM) and 6 expiry choices
+- Fixed `np.random.seed(99)` global state issue by switching to `np.random.default_rng(99)`
+- Added 22 new Black-Scholes tests (put-call parity, monotonicity, Greeks, edge cases)
+
+**R-I Pivot**: The original stress scenarios used only synthetic covariance perturbation — professor wanted real market data. Switching to yfinance for historical crises revealed that `fetch_multi_asset_data` with aggressive `dropna()` killed partial data. Fixed with `dropna(how='all')`, forward-fill, per-ticker fallback, and `@st.cache_data` to avoid rate-limiting on Streamlit Cloud.
+
 ---
 
 ## V — Validate
 
 ### Test Strategy
-- **164 test cases** across 13 test files
+- **186 test cases** across 14 test files (including 22 Black-Scholes tests)
 - **Zero network calls**: all tests use seeded synthetic data (504 trading days, 5 assets)
 - **Deterministic**: `np.random.seed(42)` ensures reproducibility
 - **Coverage**: 78% across core/, risk/, and chat/ modules (above 75% threshold)
+- **`risk/black_scholes.py` at 100% coverage**: put-call parity, monotonicity, Greeks, protective put cost
 
 ### Validation Criteria Met
-1. All 8 pages render without errors when data is loaded
+1. Holdings persist across app restarts (JSON file created and loaded)
+2. All 8 pages render without errors when data is loaded
 2. Chat responds meaningfully in OpenAI, Gemini, and fallback modes
 3. VaR properties hold: CVaR >= VaR, higher confidence -> higher VaR
 4. Monte Carlo simulations are deterministic with seed
 5. Hedge analysis correctly identifies negative-correlation assets as better hedges
 6. CI pipeline passes on push/PR to main
 7. Mobile layout works (columns stack, tables scroll, charts resize)
+8. Black-Scholes put-call parity holds to 10 decimal places
+9. Protective put costs scale linearly with contract count
+10. Historical crisis replay shows real drawdowns for 2008, 2020, 2022
 
 ### What Validation Caught
 - `test_tail_higher_for_equities` failed because synthetic data didn't guarantee tail > normal correlation. **Fixed**: replaced with `test_tail_correlation_bounded` checking valid range instead.
@@ -145,6 +165,9 @@ User Input (tickers, period)
 - Stress scenarios crashed on certain ticker combinations. **Fixed**: wrapped in try/except with graceful warning.
 - Coverage dropped to 51% after adding optimizer and holdings modules. **Fixed**: added 95 new tests across optimizer, portfolio holdings, chat engine, chat tools, and expanded fallback tests. Reached 78%.
 - `test_regime_status` failed due to numpy int64 not JSON serializable. **Fixed**: added explicit float conversion in `chat/tools.py`.
+- Historical crisis data returned empty on Streamlit Cloud due to yfinance rate limiting. **Fixed**: added `@st.cache_data(ttl=3600)`, `dropna(how='all')` instead of `dropna()`, forward-fill, and per-ticker fallback.
+- `save_holdings()` crashed on Streamlit Cloud (read-only filesystem). **Fixed**: wrapped in `try/except OSError`.
+- `np.random.seed(99)` in stress scenarios polluted global RNG state. **Fixed**: replaced with `np.random.default_rng(99)` (local RNG instance).
 
 ---
 
@@ -163,10 +186,14 @@ User Input (tickers, period)
 - **Multi-provider chatbot**: OpenAI + Gemini support with in-app API key input and error transparency
 - **Financial advisor mode**: Buy/sell advice routing based on holdings P&L, regime context, and sector exposure
 - **Regime dropdown**: Per-regime volatility charts replacing messy combined timeline
-- **Test coverage expansion**: 69 → 164 tests, 74% → 78% coverage across 13 test files
+- **Test coverage expansion**: 69 → 186 tests, 74% → 78% coverage across 14 test files
+- **Holdings persistence**: JSON save/load so positions survive app restarts
+- **Historical Crisis Replay**: Real 2008 GFC, 2020 COVID, 2022 Rate Hike data from yfinance with drawdown charts, crisis volatility, and crisis correlation matrices
+- **Holdings-weighted analysis**: Hedge Impact and Efficient Frontier pages use actual holdings weights instead of equal-weight when holdings exist
+- **Black-Scholes put pricing**: Full options pricing module with protective put cost calculator and Greeks (delta, gamma, theta, vega)
+- **Protective Put Pricing UI**: 11 strike options (20% ITM to 20% OTM), 6 expiry choices (1mo to 1yr), per-ticker pricing table with Greeks
 
 ### Future Enhancements
-- **Options pricing**: Add Black-Scholes for put option hedging cost analysis
 - **Real-time data**: WebSocket integration for intraday regime detection
 - **Custom scenarios**: User-defined stress parameter inputs
 - **Historical backtesting**: Walk-forward validation of hedge recommendations
@@ -191,10 +218,14 @@ Every significant improvement in this project came from the **Represent -> Imple
 | 9 | No optimization guidance | Efficient Frontier with Markowitz | Users see optimal portfolio vs current allocation |
 | 10 | Chat silently fails to fallback | Error transparency + multi-provider | Users know exactly what happened and can fix it |
 | 11 | No benchmark comparison | S&P 500 overlay on cumulative returns | Portfolio performance in context |
+| 12 | Holdings lost on app restart | JSON persistence with Cloud error handling | Positions survive restarts; graceful degradation on read-only filesystems |
+| 13 | Synthetic stress scenarios only | Historical Crisis Replay (2008, 2020, 2022) | Real drawdown data makes stress testing credible |
+| 14 | Equal-weight assumptions everywhere | Holdings-weighted hedge analysis + frontier | Analysis reflects actual portfolio allocation |
+| 15 | No options pricing | Black-Scholes put/call + protective put UI | Quantitative hedging cost analysis with Greeks |
 
 ### Lessons Learned
 1. **Tail correlation > normal correlation** for risk management decisions — this is the central finding
-2. **The R-I loop is not a one-time thing** — I looped through Represent -> Implement 11+ times during this project
+2. **The R-I loop is not a one-time thing** — I looped through Represent -> Implement 15 times during this project
 3. **Removing features is as important as adding them** — rolling correlation and Monte Carlo were cut because they added noise, not insight
 4. **Sidebar chat is better UX than page chat** — persistent context beats dedicated interface
 5. **Synthetic test data eliminates flaky tests** while preserving statistical properties

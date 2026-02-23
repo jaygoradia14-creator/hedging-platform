@@ -208,3 +208,72 @@ Reflection: [What was learned]
 - Strengthened hamburger button CSS in `core/style.py` to ensure sidebar toggle always visible
 
 **Reflection:** The biggest lesson: **silent error handling is the enemy of debugging.** The original `except Exception: pass` hid 3 separate bugs (wrong key detection, st.text_input binding issue, and an actual API auth failure). Making errors visible fixed all three in sequence because each error message pointed to the next issue.
+
+---
+
+## Entry 11: Holdings Persistence, Historical Crisis Data & Black-Scholes Pricing
+
+**Date:** 2026-02-22
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Implement all 5 professor feedback items to push code review score from 94 to 100
+
+**Prompt:** Implement: (1) JSON persistence for holdings, (2) historical crisis replay with real 2008/2020/2022 yfinance data, (3) holdings-weighted hedge analysis, (4) holdings-derived weights in efficient frontier, (5) Black-Scholes put pricing module with protective put UI. Create tests for Black-Scholes.
+
+**AI Output:** Generated a 6-step implementation plan and executed all steps:
+- `core/portfolio.py`: Added `save_holdings()`, `load_holdings()` with JSON persistence and Cloud error handling
+- `pages/6_Stress_Scenarios.py`: New "Historical Crisis Replay" section with 3 crises, drawdown charts, crisis volatility comparison, crisis correlation matrices. Fixed `np.random.seed(99)` to `np.random.default_rng(99)`
+- `pages/4_Hedge_Impact.py`: Holdings-weighted portfolio returns with info banner, plus Protective Put Pricing section
+- `pages/8_Efficient_Frontier.py`: Holdings-derived weights with dynamic "Current (Holdings)" label
+- `risk/black_scholes.py`: NEW module with `black_scholes_put`, `black_scholes_call`, `protective_put_cost`, `put_greeks`
+- `tests/test_black_scholes.py`: 22 tests (put-call parity, monotonicity, Greeks, protective put cost, edge cases)
+- `streamlit_app.py`: Calls `save_holdings()` after every add/sell
+
+**Modifications:**
+- Expanded strike options from 3 (ATM, 5% OTM, 10% OTM) to 11 (20% ITM through 20% OTM) after seeing the UI felt too limited
+- Added expiry options beyond 6 months (9 months, 1 year) for longer-dated hedging analysis
+- Added `try/except OSError` to persistence functions after Streamlit Cloud deployment crashed on read-only filesystem
+- Added `@st.cache_data(ttl=3600)` and per-ticker fallback after yfinance rate-limited historical crisis fetches on Cloud
+
+**Reflection:** The biggest lesson was that **deploying to production surfaces bugs that local testing misses**. The Streamlit Cloud filesystem is read-only (broke JSON persistence), yfinance rate-limits concurrent requests (broke crisis data fetch), and `dropna()` with `how='any'` was too aggressive for historical data with partial coverage. Each deployment failure led to a targeted fix. The 22 Black-Scholes tests at 100% coverage were the cleanest part — mathematical functions with known properties are easy to test.
+
+---
+
+## Entry 12: Streamlit Cloud Deployment Fixes
+
+**Date:** 2026-02-22
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Debug and fix ImportError and empty crisis data on Streamlit Cloud
+
+**Prompt:** Fix two Streamlit Cloud issues: (1) ImportError on line 222 of streamlit_app.py when importing save_holdings, (2) "No data available for 2022 Rate Hike period" showing empty on the stress page.
+
+**AI Output:** Diagnosed two root causes:
+1. `save_holdings()` / `load_holdings()` filesystem operations crash on Streamlit Cloud's restricted environment. Added defensive `try/except (OSError, json.JSONDecodeError)` wrappers.
+2. Crisis data fetch used `fetch_multi_asset_data` which calls `prices.dropna()` (drops ALL rows if ANY column has NaN). Combined with yfinance rate-limiting on Cloud, this returned empty DataFrames.
+
+Created `_fetch_crisis_data()` with: bulk download attempt first, `dropna(how='all')` + forward-fill instead of aggressive dropna, `@st.cache_data(ttl=3600)` to avoid repeated API calls, and per-ticker fallback if bulk download fails.
+
+**Modifications:**
+- Changed the crisis fetch function to accept `tuple(tickers)` instead of `list(tickers)` for `@st.cache_data` hashability
+- Kept both the cached crisis fetch and the original `fetch_multi_asset_data` (used elsewhere) to avoid breaking other pages
+
+**Reflection:** Production deployment is a fundamentally different environment from local development. Streamlit Cloud has: read-only filesystem (most of it), shared yfinance rate limits, different Python package versions, and network restrictions. Each of these constraints required a specific fix. The cache + fallback pattern for yfinance is reusable — any page fetching historical data should use it.
+
+---
+
+## Entry 13: Documentation Update — DRIVER, REFLECT, AI Collab Log
+
+**Date:** 2026-02-23
+**Tool:** Claude Code (claude-opus-4-6)
+**Task:** Update all three documentation files to cover the new features (Phase 6)
+
+**Prompt:** Update DRIVER.md (add Phase 6, update test counts, update Evolve/Review), REFLECT.md (add iterations 12-15 for holdings-weighted analysis, historical crisis replay, Black-Scholes, persistence), and AI_COLLAB_LOG.md (add entries 11-13 for the implementation work, Cloud fixes, and doc updates).
+
+**AI Output:** Updated all three documents with new content covering the professor feedback implementation. DRIVER.md now has Phase 6 (Push to 100), 186 tests, 15 R-I loops in the Review table. REFLECT.md has 4 new iterations documenting the pivots. AI Collab Log has 3 new entries.
+
+**Modifications:**
+- Ensured REFLECT iterations capture the *why* behind each pivot, not just the *what*
+- Updated test count from 164 to 186 throughout DRIVER.md
+- Removed "Options pricing" from Future Enhancements (now completed)
+- Added specific lessons learned tied to production deployment experience
+
+**Reflection:** Documentation is most valuable when written close to the implementation. The REFLECT entries for iterations 12-15 capture nuances (like the `dropna(how='all')` vs `dropna()` distinction) that I would have forgotten a week later. The AI collaboration log serves dual purpose: it documents the development process for the professor AND creates a reusable record of prompting patterns for future projects.
