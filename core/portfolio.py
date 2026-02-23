@@ -3,10 +3,14 @@ Portfolio management module.
 Provides a Portfolio dataclass and session state integration for Streamlit.
 """
 
+import json
 import numpy as np
 import pandas as pd
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional
+
+HOLDINGS_FILE = Path("holdings.json")
 
 
 @dataclass
@@ -73,6 +77,21 @@ class Portfolio:
         return info
 
 
+def save_holdings():
+    """Save holdings to JSON file."""
+    import streamlit as st
+    with open(HOLDINGS_FILE, "w") as f:
+        json.dump(st.session_state.holdings, f)
+
+
+def load_holdings():
+    """Load holdings from JSON file if it exists."""
+    if HOLDINGS_FILE.exists():
+        with open(HOLDINGS_FILE) as f:
+            return json.load(f)
+    return {}
+
+
 def init_session_state():
     """Initialize Streamlit session state with default portfolio and chat history."""
     import streamlit as st
@@ -86,7 +105,7 @@ def init_session_state():
     if "data_loaded" not in st.session_state:
         st.session_state.data_loaded = False
     if "holdings" not in st.session_state:
-        st.session_state.holdings = {}  # {ticker: {shares: float, buy_price: float}}
+        st.session_state.holdings = load_holdings()
 
 
 def update_portfolio(tickers: List[str], weights: Optional[np.ndarray] = None):

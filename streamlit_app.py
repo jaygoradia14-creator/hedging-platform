@@ -219,7 +219,10 @@ st.markdown("""
 # ---------------------------------------------------------------------------
 # Session state
 # ---------------------------------------------------------------------------
-from core.portfolio import init_session_state, Portfolio, add_holding, sell_holding, get_holdings_summary  # noqa: E402
+from core.portfolio import (  # noqa: E402
+    init_session_state, Portfolio, add_holding, sell_holding,
+    get_holdings_summary, save_holdings,
+)
 from core.data_fetch import (  # noqa: E402
     fetch_multi_asset_data, calculate_returns, fetch_latest_prices, get_sectors, POPULAR_TICKERS,
 )
@@ -430,6 +433,7 @@ with add_col4:
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
         add_holding(add_ticker, add_shares, add_price)
+        save_holdings()
         st.rerun()
 
 # Holdings with integrated sell buttons
@@ -486,6 +490,7 @@ if holdings:
                 ):
                     if sell_qty > 0:
                         sell_holding(r["Ticker"], sell_qty)
+                        save_holdings()
                         st.rerun()
                     else:
                         st.warning("Enter shares to sell")

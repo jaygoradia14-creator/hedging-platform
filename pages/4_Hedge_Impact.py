@@ -1,8 +1,11 @@
 """
 Hedge Impact Analysis (Zerodha Kite style).
+Uses actual holdings weights when available; falls back to equal-weight.
 """
 
 import streamlit as st
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 
 from core.portfolio import init_session_state
@@ -18,11 +21,41 @@ if not st.session_state.data_loaded:
 
 portfolio = st.session_state.portfolio
 returns = portfolio.returns
-port_ret = portfolio.portfolio_returns
 
-if port_ret is None or returns is None:
+if returns is None:
     st.warning("Portfolio returns not available.")
     st.stop()
+
+# --- Compute portfolio returns using holdings weights if available ---
+holdings = st.session_state.holdings
+using_holdings = False
+
+if holdings:
+    active = {t: h for t, h in holdings.items()
+              if t in portfolio.tickers and h.get("shares", 0) > 0}
+    total_value = sum(
+        h["shares"] * h["buy_price"] for h in active.values()
+    )
+    if active and total_value > 0:
+        held_tickers = [t for t in portfolio.tickers if t in active]
+        held_weights = np.array([
+            active[t]["shares"] * active[t]["buy_price"] / total_value
+            for t in held_tickers
+        ])
+        port_ret = (returns[held_tickers] * held_weights).sum(axis=1)
+        using_holdings = True
+
+if not using_holdings:
+    port_ret = portfolio.portfolio_returns
+
+if port_ret is None:
+    st.warning("Portfolio returns not available.")
+    st.stop()
+
+if using_holdings:
+    st.info("Using actual holdings weights for portfolio returns.")
+else:
+    st.info("Using equal weights (no holdings). Add holdings on the main page for weighted analysis.")
 
 candidates = [t for t in portfolio.tickers[1:]]
 if not candidates:
@@ -113,3 +146,84 @@ fig2.update_layout(**kite_layout(height=420),
                    yaxis_title="Return %", yaxis_ticksuffix="%",
                    hovermode="x unified")
 st.plotly_chart(fig2, use_container_width=True)
+
+# =========================================================================
+# Protective Put Pricing (Black-Scholes)
+# =========================================================================
+st.markdown("### Protective Put Pricing")
+st.markdown(
+    '<p class="muted">Black-Scholes put option pricing for downside '
+    'protection. Uses historical volatility as the sigma input.</p>',
+    unsafe_allow_html=True,
+)
+
+try:
+    from risk.black_scholes import black_scholes_put, protective_put_cost, put_greeks
+    from core.data_fetch import fetch_latest_prices
+
+    live_df = fetch_latest_prices(portfolio.tickers)
+    price_map = {}
+    if not live_df.empty:
+        for _, row in live_df.iterrows():
+            if pd.notna(row.get("Price")):
+                price_map[row["Ticker"]] = float(row["Price"])
+
+    # Strike and expiry selectors
+    strike_opt = st.selectbox(
+        "Strike", ["ATM", "5% OTM", "10% OTM"], key="put_strike"
+    )
+    expiry_opt = st.selectbox(
+        "Expiry", ["1 month", "3 months", "6 months"], key="put_expiry"
+    )
+
+    strike_pct = {"ATM": 1.0, "5% OTM": 0.95, "10% OTM": 0.90}[strike_opt]
+    T = {"1 month": 1 / 12, "3 months": 3 / 12, "6 months": 6 / 12}[expiry_opt]
+    r = 0.05  # risk-free rate assumption
+
+    ann_vols = returns.std() * np.sqrt(252)
+
+    put_rows = []
+    for ticker in portfolio.tickers:
+        S = price_map.get(ticker)
+        if S is None or S <= 0:
+            continue
+
+        sigma = float(ann_vols[ticker])
+        K = S * strike_pct
+
+        put_price = black_scholes_put(S, K, T, r, sigma)
+        greeks = put_greeks(S, K, T, r, sigma)
+
+        # Shares from holdings or default to 100
+        shares = 100.0
+        if holdings and ticker in holdings:
+            shares = holdings[ticker].get("shares", 100.0)
+
+        total_cost = protective_put_cost(S, K, T, r, sigma, shares)
+        position_value = S * shares
+        cost_pct = (total_cost / position_value * 100) if position_value > 0 else 0.0
+
+        put_rows.append({
+            "Ticker": ticker,
+            "Spot": f"${S:,.2f}",
+            "Strike": f"${K:,.2f}",
+            "Put Premium": f"${put_price:,.2f}",
+            "Shares": f"{shares:.0f}",
+            "Total Hedge Cost": f"${total_cost:,.2f}",
+            "Cost % of Position": f"{cost_pct:.2f}%",
+            "Delta": f"{greeks['delta']:.3f}",
+            "Gamma": f"{greeks['gamma']:.4f}",
+            "Theta": f"{greeks['theta']:.4f}",
+            "Vega": f"{greeks['vega']:.4f}",
+        })
+
+    if put_rows:
+        st.dataframe(
+            pd.DataFrame(put_rows).set_index("Ticker"),
+            use_container_width=True,
+        )
+    else:
+        st.warning("No live prices available for put pricing.")
+
+except Exception as exc:
+    st.warning(f"Protective put pricing unavailable: {exc}")

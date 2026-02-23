@@ -1,8 +1,10 @@
 """
 Efficient Frontier - Markowitz Mean-Variance Optimization.
+Uses holdings-derived weights as 'Current Portfolio' when available.
 """
 
 import streamlit as st
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -29,6 +31,27 @@ from risk.optimizer import (  # noqa: E402
 
 risk_free = st.slider("Risk-Free Rate (%)", 0.0, 8.0, 2.0, 0.5) / 100
 
+# --- Compute current weights from holdings if available ---
+holdings = st.session_state.holdings
+current_weights = portfolio.weights
+current_label = "Current (Equal-Weight)"
+
+if holdings:
+    active = {t: h for t, h in holdings.items()
+              if t in portfolio.tickers and h.get("shares", 0) > 0}
+    total_value = sum(
+        h["shares"] * h["buy_price"] for h in active.values()
+    )
+    if active and total_value > 0:
+        # Build full-length weight vector (0 for unheld tickers)
+        hw = np.array([
+            active[t]["shares"] * active[t]["buy_price"] / total_value
+            if t in active else 0.0
+            for t in portfolio.tickers
+        ])
+        current_weights = hw
+        current_label = "Current (Holdings)"
+
 with st.spinner("Computing efficient frontier..."):
     mv = min_variance_portfolio(returns)
     ms = max_sharpe_portfolio(returns, risk_free)
@@ -39,7 +62,7 @@ with st.spinner("Computing efficient frontier..."):
     mean_ret = returns.mean().values
     cov = returns.cov().values
     cur_ret, cur_vol, cur_sharpe = portfolio_performance(
-        portfolio.weights, mean_ret, cov, risk_free
+        current_weights, mean_ret, cov, risk_free
     )
 
 # --- Efficient Frontier Chart ---
@@ -67,10 +90,10 @@ fig.add_trace(go.Scatter(
 # Current portfolio
 fig.add_trace(go.Scatter(
     x=[cur_vol * 100], y=[cur_ret * 100],
-    mode="markers", name="Current Portfolio",
+    mode="markers", name=current_label,
     marker=dict(size=15, color=COLORS[0], symbol="diamond",
                 line=dict(width=2, color="#fff")),
-    hovertemplate="Current<br>Vol: %{x:.1f}%<br>Ret: %{y:.1f}%<extra></extra>",
+    hovertemplate=f"{current_label}<br>Vol: %{{x:.1f}}%<br>Ret: %{{y:.1f}}%<extra></extra>",
 ))
 
 # Min variance
@@ -105,7 +128,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("### Portfolio Comparison")
 
 comp_df = pd.DataFrame({
-    "Portfolio": ["Current (Equal-Weight)", "Min Variance", "Max Sharpe"],
+    "Portfolio": [current_label, "Min Variance", "Max Sharpe"],
     "Return": [f"{cur_ret:.2%}", f"{mv['return']:.2%}", f"{ms['return']:.2%}"],
     "Volatility": [f"{cur_vol:.2%}", f"{mv['volatility']:.2%}", f"{ms['volatility']:.2%}"],
     "Sharpe": [f"{cur_sharpe:.2f}", f"{mv['sharpe']:.2f}", f"{ms['sharpe']:.2f}"],
@@ -121,9 +144,9 @@ with w_col1:
     st.markdown("**Min Variance**")
     mv_weights = pd.DataFrame({
         "Ticker": portfolio.tickers,
-        "Current": [f"{w:.1%}" for w in portfolio.weights],
+        "Current": [f"{w:.1%}" for w in current_weights],
         "Optimal": [f"{w:.1%}" for w in mv["weights"]],
-        "Change": [f"{o - c:+.1%}" for c, o in zip(portfolio.weights, mv["weights"])],
+        "Change": [f"{o - c:+.1%}" for c, o in zip(current_weights, mv["weights"])],
     })
     st.dataframe(mv_weights.set_index("Ticker"), use_container_width=True)
 
@@ -131,9 +154,9 @@ with w_col2:
     st.markdown("**Max Sharpe**")
     ms_weights = pd.DataFrame({
         "Ticker": portfolio.tickers,
-        "Current": [f"{w:.1%}" for w in portfolio.weights],
+        "Current": [f"{w:.1%}" for w in current_weights],
         "Optimal": [f"{w:.1%}" for w in ms["weights"]],
-        "Change": [f"{o - c:+.1%}" for c, o in zip(portfolio.weights, ms["weights"])],
+        "Change": [f"{o - c:+.1%}" for c, o in zip(current_weights, ms["weights"])],
     })
     st.dataframe(ms_weights.set_index("Ticker"), use_container_width=True)
 
@@ -143,7 +166,7 @@ st.markdown("### Weight Comparison")
 fig_w = go.Figure()
 x = portfolio.tickers
 fig_w.add_trace(go.Bar(
-    name="Current", x=x, y=portfolio.weights * 100, marker_color=COLORS[0],
+    name=current_label, x=x, y=current_weights * 100, marker_color=COLORS[0],
 ))
 fig_w.add_trace(go.Bar(
     name="Min Variance", x=x, y=mv["weights"] * 100, marker_color=COLORS[1],
