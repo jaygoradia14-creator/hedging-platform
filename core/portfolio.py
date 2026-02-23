@@ -80,15 +80,21 @@ class Portfolio:
 def save_holdings():
     """Save holdings to JSON file."""
     import streamlit as st
-    with open(HOLDINGS_FILE, "w") as f:
-        json.dump(st.session_state.holdings, f)
+    try:
+        with open(HOLDINGS_FILE, "w") as f:
+            json.dump(st.session_state.holdings, f)
+    except OSError:
+        pass
 
 
 def load_holdings():
     """Load holdings from JSON file if it exists."""
-    if HOLDINGS_FILE.exists():
-        with open(HOLDINGS_FILE) as f:
-            return json.load(f)
+    try:
+        if HOLDINGS_FILE.exists():
+            with open(HOLDINGS_FILE) as f:
+                return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        pass
     return {}
 
 
