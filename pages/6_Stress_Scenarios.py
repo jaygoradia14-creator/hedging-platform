@@ -51,7 +51,54 @@ CRISES = {
 }
 
 try:
-    from core.data_fetch import fetch_multi_asset_data, calculate_returns
+    from core.data_fetch import calculate_returns
+    import yfinance as yf
+
+    @st.cache_data(ttl=3600, show_spinner=False)
+    def _fetch_crisis_data(ticker_tuple, start, end):
+        """Fetch crisis data with per-ticker fallback, cached for 1 hour."""
+        # Try bulk download first
+        try:
+            data = yf.download(list(ticker_tuple), start=start, end=end, progress=False)
+            if not data.empty:
+                if isinstance(data.columns, pd.MultiIndex):
+                    if 'Close' in data.columns.get_level_values(0):
+                        prices = data['Close']
+                    elif 'Adj Close' in data.columns.get_level_values(0):
+                        prices = data['Adj Close']
+                    else:
+                        prices = data.iloc[:, :len(ticker_tuple)]
+                else:
+                    prices = data[['Close']] if 'Close' in data.columns else data
+                    if len(ticker_tuple) == 1:
+                        prices.columns = list(ticker_tuple)
+                if prices.index.tz is not None:
+                    prices.index = prices.index.tz_localize(None)
+                prices = prices.dropna(how='all').dropna(axis=1, how='all')
+                if not prices.empty:
+                    return prices.ffill()
+        except Exception:
+            pass
+
+        # Per-ticker fallback
+        frames = {}
+        for t in ticker_tuple:
+            try:
+                d = yf.download(t, start=start, end=end, progress=False)
+                if not d.empty:
+                    col = 'Close' if 'Close' in d.columns else d.columns[0]
+                    s = d[col]
+                    if hasattr(s, 'columns'):
+                        s = s.iloc[:, 0]
+                    frames[t] = s
+            except Exception:
+                continue
+        if frames:
+            result = pd.DataFrame(frames)
+            if result.index.tz is not None:
+                result.index = result.index.tz_localize(None)
+            return result.ffill().dropna(how='all')
+        return pd.DataFrame()
 
     crisis_tabs = st.tabs(list(CRISES.keys()))
 
@@ -63,8 +110,8 @@ try:
             )
 
             with st.spinner(f"Fetching {crisis_name} data..."):
-                crisis_prices = fetch_multi_asset_data(
-                    tickers, crisis_cfg["start"], crisis_cfg["end"]
+                crisis_prices = _fetch_crisis_data(
+                    tuple(tickers), crisis_cfg["start"], crisis_cfg["end"]
                 )
 
             if crisis_prices.empty or crisis_prices.shape[1] == 0:
