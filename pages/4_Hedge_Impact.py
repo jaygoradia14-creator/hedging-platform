@@ -169,15 +169,29 @@ try:
                 price_map[row["Ticker"]] = float(row["Price"])
 
     # Strike and expiry selectors
+    strike_options = [
+        "10% ITM", "5% ITM", "2% ITM",
+        "ATM",
+        "2% OTM", "5% OTM", "10% OTM", "15% OTM", "20% OTM",
+    ]
     strike_opt = st.selectbox(
-        "Strike", ["ATM", "5% OTM", "10% OTM"], key="put_strike"
+        "Strike", strike_options, index=3, key="put_strike"
     )
+    expiry_options = ["1 month", "2 months", "3 months", "6 months", "9 months", "1 year"]
     expiry_opt = st.selectbox(
-        "Expiry", ["1 month", "3 months", "6 months"], key="put_expiry"
+        "Expiry", expiry_options, key="put_expiry"
     )
 
-    strike_pct = {"ATM": 1.0, "5% OTM": 0.95, "10% OTM": 0.90}[strike_opt]
-    T = {"1 month": 1 / 12, "3 months": 3 / 12, "6 months": 6 / 12}[expiry_opt]
+    strike_pct = {
+        "10% ITM": 1.10, "5% ITM": 1.05, "2% ITM": 1.02,
+        "ATM": 1.0,
+        "2% OTM": 0.98, "5% OTM": 0.95, "10% OTM": 0.90,
+        "15% OTM": 0.85, "20% OTM": 0.80,
+    }[strike_opt]
+    T = {
+        "1 month": 1 / 12, "2 months": 2 / 12, "3 months": 3 / 12,
+        "6 months": 6 / 12, "9 months": 9 / 12, "1 year": 1.0,
+    }[expiry_opt]
     r = 0.05  # risk-free rate assumption
 
     ann_vols = returns.std() * np.sqrt(252)
