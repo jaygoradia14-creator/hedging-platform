@@ -170,12 +170,12 @@ try:
 
     # Strike and expiry selectors
     strike_options = [
-        "10% ITM", "5% ITM", "2% ITM",
+        "20% ITM", "15% ITM", "10% ITM", "5% ITM", "2% ITM",
         "ATM",
         "2% OTM", "5% OTM", "10% OTM", "15% OTM", "20% OTM",
     ]
     strike_opt = st.selectbox(
-        "Strike", strike_options, index=3, key="put_strike"
+        "Strike", strike_options, index=5, key="put_strike"
     )
     expiry_options = ["1 month", "2 months", "3 months", "6 months", "9 months", "1 year"]
     expiry_opt = st.selectbox(
@@ -183,7 +183,8 @@ try:
     )
 
     strike_pct = {
-        "10% ITM": 1.10, "5% ITM": 1.05, "2% ITM": 1.02,
+        "20% ITM": 1.20, "15% ITM": 1.15, "10% ITM": 1.10,
+        "5% ITM": 1.05, "2% ITM": 1.02,
         "ATM": 1.0,
         "2% OTM": 0.98, "5% OTM": 0.95, "10% OTM": 0.90,
         "15% OTM": 0.85, "20% OTM": 0.80,
