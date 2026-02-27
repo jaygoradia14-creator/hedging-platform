@@ -60,6 +60,78 @@ with col_bar:
                           yaxis_title="Weight %", yaxis_ticksuffix="%")
     st.plotly_chart(fig_bar, use_container_width=True)
 
+# --- Sector Exposure ---
+st.markdown("### Sector Exposure")
+
+from core.data_fetch import get_sectors  # noqa: E402
+
+_sectors = get_sectors(portfolio.tickers)
+
+# Compute weights from holdings if available
+_holdings = st.session_state.holdings
+_sec_wts = portfolio.weights.copy()
+
+if _holdings:
+    _active = {t: h for t, h in _holdings.items()
+               if t in portfolio.tickers and h.get("shares", 0) > 0}
+    _total_val = sum(
+        h["shares"] * h["buy_price"] for h in _active.values()
+    )
+    if _active and _total_val > 0:
+        _sec_wts = np.array([
+            _active[t]["shares"] * _active[t]["buy_price"] / _total_val
+            if t in _active else 0.0
+            for t in portfolio.tickers
+        ])
+
+# Aggregate by sector
+_sector_agg = {}
+for i, t in enumerate(portfolio.tickers):
+    sec = _sectors[t]
+    _sector_agg.setdefault(sec, {"weight": 0.0, "count": 0})
+    _sector_agg[sec]["weight"] += _sec_wts[i]
+    _sector_agg[sec]["count"] += 1
+
+_sec_names = list(_sector_agg.keys())
+_sec_weights = [_sector_agg[s]["weight"] for s in _sec_names]
+_sec_counts = [_sector_agg[s]["count"] for s in _sec_names]
+
+sec_c1, sec_c2 = st.columns([1, 1])
+
+with sec_c1:
+    fig_sec = go.Figure(data=[go.Pie(
+        labels=_sec_names,
+        values=_sec_weights,
+        hole=0.55,
+        marker=dict(colors=COLORS[:len(_sec_names)],
+                    line=dict(color="#ffffff", width=2)),
+        textinfo="label+percent",
+        textfont=dict(size=11, color="#333"),
+    )])
+    fig_sec.update_layout(**kite_layout(height=320), showlegend=False)
+    st.plotly_chart(fig_sec, use_container_width=True)
+
+with sec_c2:
+    sec_df = pd.DataFrame({
+        "Sector": _sec_names,
+        "Weight %": [f"{w:.1%}" for w in _sec_weights],
+        "# Tickers": _sec_counts,
+    })
+    st.dataframe(sec_df.set_index("Sector"), use_container_width=True)
+
+    sec_hhi = sum(w ** 2 for w in _sec_weights)
+    st.metric("Sector HHI", f"{sec_hhi:.3f}")
+
+# Concentration warnings
+for _sec, _data in _sector_agg.items():
+    _pct = _data["weight"] * 100
+    if _pct > 60:
+        st.error(f"Sector '{_sec}' has {_pct:.1f}% concentration — "
+                 "extremely high risk from single-sector exposure.")
+    elif _pct > 40:
+        st.warning(f"Sector '{_sec}' has {_pct:.1f}% concentration — "
+                   "consider diversifying across sectors.")
+
 # --- Cumulative returns ---
 st.markdown("### Performance")
 cum_ret = (1 + returns).cumprod() - 1

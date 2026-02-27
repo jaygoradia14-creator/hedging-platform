@@ -177,3 +177,78 @@ fig_w.add_trace(go.Bar(
 fig_w.update_layout(**kite_layout(height=350), barmode="group",
                     yaxis_title="Weight %", yaxis_ticksuffix="%")
 st.plotly_chart(fig_w, use_container_width=True)
+
+# --- Rebalancing Suggestions ---
+st.markdown("### Rebalancing Suggestions")
+
+rebal_target = st.radio(
+    "Optimization Target",
+    ["Min Variance", "Max Sharpe"],
+    horizontal=True,
+    key="rebal_target",
+)
+
+optimal_weights = mv["weights"] if rebal_target == "Min Variance" else ms["weights"]
+
+# Compute deltas
+deltas = optimal_weights - current_weights
+
+# Build rebalancing table (filter noise < 0.5%)
+rebal_rows = []
+for i, t in enumerate(portfolio.tickers):
+    if abs(deltas[i]) < 0.005:
+        continue
+    action = "BUY" if deltas[i] > 0 else "SELL"
+    rebal_rows.append({
+        "Ticker": t,
+        "Current %": round(current_weights[i] * 100, 1),
+        "Optimal %": round(optimal_weights[i] * 100, 1),
+        "Change %": round(deltas[i] * 100, 1),
+        "Action": action,
+    })
+
+if rebal_rows:
+    rebal_df = pd.DataFrame(rebal_rows)
+
+    # Add dollar amounts if holdings exist
+    total_value = 0.0
+    if holdings:
+        active = {t: h for t, h in holdings.items()
+                  if t in portfolio.tickers and h.get("shares", 0) > 0}
+        total_value = sum(
+            h["shares"] * h["buy_price"] for h in active.values()
+        )
+
+    if total_value > 0:
+        rebal_df["Est. $ Amount"] = rebal_df["Change %"].apply(
+            lambda x: f"${abs(x / 100) * total_value:,.0f}"
+        )
+        total_txn = sum(abs(r["Change %"] / 100) * total_value
+                        for r in rebal_rows)
+        st.metric("Total Estimated Transaction Value",
+                  f"${total_txn:,.0f}")
+
+    # Color-code with styled dataframe
+    def _color_action(val):
+        if val == "BUY":
+            return f"color: {COLORS[1]}"  # GREEN
+        elif val == "SELL":
+            return f"color: {COLORS[2]}"  # RED
+        return ""
+
+    def _color_change(val):
+        if isinstance(val, (int, float)):
+            if val > 0:
+                return f"color: {COLORS[1]}"
+            elif val < 0:
+                return f"color: {COLORS[2]}"
+        return ""
+
+    styled = (
+        rebal_df.style
+        .map(_color_action, subset=["Action"])
+        .map(_color_change, subset=["Change %"])
+    )
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+else:
+    st.info("Your portfolio is already close to the optimal allocation.")
