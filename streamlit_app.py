@@ -307,17 +307,12 @@ with st.sidebar:
     user_msg = st.chat_input("Ask anything about finance...", key="sidebar_chat")
     if user_msg:
         st.session_state.chat_history.append({"role": "user", "content": user_msg})
-        try:
-            from chat.engine import get_response
-            # Pass conversation history for multi-turn context
-            _hist = [
-                m for m in st.session_state.chat_history
-                if m["role"] in ("user", "assistant")
-            ][:-1]  # Exclude the message we just appended
-            reply = get_response(user_msg, st.session_state, history=_hist)
-        except Exception:
-            from chat.fallback import fallback_response
-            reply = fallback_response(user_msg, st.session_state)
+        from chat.engine import get_response
+        _hist = [
+            m for m in st.session_state.chat_history
+            if m["role"] in ("user", "assistant")
+        ][:-1]  # Exclude the message we just appended
+        reply = get_response(user_msg, st.session_state, history=_hist)
         st.session_state.chat_history.append({"role": "assistant", "content": reply})
         st.rerun()
 

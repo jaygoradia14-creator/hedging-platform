@@ -1,5 +1,5 @@
 """
-Chat Advisor - LLM-powered chat interface grounded in portfolio analytics.
+Chat Advisor - OpenAI-powered chat interface grounded in portfolio analytics.
 This is the primary intelligent interface for the hedging platform.
 """
 
@@ -53,30 +53,6 @@ else:
         f'<div class="provider-badge">Powered by: {provider}</div>',
         unsafe_allow_html=True,
     )
-
-# --- Show key input ONLY if no secrets/env key found ---
-_has_saved_key = False
-try:
-    if st.secrets.get("OPENAI_API_KEY") or st.secrets.get("GEMINI_API_KEY"):
-        _has_saved_key = True
-except Exception:
-    pass
-
-if not _has_saved_key and "Fallback" in provider:
-    with st.sidebar:
-        st.markdown("---")
-        st.markdown("**API Key**")
-        if "user_api_key" not in st.session_state:
-            st.session_state.user_api_key = ""
-        st.text_input(
-            "Paste your OpenAI or Gemini key",
-            type="password",
-            key="user_api_key",
-            placeholder="sk-... or AIza...",
-            label_visibility="collapsed",
-        )
-        if st.session_state.user_api_key:
-            st.success("Key active", icon="\u2705")
 
 # --- Portfolio context panel ---
 if st.session_state.data_loaded:
@@ -166,11 +142,9 @@ if len(st.session_state.page_chat_history) <= 1 and st.session_state.data_loaded
             )
             try:
                 from chat.engine import get_response
-                # Pass history for context (exclude welcome message)
                 chat_hist = [
-                    m for m in st.session_state.page_chat_history
+                    m for m in st.session_state.page_chat_history[1:]
                     if m["role"] in ("user", "assistant")
-                    and m != st.session_state.page_chat_history[0]
                 ]
                 reply = get_response(suggestion, st.session_state, history=chat_hist)
             except Exception as e:
@@ -194,13 +168,11 @@ if user_input:
         with st.spinner("Thinking..."):
             try:
                 from chat.engine import get_response
-                # Pass conversation history (exclude welcome message)
+                # Pass conversation history (exclude welcome message and current input)
                 chat_hist = [
-                    m for m in st.session_state.page_chat_history[1:]
+                    m for m in st.session_state.page_chat_history[1:-1]
                     if m["role"] in ("user", "assistant")
                 ]
-                # Don't include the message we just appended (it's the current input)
-                chat_hist = chat_hist[:-1]
                 reply = get_response(user_input, st.session_state, history=chat_hist)
             except Exception as e:
                 reply = f"**Error:** {e}"
