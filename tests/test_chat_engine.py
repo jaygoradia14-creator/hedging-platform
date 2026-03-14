@@ -17,11 +17,19 @@ class MockState(dict):
         self[key] = val
 
 
+class MockSecrets(dict):
+    """Mock st.secrets that returns None for missing keys."""
+    def get(self, key, default=None):
+        return dict.get(self, key, default)
+
+
 @pytest.fixture
 def mock_st(monkeypatch):
     state = MockState(user_api_key="")
     import streamlit as st
     monkeypatch.setattr(st, "session_state", state)
+    # Mock secrets to prevent real secrets.toml from interfering
+    monkeypatch.setattr(st, "secrets", MockSecrets())
     return state
 
 

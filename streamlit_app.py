@@ -290,6 +290,14 @@ with st.sidebar:
 
     # Chat
     st.markdown("## Advisor")
+
+    from chat.engine import get_active_provider  # noqa: E402
+    _provider = get_active_provider()
+    if "Fallback" not in _provider:
+        st.caption(f"Powered by {_provider}")
+    else:
+        st.caption("Rules-based mode")
+
     chat_container = st.container(height=250)
     with chat_container:
         for msg in st.session_state.chat_history:
@@ -301,7 +309,12 @@ with st.sidebar:
         st.session_state.chat_history.append({"role": "user", "content": user_msg})
         try:
             from chat.engine import get_response
-            reply = get_response(user_msg, st.session_state)
+            # Pass conversation history for multi-turn context
+            _hist = [
+                m for m in st.session_state.chat_history
+                if m["role"] in ("user", "assistant")
+            ][:-1]  # Exclude the message we just appended
+            reply = get_response(user_msg, st.session_state, history=_hist)
         except Exception:
             from chat.fallback import fallback_response
             reply = fallback_response(user_msg, st.session_state)

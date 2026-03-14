@@ -24,17 +24,37 @@ st.markdown("""
         padding: 1rem 1.2rem; margin-bottom: 1.5rem; font-size: 0.85rem; color: #555;
     }
     .chat-context strong { color: #333; }
-    .suggestion-btn {
-        display: inline-block; background: #f0f6ff; border: 1px solid #387ed1;
-        border-radius: 20px; padding: 0.4rem 1rem; margin: 0.3rem;
-        font-size: 0.8rem; color: #387ed1; cursor: pointer;
+    .provider-badge {
+        display: inline-block; background: #e8f5e9; border: 1px solid #00b386;
+        border-radius: 16px; padding: 0.25rem 0.8rem; font-size: 0.75rem;
+        color: #00b386; font-weight: 600; margin-bottom: 1rem;
+    }
+    .provider-badge-fallback {
+        display: inline-block; background: #fff3e0; border: 1px solid #f5a623;
+        border-radius: 16px; padding: 0.25rem 0.8rem; font-size: 0.75rem;
+        color: #f5a623; font-weight: 600; margin-bottom: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown('<div class="chat-header">Portfolio Advisor</div>', unsafe_allow_html=True)
 
-# --- Check if API key exists (secrets, env, or session) ---
+# --- Provider status badge ---
+from chat.engine import get_active_provider  # noqa: E402
+
+provider = get_active_provider()
+if "Fallback" in provider:
+    st.markdown(
+        f'<div class="provider-badge-fallback">Powered by: {provider}</div>',
+        unsafe_allow_html=True,
+    )
+else:
+    st.markdown(
+        f'<div class="provider-badge">Powered by: {provider}</div>',
+        unsafe_allow_html=True,
+    )
+
+# --- Show key input ONLY if no secrets/env key found ---
 _has_saved_key = False
 try:
     if st.secrets.get("OPENAI_API_KEY") or st.secrets.get("GEMINI_API_KEY"):
@@ -42,7 +62,7 @@ try:
 except Exception:
     pass
 
-if not _has_saved_key:
+if not _has_saved_key and "Fallback" in provider:
     with st.sidebar:
         st.markdown("---")
         st.markdown("**API Key**")
@@ -63,11 +83,14 @@ if st.session_state.data_loaded:
     portfolio = st.session_state.portfolio
     summary = portfolio.summary()
     regime_df = st.session_state.regime_df
-    current_regime = regime_df["regime"].iloc[-1] if regime_df is not None and len(regime_df) > 0 else "Unknown"
+    current_regime = (
+        regime_df["regime"].iloc[-1]
+        if regime_df is not None and len(regime_df) > 0
+        else "Unknown"
+    )
 
-    # Quick stats context
-    from risk.var_cvar import var_cvar_summary
-    from risk.correlation import calculate_diversification_ratio
+    from risk.var_cvar import var_cvar_summary  # noqa: E402
+    from risk.correlation import calculate_diversification_ratio  # noqa: E402
     try:
         var_s = var_cvar_summary(portfolio.returns, portfolio.weights, 0.95)
         div_ratio = calculate_diversification_ratio(portfolio.returns, portfolio.weights)
@@ -138,13 +161,23 @@ if len(st.session_state.page_chat_history) <= 1 and st.session_state.data_loaded
     cols = st.columns(3)
     for i, suggestion in enumerate(suggestions):
         if cols[i % 3].button(suggestion, key=f"suggest_{i}", use_container_width=True):
-            st.session_state.page_chat_history.append({"role": "user", "content": suggestion})
+            st.session_state.page_chat_history.append(
+                {"role": "user", "content": suggestion}
+            )
             try:
                 from chat.engine import get_response
-                reply = get_response(suggestion, st.session_state)
+                # Pass history for context (exclude welcome message)
+                chat_hist = [
+                    m for m in st.session_state.page_chat_history
+                    if m["role"] in ("user", "assistant")
+                    and m != st.session_state.page_chat_history[0]
+                ]
+                reply = get_response(suggestion, st.session_state, history=chat_hist)
             except Exception as e:
                 reply = f"**Error:** {e}"
-            st.session_state.page_chat_history.append({"role": "assistant", "content": reply})
+            st.session_state.page_chat_history.append(
+                {"role": "assistant", "content": reply}
+            )
             st.rerun()
 
 # --- Chat input ---
@@ -152,8 +185,6 @@ user_input = st.chat_input("Ask anything about finance, investing, or your portf
 
 if user_input:
     st.session_state.page_chat_history.append({"role": "user", "content": user_input})
-
-    # Also add to sidebar chat history for cross-page persistence
     st.session_state.chat_history.append({"role": "user", "content": user_input})
 
     with st.chat_message("user"):
@@ -163,7 +194,14 @@ if user_input:
         with st.spinner("Thinking..."):
             try:
                 from chat.engine import get_response
-                reply = get_response(user_input, st.session_state)
+                # Pass conversation history (exclude welcome message)
+                chat_hist = [
+                    m for m in st.session_state.page_chat_history[1:]
+                    if m["role"] in ("user", "assistant")
+                ]
+                # Don't include the message we just appended (it's the current input)
+                chat_hist = chat_hist[:-1]
+                reply = get_response(user_input, st.session_state, history=chat_hist)
             except Exception as e:
                 reply = f"**Error:** {e}"
 
