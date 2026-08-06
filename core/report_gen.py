@@ -10,49 +10,73 @@ from datetime import datetime
 
 
 def _safe_str(val):
-    """Convert value to string, handling NaN and None."""
+    """Convert value to string, handling NaN, None, and non-latin characters."""
     if val is None:
         return "N/A"
     if isinstance(val, float) and (np.isnan(val) or np.isinf(val)):
         return "N/A"
-    return str(val)
+    text = str(val)
+    # Replace common Unicode characters that latin-1 can't encode
+    replacements = {
+        "\u2019": "'", "\u2018": "'",  # smart quotes
+        "\u201c": '"', "\u201d": '"',
+        "\u2013": "-", "\u2014": "--",  # dashes
+        "\u2026": "...",  # ellipsis
+        "\u2022": "*",  # bullet
+        "\u00a0": " ",  # non-breaking space
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    # Fallback: encode to latin-1, replacing anything else
+    text = text.encode("latin-1", errors="replace").decode("latin-1")
+    return text
+
+
+def _make_pdf_class():
+    """Create FPDF subclass with branded header/footer."""
+    from fpdf import FPDF
+
+    header_color = (56, 126, 209)
+
+    class _BrandedPDF(FPDF):
+        def header(self):
+            self.set_font("Helvetica", "B", 18)
+            self.set_text_color(*header_color)
+            self.cell(0, 12, "hedging platform", new_x="LMARGIN", new_y="NEXT")
+            self.set_font("Helvetica", "", 9)
+            self.set_text_color(140, 140, 140)
+            self.cell(
+                0, 6,
+                f"Portfolio Risk & Hedging Report  |  {datetime.now().strftime('%B %d, %Y')}",
+                new_x="LMARGIN", new_y="NEXT",
+            )
+            self.set_draw_color(*header_color)
+            self.line(10, self.get_y(), 200, self.get_y())
+            self.ln(8)
+
+        def footer(self):
+            self.set_y(-15)
+            self.set_font("Helvetica", "", 8)
+            self.set_text_color(180, 180, 180)
+            self.cell(0, 10, f"Page {self.page_no()}/{{nb}}", align="C")
+
+    return _BrandedPDF
 
 
 class ReportPDF:
     """Branded PDF report using fpdf2."""
 
     def __init__(self):
-        from fpdf import FPDF
-        self.pdf = FPDF()
+        PDFClass = _make_pdf_class()
+        self.pdf = PDFClass()
+        self.pdf.alias_nb_pages()
         self.pdf.set_auto_page_break(auto=True, margin=20)
         self.pdf.set_font("Helvetica", size=10)
         self._header_color = (56, 126, 209)  # BLUE
         self._alt_row = (245, 247, 250)
 
-    def _add_header(self):
-        """Add branded header to current page."""
-        self.pdf.set_font("Helvetica", "B", 18)
-        self.pdf.set_text_color(*self._header_color)
-        self.pdf.cell(0, 12, "hedging platform", new_x="LMARGIN", new_y="NEXT")
-        self.pdf.set_font("Helvetica", "", 9)
-        self.pdf.set_text_color(140, 140, 140)
-        self.pdf.cell(
-            0, 6,
-            f"Portfolio Risk & Hedging Report  |  {datetime.now().strftime('%B %d, %Y')}",
-            new_x="LMARGIN", new_y="NEXT",
-        )
-        self.pdf.set_draw_color(*self._header_color)
-        self.pdf.line(10, self.pdf.get_y(), 200, self.pdf.get_y())
-        self.pdf.ln(8)
-
-    def _add_footer_on_pages(self):
-        """Set up automatic footer with page numbers."""
-        # fpdf2 handles footers through subclass, so we add page numbers after
-        pass
-
     def add_page(self):
         self.pdf.add_page()
-        self._add_header()
 
     def section_title(self, title):
         self.pdf.set_font("Helvetica", "B", 12)
@@ -118,15 +142,6 @@ class ReportPDF:
 
     def get_bytes(self):
         """Return PDF as bytes."""
-        # Add page numbers
-        total = self.pdf.pages_count
-        for i in range(1, total + 1):
-            self.pdf.page = i
-            self.pdf.set_y(-15)
-            self.pdf.set_font("Helvetica", "", 8)
-            self.pdf.set_text_color(180, 180, 180)
-            self.pdf.cell(0, 10, f"Page {i} of {total}", align="C")
-
         return self.pdf.output()
 
 

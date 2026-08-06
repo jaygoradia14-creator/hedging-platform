@@ -61,27 +61,53 @@ def fetch_yfinance_news(ticker, max_items=10):
 
     items = []
     for article in raw[:max_items]:
-        title = article.get("title", "")
+        # Handle both old and new yfinance news API formats
+        content = article.get("content", {})
+        if content and isinstance(content, dict):
+            # New format: nested under "content"
+            title = content.get("title", "")
+            provider = content.get("provider", {})
+            source = provider.get("displayName", "Unknown") if isinstance(provider, dict) else "Unknown"
+            pub_date = content.get("pubDate", "") or content.get("displayTime", "")
+            click_url = content.get("clickThroughUrl", {})
+            link = click_url.get("url", "") if isinstance(click_url, dict) else ""
+            if not link:
+                canonical = content.get("canonicalUrl", {})
+                link = canonical.get("url", "") if isinstance(canonical, dict) else ""
+        else:
+            # Old format: flat keys
+            title = article.get("title", "")
+            source = article.get("publisher", "Unknown")
+            pub_date = ""
+            link = article.get("link", "")
+
         if not title:
             continue
         label, sc = score_sentiment(title)
 
         # Parse publish time
-        pub_ts = article.get("providerPublishTime", 0)
-        if pub_ts:
+        pub = ""
+        if pub_date and isinstance(pub_date, str) and pub_date:
             try:
-                pub = datetime.fromtimestamp(pub_ts, tz=timezone.utc).strftime(
-                    "%Y-%m-%d %H:%M"
-                )
+                # ISO format: "2026-08-06T03:58:32Z"
+                pub = pub_date[:16].replace("T", " ")
             except Exception:
                 pub = ""
-        else:
-            pub = ""
+        elif not pub_date:
+            # Legacy: epoch timestamp
+            pub_ts = article.get("providerPublishTime", 0)
+            if pub_ts:
+                try:
+                    pub = datetime.fromtimestamp(pub_ts, tz=timezone.utc).strftime(
+                        "%Y-%m-%d %H:%M"
+                    )
+                except Exception:
+                    pass
 
         items.append({
             "title": title,
-            "link": article.get("link", ""),
-            "source": article.get("publisher", "Unknown"),
+            "link": link,
+            "source": source,
             "published": pub,
             "ticker": ticker,
             "sentiment": label,
