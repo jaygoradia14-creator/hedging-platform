@@ -37,7 +37,7 @@ else:
         "buy/sell recommendations with health score, and a news digest."
     )
 
-# --- Generate button ---
+# --- Generate and store in session state ---
 if st.button("Generate PDF Report", type="primary", use_container_width=True):
     with st.spinner("Generating report..."):
         from core.data_fetch import get_sectors, fetch_latest_prices
@@ -59,7 +59,6 @@ if st.button("Generate PDF Report", type="primary", use_container_width=True):
             )
             filename = "portfolio_summary.pdf"
         else:
-            # Full report needs signals and news
             from core.signals import generate_all_signals
             from core.news import fetch_portfolio_news
 
@@ -75,14 +74,19 @@ if st.button("Generate PDF Report", type="primary", use_container_width=True):
             )
             filename = "portfolio_full_report.pdf"
 
+    st.session_state["_pdf_bytes"] = bytes(pdf_bytes)
+    st.session_state["_pdf_filename"] = filename
+    st.success("Report generated successfully.")
+
+# --- Download button (always rendered if PDF is ready) ---
+if st.session_state.get("_pdf_bytes"):
     st.download_button(
-        f"Download {filename}",
-        pdf_bytes,
-        file_name=filename,
+        f"Download {st.session_state['_pdf_filename']}",
+        st.session_state["_pdf_bytes"],
+        file_name=st.session_state["_pdf_filename"],
         mime="application/pdf",
         use_container_width=True,
     )
-    st.success("Report generated successfully.")
 
 # --- Existing Excel exports ---
 st.markdown("### Excel Exports")

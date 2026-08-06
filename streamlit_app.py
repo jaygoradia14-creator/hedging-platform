@@ -842,9 +842,11 @@ with dl3:
                 portfolio, st.session_state.regime_df,
                 st.session_state.holdings, _cur_prices, sectors,
             )
+        st.session_state["_main_pdf"] = bytes(_pdf_bytes)
+    if st.session_state.get("_main_pdf"):
         st.download_button(
             "Download PDF",
-            _pdf_bytes,
+            st.session_state["_main_pdf"],
             file_name="portfolio_summary.pdf",
             mime="application/pdf",
             use_container_width=True,
