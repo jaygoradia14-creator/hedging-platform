@@ -31,14 +31,15 @@ def empty_session():
 
 
 class TestToolDefinitions:
-    def test_five_tools_defined(self):
-        assert len(TOOL_DEFINITIONS) == 5
+    def test_tools_defined(self):
+        assert len(TOOL_DEFINITIONS) == 7
 
     def test_tool_names(self):
         names = {t["function"]["name"] for t in TOOL_DEFINITIONS}
         assert names == {
             "get_correlation_matrix", "get_var_metrics",
             "compare_hedges", "get_regime_status", "get_holdings",
+            "get_news", "get_recommendations",
         }
 
 

@@ -674,36 +674,54 @@ def _buy_advice(msg: str, session_state) -> str:
     if not data_loaded or portfolio is None:
         return generic
 
-    # Personalized advice with portfolio context
+    # Use shared signals engine for personalized advice
     try:
-        from core.data_fetch import get_sectors
+        import pandas as _pd
+        from core.signals import generate_all_signals, SignalType
+        from core.data_fetch import get_sectors, fetch_latest_prices
+
+        held = getattr(session_state, "holdings", {})
+        current_prices = {}
+        if held:
+            live = fetch_latest_prices(list(held.keys()))
+            for _, row in live.iterrows():
+                if _pd.notna(row.get("Price")):
+                    current_prices[row["Ticker"]] = row["Price"]
+
+        signals = generate_all_signals(portfolio, regime_df, held, current_prices)
+        opportunities = [s for s in signals if s.signal_type == SignalType.OPPORTUNITY]
+
         tickers = portfolio.tickers
         sector_counts = {}
         for t in tickers:
             sec = get_sectors([t])[t]
             sector_counts[sec] = sector_counts.get(sec, 0) + 1
 
-        held = getattr(session_state, "holdings", {})
-        held_sectors = {}
-        for ht in held:
-            sec = get_sectors([ht])[ht]
-            held_sectors[sec] = held_sectors.get(sec, 0) + 1
-
         regime_text = ""
         if regime_df is not None and len(regime_df) > 0:
             current = regime_df["regime"].iloc[-1]
             regime_text = f"Current regime: **{current}**. "
 
+        response = f"**Personalized Buy Suggestions:**\n\n{regime_text}\n\n"
+        response += f"Your portfolio covers: **{', '.join(sorted(sector_counts.keys()))}**.\n\n"
+
+        if opportunities:
+            response += "**Opportunities detected:**\n"
+            for s in opportunities[:5]:
+                response += f"- **{s.title}**: {s.action}\n"
+            response += "\n"
+
+        # Diversification gaps
+        held_sectors = {}
+        for ht in held:
+            sec = get_sectors([ht])[ht]
+            held_sectors[sec] = held_sectors.get(sec, 0) + 1
         all_sectors = {**sector_counts, **held_sectors}
         target_sectors = [
             "Technology", "Healthcare", "Energy", "Financials",
             "Consumer Staples", "Gold", "Long-Term Treasury",
         ]
         missing = [s for s in target_sectors if s not in all_sectors]
-
-        response = f"**Personalized Buy Suggestions:**\n\n{regime_text}\n\n"
-        response += f"Your portfolio covers: **{', '.join(sorted(sector_counts.keys()))}**.\n\n"
-
         if missing:
             response += "**Diversification gaps** — consider adding: "
             response += "**{}**.\n\n".format(', '.join(missing[:4]))
@@ -741,6 +759,7 @@ def _sell_advice(msg: str, session_state) -> str:
     """Generate sell advice based on holdings."""
     regime_df = getattr(session_state, "regime_df", None)
     held = getattr(session_state, "holdings", {})
+    portfolio = getattr(session_state, "portfolio", None)
 
     if not held:
         return (
@@ -759,6 +778,8 @@ def _sell_advice(msg: str, session_state) -> str:
     try:
         import pandas as _pd
         from core.data_fetch import fetch_latest_prices as _flp
+        from core.signals import generate_all_signals, SignalType
+
         held_tickers = list(held.keys())
         live = _flp(held_tickers)
         price_map = {}
@@ -788,6 +809,18 @@ def _sell_advice(msg: str, session_state) -> str:
                 response += fmt.format(pnl_label)
             else:
                 response += "Hold for now.\n"
+
+        # Add caution/action signals from shared engine
+        if portfolio is not None:
+            signals = generate_all_signals(portfolio, regime_df, held, price_map)
+            cautions = [
+                s for s in signals
+                if s.signal_type in (SignalType.CAUTION, SignalType.ACTION_NEEDED)
+            ]
+            if cautions:
+                response += "\n**Signals to watch:**\n"
+                for s in cautions[:5]:
+                    response += f"- **{s.title}**: {s.action}\n"
 
         if regime_df is not None and len(regime_df) > 0:
             current = regime_df["regime"].iloc[-1]

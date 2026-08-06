@@ -122,6 +122,10 @@ def init_session_state():
         st.session_state.data_loaded = False
     if "holdings" not in st.session_state:
         st.session_state.holdings = load_holdings()
+    if "news_cache" not in st.session_state:
+        st.session_state.news_cache = []
+    if "news_cache_time" not in st.session_state:
+        st.session_state.news_cache_time = None
 
 
 def update_portfolio(tickers: List[str], weights: Optional[np.ndarray] = None):

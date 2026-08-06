@@ -337,6 +337,10 @@ returns = portfolio.returns
 import plotly.graph_objects as go  # noqa: E402
 from core.style import COLORS, kite_layout  # noqa: E402
 
+# --- TradingView Ticker Tape ---
+from core.tradingview import ticker_tape_html  # noqa: E402
+st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
+
 # --- Metrics row ---
 c1, c2, c3 = st.columns(3)
 c1.metric("Instruments", summary["n_assets"])
@@ -363,6 +367,74 @@ if not live_df.empty and live_df["Price"].notna().any():
         lambda x: f"{x:,.0f}" if pd.notna(x) and x > 0 else "N/A"
     )
     st.dataframe(display_df.set_index("Ticker"), use_container_width=True)
+
+# --- Top Headlines ---
+st.markdown("### Top Headlines")
+from core.news import fetch_portfolio_news  # noqa: E402
+from datetime import datetime as _dt  # noqa: E402
+
+_news_cache_time = st.session_state.get("news_cache_time")
+_news_valid = (
+    _news_cache_time is not None
+    and (_dt.now() - _news_cache_time).seconds < 300
+)
+if not _news_valid:
+    _top_news = fetch_portfolio_news(portfolio.tickers, max_per_ticker=2)
+    st.session_state.news_cache = _top_news
+    st.session_state.news_cache_time = _dt.now()
+else:
+    _top_news = st.session_state.news_cache
+
+for _item in _top_news[:5]:
+    _sent = _item["sentiment"]
+    _sc = "#00b386" if _sent == "Positive" else "#d43725" if _sent == "Negative" else "#8b8b8b"
+    _link = _item.get("link", "")
+    _title_disp = _item["title"]
+    if _link:
+        _title_disp = f'<a href="{_link}" target="_blank" style="color:#44475b;text-decoration:none;">{_item["title"]}</a>'
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:8px;padding:4px 0;'
+        f'border-bottom:1px solid #f0f0f0;font-size:0.85rem;">'
+        f'<span style="background:#f0f7ff;color:#44475b;padding:1px 6px;'
+        f'border-radius:3px;font-size:0.7rem;font-weight:500;">{_item["ticker"]}</span>'
+        f'{_title_disp}'
+        f'<span style="color:{_sc};font-size:0.7rem;font-weight:600;margin-left:auto;">'
+        f'{_sent}</span></div>',
+        unsafe_allow_html=True,
+    )
+if _top_news:
+    st.caption("View all news on the News page in the sidebar.")
+
+# --- Recommendations Banner ---
+st.markdown("### Key Signals")
+from core.signals import generate_all_signals, get_signal_color  # noqa: E402
+
+_held = st.session_state.holdings
+_cur_prices = {}
+if _held and live_df is not None and not live_df.empty:
+    for _, _r in live_df.iterrows():
+        if pd.notna(_r.get("Price")):
+            _cur_prices[_r["Ticker"]] = _r["Price"]
+
+_signals = generate_all_signals(
+    portfolio, st.session_state.regime_df, _held, _cur_prices
+)
+_top_sigs = _signals[:3]
+if _top_sigs:
+    _sig_cols = st.columns(len(_top_sigs))
+    for _col, _sig in zip(_sig_cols, _top_sigs):
+        _color = get_signal_color(_sig.signal_type)
+        _col.markdown(
+            f'<div style="border-left:3px solid {_color};padding:8px 12px;'
+            f'background:#fff;border:1px solid #e8e8e8;border-left:3px solid {_color};'
+            f'border-radius:6px;font-size:0.8rem;">'
+            f'<span style="color:{_color};font-weight:600;font-size:0.7rem;">'
+            f'{_sig.signal_type.value.upper()}</span><br>'
+            f'<span style="color:#44475b;font-weight:500;">{_sig.title}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    st.caption("View all recommendations on the Recommendations page.")
 
 # --- Allocation ---
 st.markdown("### Allocation")
@@ -594,6 +666,21 @@ fig_prices.update_layout(
 )
 st.plotly_chart(fig_prices, use_container_width=True)
 
+# --- TradingView Analysis ---
+st.markdown("### TradingView Analysis")
+from core.tradingview import advanced_chart_html, technical_analysis_html  # noqa: E402
+
+_tv_ticker = st.selectbox(
+    "Select instrument for TradingView analysis",
+    options=portfolio.tickers,
+    key="tv_ticker_select",
+)
+_tv_chart_col, _tv_ta_col = st.columns([2, 1])
+with _tv_chart_col:
+    st.components.v1.html(advanced_chart_html(_tv_ticker, height=450), height=460)
+with _tv_ta_col:
+    st.components.v1.html(technical_analysis_html(_tv_ticker, height=400), height=410)
+
 # --- Individual cumulative returns with benchmark ---
 st.markdown("### Cumulative Returns")
 
@@ -725,7 +812,7 @@ risk_rows.append({"Ticker": "HHI", "Sector": f"{summary['hhi']:.4f}"})
 if risk_rows:
     report_df = pd.concat([report_df, pd.DataFrame(risk_rows)], ignore_index=True)
 
-dl1, dl2 = st.columns(2)
+dl1, dl2, dl3 = st.columns(3)
 with dl1:
     import io
     buf1 = io.BytesIO()
@@ -747,6 +834,21 @@ with dl2:
         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         use_container_width=True,
     )
+with dl3:
+    if st.button("Generate PDF Report", use_container_width=True):
+        with st.spinner("Generating PDF..."):
+            from core.report_gen import generate_summary_report  # noqa: E402
+            _pdf_bytes = generate_summary_report(
+                portfolio, st.session_state.regime_df,
+                st.session_state.holdings, _cur_prices, sectors,
+            )
+        st.download_button(
+            "Download PDF",
+            _pdf_bytes,
+            file_name="portfolio_summary.pdf",
+            mime="application/pdf",
+            use_container_width=True,
+        )
 
 st.markdown(
     f'<p class="muted">Data: {summary["date_range"]} &middot; Navigate to pages in sidebar for detailed analysis</p>',

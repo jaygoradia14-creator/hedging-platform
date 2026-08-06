@@ -63,6 +63,40 @@ TOOL_DEFINITIONS = [
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_news",
+            "description": "Get recent news headlines for portfolio stocks with sentiment analysis.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string",
+                        "description": "Optional specific ticker to get news for. If omitted, gets news for all portfolio tickers.",
+                    }
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recommendations",
+            "description": "Get buy/sell/hold recommendations and signals for the portfolio.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "ticker": {
+                        "type": "string",
+                        "description": "Optional specific ticker to get recommendations for.",
+                    }
+                },
+                "required": [],
+            },
+        },
+    },
 ]
 
 
@@ -137,5 +171,46 @@ def execute_tool(name: str, arguments: dict, session_state) -> str:
             "total_value": round(total_value, 2),
             "total_pnl": round(total_pnl, 2),
         })
+
+    elif name == "get_news":
+        from core.news import fetch_portfolio_news, fetch_yfinance_news
+        ticker = arguments.get("ticker")
+        if ticker:
+            items = fetch_yfinance_news(ticker, max_items=10)
+        else:
+            items = fetch_portfolio_news(portfolio.tickers, max_per_ticker=3)
+        # Limit to top 10
+        items = items[:10]
+        return json.dumps({"news": items, "count": len(items)})
+
+    elif name == "get_recommendations":
+        import pandas as pd
+        from core.signals import generate_all_signals, calculate_portfolio_health_score
+        from core.data_fetch import fetch_latest_prices
+        holdings = getattr(session_state, "holdings", {})
+        current_prices = {}
+        if holdings:
+            live = fetch_latest_prices(list(holdings.keys()))
+            for _, row in live.iterrows():
+                if pd.notna(row.get("Price")):
+                    current_prices[row["Ticker"]] = row["Price"]
+        signals = generate_all_signals(portfolio, regime_df, holdings, current_prices)
+        ticker = arguments.get("ticker")
+        if ticker:
+            signals = [s for s in signals if s.ticker == ticker or s.ticker == "PORTFOLIO"]
+        health = calculate_portfolio_health_score(signals)
+        sig_data = [
+            {
+                "ticker": s.ticker,
+                "type": s.signal_type.value,
+                "title": s.title,
+                "description": s.description,
+                "action": s.action,
+                "source": s.source,
+                "priority": s.priority,
+            }
+            for s in signals[:10]
+        ]
+        return json.dumps({"health_score": health, "signals": sig_data})
 
     return json.dumps({"error": f"Unknown tool: {name}"})
