@@ -9,8 +9,8 @@ from core.style import (
 class TestColorConstants:
     """Verify color palettes are defined correctly."""
 
-    def test_colors_has_eight_entries(self):
-        assert len(COLORS) == 8
+    def test_colors_has_entries(self):
+        assert len(COLORS) == 10
 
     def test_colors_are_hex(self):
         for c in COLORS:

@@ -2,17 +2,19 @@
 Shared Zerodha Kite-inspired styling for all pages.
 """
 
-# Zerodha color palette
-BLUE = "#387ed1"
+# Modern color palette
+BLUE = "#5367ff"
 GREEN = "#00b386"
-RED = "#d43725"
-ORANGE = "#f5a623"
-PURPLE = "#7c3aed"
+RED = "#eb5b3c"
+ORANGE = "#f59e0b"
+PURPLE = "#8b5cf6"
 CYAN = "#06b6d4"
 PINK = "#ec4899"
-LIME = "#84cc16"
+LIME = "#22c55e"
+INDIGO = "#6366f1"
+TEAL = "#14b8a6"
 
-COLORS = [BLUE, GREEN, RED, ORANGE, PURPLE, CYAN, PINK, LIME]
+COLORS = [BLUE, GREEN, RED, ORANGE, PURPLE, CYAN, PINK, LIME, INDIGO, TEAL]
 
 REGIME_COLORS = {
     "Low Volatility": GREEN,
@@ -21,17 +23,38 @@ REGIME_COLORS = {
     "Crisis": RED,
 }
 
-# Plotly layout defaults (Zerodha light theme)
+# Plotly layout defaults (clean, modern light theme)
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, -apple-system, sans-serif", color="#333", size=12),
-    margin=dict(l=50, r=20, t=10, b=40),
-    xaxis=dict(gridcolor="#f0f0f0", zerolinecolor="#e0e0e0"),
-    yaxis=dict(gridcolor="#f0f0f0", zerolinecolor="#e0e0e0"),
+    font=dict(family="Inter, -apple-system, sans-serif", color="#44475b", size=12),
+    margin=dict(l=55, r=25, t=15, b=45),
+    xaxis=dict(
+        gridcolor="rgba(0,0,0,0.04)",
+        zerolinecolor="#e0e0e0",
+        showgrid=True,
+        tickfont=dict(size=10, color="#8b8b8b"),
+        linecolor="#e8e8e8",
+        linewidth=1,
+    ),
+    yaxis=dict(
+        gridcolor="rgba(0,0,0,0.04)",
+        zerolinecolor="#e0e0e0",
+        showgrid=True,
+        tickfont=dict(size=10, color="#8b8b8b"),
+        linecolor="#e8e8e8",
+        linewidth=1,
+    ),
     legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-        font=dict(size=11),
+        font=dict(size=11, color="#44475b"),
+        bgcolor="rgba(255,255,255,0.8)",
+        bordercolor="rgba(0,0,0,0)",
+    ),
+    hoverlabel=dict(
+        bgcolor="#ffffff",
+        bordercolor="#e8e8e8",
+        font=dict(size=12, color="#44475b", family="Inter, sans-serif"),
     ),
 )
 
@@ -49,8 +72,13 @@ def heatmap_layout(height=350):
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, sans-serif", color="#333", size=12),
-        margin=dict(l=60, r=60, t=10, b=60),
+        font=dict(family="Inter, sans-serif", color="#44475b", size=12),
+        margin=dict(l=60, r=60, t=15, b=60),
+        hoverlabel=dict(
+            bgcolor="#ffffff",
+            bordercolor="#e8e8e8",
+            font=dict(size=12, color="#44475b"),
+        ),
     )
 
 

@@ -162,6 +162,62 @@ st.markdown("""
         padding-bottom: 0.5rem; margin-top: 2rem;
     }
 
+    /* ========== STYLED TABLES ========== */
+    .styled-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 0.82rem;
+    }
+    .styled-table thead th {
+        background: #f7f8fa;
+        color: #8b8b8b;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        text-align: center;
+        border-bottom: 2px solid #e8e8e8;
+        white-space: nowrap;
+    }
+    .styled-table tbody td {
+        padding: 9px 12px;
+        text-align: center;
+        color: #44475b;
+        border-bottom: 1px solid #f0f0f0;
+        white-space: nowrap;
+    }
+    .styled-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .styled-table tbody tr:hover {
+        background: #f8faff;
+    }
+    .styled-table .ticker-cell {
+        font-weight: 600;
+        color: #5367ff;
+        text-align: left;
+    }
+    .styled-table .sector-cell {
+        text-align: left;
+        color: #8b8b8b;
+        font-size: 0.75rem;
+    }
+    .styled-table .positive { color: #00b386; font-weight: 600; }
+    .styled-table .negative { color: #eb5b3c; font-weight: 600; }
+    .styled-table .na-cell { color: #c0c0c0; }
+
+    /* ========== DATAFRAME OVERRIDES ========== */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
     /* ========== UTILITY ========== */
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
@@ -354,19 +410,50 @@ with st.spinner("Fetching latest prices..."):
     live_df = fetch_latest_prices(portfolio.tickers)
 
 if not live_df.empty and live_df["Price"].notna().any():
-    # Format for display
-    display_df = live_df.copy()
-    display_df["Price"] = display_df["Price"].apply(lambda x: f"${x:,.2f}" if pd.notna(x) else "N/A")
-    display_df["Change"] = display_df["Change"].apply(
-        lambda x: f"{x:+.2f}" if pd.notna(x) else "N/A"
+    # Build styled HTML table for live prices
+    def _fmt_val(val, fmt, prefix="", suffix=""):
+        if pd.isna(val) or val is None:
+            return '<span class="na-cell">N/A</span>'
+        return f"{prefix}{fmt.format(val)}{suffix}"
+
+    def _fmt_change(val, fmt="{:+.2f}", suffix=""):
+        if pd.isna(val) or val is None:
+            return '<span class="na-cell">N/A</span>'
+        cls = "positive" if val >= 0 else "negative"
+        return f'<span class="{cls}">{fmt.format(val)}{suffix}</span>'
+
+    _cols = ["Sector", "Price", "Change", "Chg %", "Volume",
+             "Mkt Cap", "P/E", "EPS", "Div Yield", "Beta", "52W High", "52W Low"]
+    _header = "".join(f"<th>{c}</th>" for c in ["Ticker"] + _cols)
+    _na_span = '<span class="na-cell">N/A</span>'
+    _rows_html = ""
+    for _, r in live_df.iterrows():
+        vol_val = r["Volume"]
+        vol_cell = _fmt_val(vol_val, "{:,.0f}") if pd.notna(vol_val) and vol_val > 0 else _na_span
+        mktcap_val = r.get("Mkt Cap")
+        mktcap_cell = mktcap_val if pd.notna(mktcap_val) else _na_span
+        _rows_html += "<tr>"
+        _rows_html += f'<td class="ticker-cell">{r["Ticker"]}</td>'
+        _rows_html += f'<td class="sector-cell">{r["Sector"]}</td>'
+        _rows_html += f'<td>{_fmt_val(r["Price"], "{:,.2f}", prefix="$")}</td>'
+        _rows_html += f'<td>{_fmt_change(r["Change"])}</td>'
+        _rows_html += f'<td>{_fmt_change(r["Change %"], suffix="%")}</td>'
+        _rows_html += f'<td>{vol_cell}</td>'
+        _rows_html += f'<td>{mktcap_cell}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("P/E"), "{:.1f}")}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("EPS"), "{:.2f}", prefix="$")}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("Div Yield"), "{:.2f}", suffix="%")}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("Beta"), "{:.2f}")}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("52W High"), "{:,.2f}", prefix="$")}</td>'
+        _rows_html += f'<td>{_fmt_val(r.get("52W Low"), "{:,.2f}", prefix="$")}</td>'
+        _rows_html += "</tr>"
+
+    st.markdown(
+        f'<div style="overflow-x:auto;">'
+        f'<table class="styled-table"><thead><tr>{_header}</tr></thead>'
+        f'<tbody>{_rows_html}</tbody></table></div>',
+        unsafe_allow_html=True,
     )
-    display_df["Change %"] = display_df["Change %"].apply(
-        lambda x: f"{x:+.2f}%" if pd.notna(x) else "N/A"
-    )
-    display_df["Volume"] = display_df["Volume"].apply(
-        lambda x: f"{x:,.0f}" if pd.notna(x) and x > 0 else "N/A"
-    )
-    st.dataframe(display_df.set_index("Ticker"), use_container_width=True)
 
 # --- Top Headlines ---
 st.markdown("### Top Headlines")
@@ -451,7 +538,7 @@ with col_pie:
         marker=dict(colors=COLORS[:portfolio.n_assets],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#333"),
+        textfont=dict(size=11, color="#44475b"),
     )])
     fig.update_layout(**kite_layout(height=340), showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
@@ -459,16 +546,31 @@ with col_pie:
 with col_table:
     ann_ret = returns.mean() * 252
     ann_vol = returns.std() * np.sqrt(252)
+    sharpe = ann_ret / ann_vol
 
-    stats_df = pd.DataFrame({
-        "Sector": [sectors[t] for t in portfolio.tickers],
-        "Weight": [f"{w:.1%}" for w in portfolio.weights],
-        "Return": ann_ret.apply(lambda x: f"{x:+.2%}"),
-        "Volatility": ann_vol.apply(lambda x: f"{x:.2%}"),
-        "Sharpe": (ann_ret / ann_vol).apply(lambda x: f"{x:.2f}"),
-    }, index=portfolio.tickers)
-    stats_df.index.name = "Instrument"
-    st.dataframe(stats_df, use_container_width=True, height=300)
+    _alloc_header = "".join(f"<th>{c}</th>" for c in
+                            ["Instrument", "Sector", "Weight", "Return", "Volatility", "Sharpe"])
+    _alloc_rows = ""
+    for t in portfolio.tickers:
+        i = portfolio.tickers.index(t)
+        _ret_val = ann_ret[t]
+        _ret_cls = "positive" if _ret_val >= 0 else "negative"
+        _alloc_rows += (
+            f'<tr>'
+            f'<td class="ticker-cell">{t}</td>'
+            f'<td class="sector-cell">{sectors[t]}</td>'
+            f'<td>{portfolio.weights[i]:.1%}</td>'
+            f'<td><span class="{_ret_cls}">{_ret_val:+.2%}</span></td>'
+            f'<td>{ann_vol[t]:.2%}</td>'
+            f'<td>{sharpe[t]:.2f}</td>'
+            f'</tr>'
+        )
+    st.markdown(
+        f'<div style="overflow-x:auto;">'
+        f'<table class="styled-table"><thead><tr>{_alloc_header}</tr></thead>'
+        f'<tbody>{_alloc_rows}</tbody></table></div>',
+        unsafe_allow_html=True,
+    )
 
 # --- Sector Exposure ---
 st.markdown("### Sector Exposure")
@@ -512,19 +614,28 @@ with sec_col1:
         marker=dict(colors=COLORS[:len(_sec_names)],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#333"),
+        textfont=dict(size=11, color="#44475b"),
     )])
     fig_sec.update_layout(**kite_layout(height=340), showlegend=False)
     st.plotly_chart(fig_sec, use_container_width=True)
 
 with sec_col2:
-    sec_table = pd.DataFrame({
-        "Sector": _sec_names,
-        "Weight %": [f"{w:.1%}" for w in _sec_weights],
-        "# Tickers": _sec_counts,
-    })
-    st.dataframe(sec_table.set_index("Sector"),
-                 use_container_width=True, height=300)
+    _sec_header = "".join(f"<th>{c}</th>" for c in ["Sector", "Weight", "# Tickers"])
+    _sec_rows = ""
+    for sn, sw, sc in zip(_sec_names, _sec_weights, _sec_counts):
+        _sec_rows += (
+            f'<tr>'
+            f'<td class="ticker-cell">{sn}</td>'
+            f'<td>{sw:.1%}</td>'
+            f'<td>{sc}</td>'
+            f'</tr>'
+        )
+    st.markdown(
+        f'<div style="overflow-x:auto;">'
+        f'<table class="styled-table"><thead><tr>{_sec_header}</tr></thead>'
+        f'<tbody>{_sec_rows}</tbody></table></div>',
+        unsafe_allow_html=True,
+    )
 
     # Sector HHI
     sec_hhi = sum(w ** 2 for w in _sec_weights)
@@ -657,7 +768,7 @@ for i, ticker in enumerate(portfolio.tickers):
     fig_prices.add_trace(go.Scatter(
         x=normalized.index, y=normalized.values,
         mode="lines", name=f"{ticker} ({sectors[ticker]})",
-        line=dict(width=2, color=COLORS[i % len(COLORS)]),
+        line=dict(width=2.2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
     ))
 fig_prices.update_layout(
     **kite_layout(height=420),
@@ -692,12 +803,12 @@ for i, ticker in enumerate(portfolio.tickers):
     fig_cum.add_trace(go.Scatter(
         x=cum_ret.index, y=cum_ret[ticker] * 100,
         mode="lines", name=f"{ticker}",
-        line=dict(width=1.8, color=COLORS[i % len(COLORS)]),
+        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
     ))
 fig_cum.add_trace(go.Scatter(
     x=port_cum.index, y=port_cum.values * 100,
     mode="lines", name="Portfolio",
-    line=dict(color="#1a1a2e", width=3),
+    line=dict(color="#1a1a2e", width=3, shape="spline", smoothing=0.3),
 ))
 
 # Benchmark: S&P 500 (SPY) — if not already in portfolio
@@ -734,10 +845,10 @@ for i, ticker in enumerate(portfolio.tickers):
     fig_daily.add_trace(go.Scatter(
         x=returns.index, y=returns[ticker] * 100,
         mode="lines", name=ticker,
-        line=dict(width=1, color=COLORS[i % len(COLORS)]),
-        opacity=0.7,
+        line=dict(width=1.2, color=COLORS[i % len(COLORS)]),
+        opacity=0.75,
     ))
-fig_daily.add_hline(y=0, line_color="#e8e8e8")
+fig_daily.add_hline(y=0, line_color="#d0d0d0", line_width=1)
 fig_daily.update_layout(
     **kite_layout(height=350),
     yaxis_title="Daily Return %", yaxis_ticksuffix="%",
@@ -756,7 +867,7 @@ for i, ticker in enumerate(portfolio.tickers):
     fig_vol.add_trace(go.Scatter(
         x=rolling_vol.index, y=rolling_vol[ticker] * 100,
         mode="lines", name=ticker,
-        line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
     ))
 fig_vol.update_layout(
     **kite_layout(height=380),

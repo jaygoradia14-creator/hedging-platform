@@ -55,6 +55,21 @@ POPULAR_TICKERS = sorted(set(list(SECTOR_MAP.keys()) + [
 ]))
 
 
+def _format_market_cap(value) -> str:
+    """Format market cap into human-readable abbreviation."""
+    if value is None:
+        return None
+    value = float(value)
+    if value >= 1e12:
+        return f"${value / 1e12:.1f}T"
+    elif value >= 1e9:
+        return f"${value / 1e9:.1f}B"
+    elif value >= 1e6:
+        return f"${value / 1e6:.1f}M"
+    else:
+        return f"${value:,.0f}"
+
+
 def get_sector(ticker: str) -> str:
     """Get sector/category for a ticker."""
     return SECTOR_MAP.get(ticker.upper(), "Other")
@@ -127,6 +142,11 @@ def fetch_latest_prices(tickers: List[str]) -> pd.DataFrame:
             prev = float(hist["Close"].iloc[-2])
             change = current - prev
             change_pct = (change / prev) * 100
+            # Fetch fundamental data from ticker info
+            try:
+                info = tk.info
+            except Exception:
+                info = {}
             records.append({
                 "Ticker": ticker,
                 "Sector": get_sector(ticker),
@@ -134,12 +154,21 @@ def fetch_latest_prices(tickers: List[str]) -> pd.DataFrame:
                 "Change": change,
                 "Change %": change_pct,
                 "Volume": int(hist["Volume"].iloc[-1]) if "Volume" in hist.columns else 0,
+                "Mkt Cap": _format_market_cap(info.get("marketCap")),
+                "P/E": info.get("trailingPE"),
+                "EPS": info.get("trailingEps"),
+                "Div Yield": info.get("dividendYield"),
+                "Beta": info.get("beta"),
+                "52W High": info.get("fiftyTwoWeekHigh"),
+                "52W Low": info.get("fiftyTwoWeekLow"),
             })
         except Exception:
             records.append({
                 "Ticker": ticker,
                 "Sector": get_sector(ticker),
                 "Price": None, "Change": None, "Change %": None, "Volume": None,
+                "Mkt Cap": None, "P/E": None, "EPS": None, "Div Yield": None,
+                "Beta": None, "52W High": None, "52W Low": None,
             })
 
     return pd.DataFrame(records)
