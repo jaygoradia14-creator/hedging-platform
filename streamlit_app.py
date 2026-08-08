@@ -1,6 +1,6 @@
 """
 Hedging Platform - Main Entry Point
-Auto-loads data, shows live prices with sectors, Zerodha Kite UI.
+Auto-loads data, shows live prices with sectors, Wolf & Wright UI.
 """
 
 import streamlit as st
@@ -16,42 +16,49 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------------------------
-# Zerodha Kite CSS (same as before)
+# Wolf & Wright CSS
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .stApp { background-color: #ffffff; }
 
-    /* ========== GROWW-STYLE SIDEBAR ========== */
+    /* ========== DARK NAVY SIDEBAR ========== */
     [data-testid="stSidebar"] {
-        background-color: #ffffff;
-        border-right: 1px solid #e8e8e8;
-        box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+        background-color: #011f24;
+        border-right: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 2px 0 12px rgba(0,0,0,0.15);
     }
     [data-testid="stSidebar"] > div:first-child {
         padding-top: 1rem;
     }
-    /* Sidebar text defaults */
+    /* Sidebar text defaults - light on dark */
     [data-testid="stSidebar"] .stTextInput label,
     [data-testid="stSidebar"] .stSelectbox label {
-        color: #8b8b8b !important; font-size: 0.7rem;
+        color: rgba(255,255,255,0.7) !important; font-size: 0.7rem;
         text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
     }
     [data-testid="stSidebar"] .stMarkdown h2 {
-        color: #44475b !important; font-size: 0.75rem; text-transform: uppercase;
+        font-family: 'Inconsolata', monospace;
+        color: #ffffff !important; font-size: 0.75rem; text-transform: uppercase;
         letter-spacing: 0.08em; font-weight: 700;
-        border-bottom: 1px solid #eef0f4; padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;
     }
-    [data-testid="stSidebar"] hr { border-color: #eef0f4; }
+    [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.08); }
+    [data-testid="stSidebar"] .stMarkdown p,
+    [data-testid="stSidebar"] .stMarkdown span,
+    [data-testid="stSidebar"] .stCaption,
+    [data-testid="stSidebar"] small {
+        color: rgba(255,255,255,0.7) !important;
+    }
 
-    /* Sidebar page navigation - Groww style */
+    /* Sidebar page navigation - dark theme */
     [data-testid="stSidebarNav"] {
         padding-top: 0.5rem;
-        border-bottom: 1px solid #eef0f4;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
         padding-bottom: 0.5rem;
         margin-bottom: 0.5rem;
     }
@@ -59,7 +66,7 @@ st.markdown("""
         margin: 2px 8px;
     }
     [data-testid="stSidebarNav"] a {
-        color: #44475b !important;
+        color: rgba(255,255,255,0.7) !important;
         font-size: 0.88rem !important;
         font-weight: 500 !important;
         padding: 0.55rem 0.8rem !important;
@@ -69,28 +76,28 @@ st.markdown("""
         align-items: center !important;
     }
     [data-testid="stSidebarNav"] a span {
-        color: #44475b !important;
+        color: rgba(255,255,255,0.7) !important;
     }
     [data-testid="stSidebarNav"] a:hover {
-        background: #f0f7ff !important;
-        color: #5367ff !important;
+        background: rgba(255,255,255,0.08) !important;
+        color: #ffffff !important;
     }
     [data-testid="stSidebarNav"] a:hover span {
-        color: #5367ff !important;
+        color: #ffffff !important;
     }
     [data-testid="stSidebarNav"] a[aria-selected="true"] {
-        background: #f0f7ff !important;
-        color: #5367ff !important;
+        background: rgba(77,101,255,0.15) !important;
+        color: #ffffff !important;
         font-weight: 600 !important;
-        border-left: 3px solid #5367ff !important;
+        border-left: 3px solid #4d65ff !important;
     }
     [data-testid="stSidebarNav"] a[aria-selected="true"] span {
-        color: #5367ff !important;
+        color: #ffffff !important;
     }
 
-    /* Hamburger button - Groww style (top left) */
+    /* Hamburger button - dark navy style */
     button[kind="header"] {
-        color: #44475b !important;
+        color: #ffffff !important;
     }
     [data-testid="stSidebarCollapsedControl"] {
         top: 0.5rem;
@@ -99,72 +106,88 @@ st.markdown("""
     }
     [data-testid="stSidebarCollapsedControl"] button,
     [data-testid="collapsedControl"] button {
-        background: #ffffff !important;
-        border: 1px solid #e0e4eb !important;
+        background: #011f24 !important;
+        border: 1px solid rgba(255,255,255,0.15) !important;
         border-radius: 10px !important;
         padding: 6px 8px !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         transition: all 0.2s;
     }
     [data-testid="stSidebarCollapsedControl"] button:hover,
     [data-testid="collapsedControl"] button:hover {
-        background: #f0f7ff !important;
-        border-color: #5367ff !important;
-        box-shadow: 0 2px 12px rgba(83,103,255,0.15);
+        background: #032b32 !important;
+        border-color: #4d65ff !important;
+        box-shadow: 0 2px 12px rgba(77,101,255,0.15);
     }
     [data-testid="stSidebarCollapsedControl"] button svg,
     [data-testid="collapsedControl"] button svg {
-        stroke: #5367ff !important;
+        stroke: #ffffff !important;
         width: 20px !important;
         height: 20px !important;
     }
     /* Close button inside sidebar */
     [data-testid="stSidebarCollapseButton"] button {
-        color: #8b8b8b !important;
+        color: rgba(255,255,255,0.7) !important;
         background: transparent !important;
         border: none !important;
     }
     [data-testid="stSidebarCollapseButton"] button:hover {
-        color: #44475b !important;
+        color: #ffffff !important;
     }
 
     /* ========== TOPBAR ========== */
-    .kite-topbar {
+    .ww-topbar {
         display: flex; align-items: center; justify-content: space-between;
-        border-bottom: 1px solid #e8e8e8; padding: 0.6rem 0; margin-bottom: 1.5rem;
+        background: #011f24; color: #ffffff;
+        padding: 0.8rem 1.2rem; margin: -1rem -1rem 1.5rem -1rem;
+        border-radius: 0 0 10px 10px;
     }
-    .kite-logo {
-        font-size: 1.4rem; font-weight: 700; color: #5367ff;
+    .ww-logo {
+        font-family: 'Inconsolata', monospace;
+        font-size: 1.4rem; font-weight: 700; color: #ffffff;
         letter-spacing: -0.02em;
     }
-    .kite-logo span {
-        color: #999; font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;
+    .ww-logo span {
+        color: rgba(255,255,255,0.5); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;
+    }
+    .ww-tagline {
+        font-family: 'Cardo', serif;
+        font-style: italic;
+        color: rgba(255,255,255,0.6);
+        font-size: 0.85rem;
     }
 
     /* ========== METRICS ========== */
     [data-testid="stMetric"] {
-        background: #fff; border: 1px solid #e8e8e8;
+        background: #fff; border: 1px solid #e2e5ea;
         border-radius: 10px; padding: 1.2rem 1rem;
         text-align: center;
+        transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+    [data-testid="stMetric"]:hover {
+        border-color: #4d65ff;
+        box-shadow: 0 2px 12px rgba(77,101,255,0.10);
     }
     [data-testid="stMetric"] > div {
         display: flex; flex-direction: column; align-items: center;
     }
     [data-testid="stMetric"] label {
-        color: #8b8b8b !important; font-size: 0.68rem !important;
+        font-family: 'Inconsolata', monospace;
+        color: #6b7280 !important; font-size: 0.68rem !important;
         text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600 !important;
         text-align: center !important; width: 100%;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #44475b !important; font-size: 1.5rem !important; font-weight: 700 !important;
+        color: #011f24 !important; font-size: 1.5rem !important; font-weight: 700 !important;
         text-align: center !important; width: 100%;
     }
 
     /* ========== HEADINGS ========== */
     .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
-        color: #44475b; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
-        letter-spacing: 0.05em; border-bottom: 1px solid #e8e8e8;
+        font-family: 'Inconsolata', monospace;
+        color: #011f24; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
+        letter-spacing: 0.05em; border-bottom: 1px solid #e2e5ea;
         padding-bottom: 0.5rem; margin-top: 2rem;
     }
 
@@ -173,27 +196,28 @@ st.markdown("""
         width: 100%;
         border-collapse: separate;
         border-spacing: 0;
-        border: 1px solid #e8e8e8;
+        border: 1px solid #e2e5ea;
         border-radius: 10px;
         overflow: hidden;
         font-size: 0.82rem;
     }
     .styled-table thead th {
-        background: #f7f8fa;
-        color: #8b8b8b;
+        background: #f4f5f7;
+        color: #6b7280;
+        font-family: 'Inconsolata', monospace;
         font-weight: 600;
         font-size: 0.7rem;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         padding: 10px 12px;
         text-align: center;
-        border-bottom: 2px solid #e8e8e8;
+        border-bottom: 2px solid #e2e5ea;
         white-space: nowrap;
     }
     .styled-table tbody td {
         padding: 9px 12px;
         text-align: center;
-        color: #44475b;
+        color: #011f24;
         border-bottom: 1px solid #f0f0f0;
         white-space: nowrap;
     }
@@ -201,16 +225,17 @@ st.markdown("""
         border-bottom: none;
     }
     .styled-table tbody tr:hover {
-        background: #f8faff;
+        background: #f0f4f8;
     }
     .styled-table .ticker-cell {
+        font-family: 'Inconsolata', monospace;
         font-weight: 600;
-        color: #5367ff;
+        color: #4d65ff;
         text-align: left;
     }
     .styled-table .sector-cell {
         text-align: left;
-        color: #8b8b8b;
+        color: #6b7280;
         font-size: 0.75rem;
     }
     .styled-table .positive { color: #00b386; font-weight: 600; }
@@ -219,7 +244,7 @@ st.markdown("""
 
     /* ========== DATAFRAME OVERRIDES ========== */
     [data-testid="stDataFrame"] {
-        border: 1px solid #e8e8e8;
+        border: 1px solid #e2e5ea;
         border-radius: 10px;
         overflow: hidden;
     }
@@ -227,13 +252,13 @@ st.markdown("""
     /* ========== UTILITY ========== */
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
-    .muted { color: #8b8b8b; font-size: 0.8rem; }
+    .muted { color: #6b7280; font-size: 0.8rem; }
 
     /* ========== HEADER ========== */
     footer { visibility: hidden; }
     header[data-testid="stHeader"] {
         background: #ffffff;
-        border-bottom: 1px solid #e8e8e8;
+        border-bottom: 1px solid #e2e5ea;
     }
 
     /* ========== MOBILE ========== */
@@ -243,13 +268,13 @@ st.markdown("""
             padding-right: 1rem !important;
             padding-top: 1rem !important;
         }
-        .kite-topbar {
+        .ww-topbar {
             flex-direction: column;
             align-items: flex-start;
             gap: 0.3rem;
         }
-        .kite-logo { font-size: 1.1rem; }
-        .kite-logo span { font-size: 0.7rem; }
+        .ww-logo { font-size: 1.1rem; }
+        .ww-logo span { font-size: 0.7rem; }
         [data-testid="stMetric"] { padding: 0.6rem 0.8rem; }
         [data-testid="stMetric"] [data-testid="stMetricValue"] {
             font-size: 1.1rem !important;
@@ -270,7 +295,7 @@ st.markdown("""
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
         }
-        .kite-logo { font-size: 1rem; }
+        .ww-logo { font-size: 1rem; }
         [data-testid="stMetric"] [data-testid="stMetricValue"] {
             font-size: 0.95rem !important;
         }
@@ -381,10 +406,12 @@ with st.sidebar:
 # ---------------------------------------------------------------------------
 # Main content
 # ---------------------------------------------------------------------------
+
+# --- 1. Topbar ---
 st.markdown("""
-<div class="kite-topbar">
-    <div class="kite-logo">hedging<span>platform</span></div>
-    <div class="muted">Portfolio Risk & Hedging Analysis</div>
+<div class="ww-topbar">
+    <div class="ww-logo">hedging<span>platform</span></div>
+    <div class="ww-tagline">Portfolio Risk & Hedging Analysis</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -399,22 +426,138 @@ returns = portfolio.returns
 import plotly.graph_objects as go  # noqa: E402
 from core.style import COLORS, kite_layout  # noqa: E402
 
-# --- TradingView Ticker Tape ---
+# --- 2. TradingView Ticker Tape ---
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
-# --- Metrics row ---
+# --- 3. Cumulative Returns (moved up from position 12) ---
+st.markdown("### Cumulative Returns")
+
+cum_ret = (1 + returns).cumprod() - 1
+port_cum = (1 + portfolio.portfolio_returns).cumprod() - 1
+
+fig_cum = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_cum.add_trace(go.Scatter(
+        x=cum_ret.index, y=cum_ret[ticker] * 100,
+        mode="lines", name=f"{ticker}",
+        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
+    ))
+fig_cum.add_trace(go.Scatter(
+    x=port_cum.index, y=port_cum.values * 100,
+    mode="lines", name="Portfolio",
+    line=dict(color="#011f24", width=3, shape="spline", smoothing=0.3),
+))
+
+# Benchmark: S&P 500 (SPY) — if not already in portfolio
+if "SPY" not in portfolio.tickers:
+    try:
+        bench_prices = fetch_multi_asset_data(
+            ["SPY"],
+            str(portfolio.prices.index[0].date()),
+            str(portfolio.prices.index[-1].date()),
+        )
+        if not bench_prices.empty:
+            bench_ret = calculate_returns(bench_prices)
+            bench_cum = (1 + bench_ret["SPY"]).cumprod() - 1
+            fig_cum.add_trace(go.Scatter(
+                x=bench_cum.index, y=bench_cum.values * 100,
+                mode="lines", name="S&P 500 (Benchmark)",
+                line=dict(color="#999", width=2, dash="dash"),
+            ))
+    except Exception:
+        pass
+
+fig_cum.update_layout(
+    **kite_layout(height=420),
+    yaxis_title="Return %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_cum, use_container_width=True)
+
+# --- 4. Daily Returns (moved up from position 13) ---
+st.markdown("### Daily Returns")
+
+fig_daily = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_daily.add_trace(go.Scatter(
+        x=returns.index, y=returns[ticker] * 100,
+        mode="lines", name=ticker,
+        line=dict(width=1.2, color=COLORS[i % len(COLORS)]),
+        opacity=0.75,
+    ))
+fig_daily.add_hline(y=0, line_color="#d0d0d0", line_width=1)
+fig_daily.update_layout(
+    **kite_layout(height=350),
+    yaxis_title="Daily Return %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_daily, use_container_width=True)
+
+# --- 5. Rolling Volatility (moved up from position 14) ---
+st.markdown("### Rolling Volatility (21-Day)")
+
+from core.regime_detector import calculate_rolling_volatility  # noqa: E402
+rolling_vol = calculate_rolling_volatility(returns, window=21)
+
+fig_vol = go.Figure()
+for i, ticker in enumerate(portfolio.tickers):
+    fig_vol.add_trace(go.Scatter(
+        x=rolling_vol.index, y=rolling_vol[ticker] * 100,
+        mode="lines", name=ticker,
+        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
+    ))
+fig_vol.update_layout(
+    **kite_layout(height=380),
+    yaxis_title="Annualized Volatility %", yaxis_ticksuffix="%",
+    hovermode="x unified",
+)
+st.plotly_chart(fig_vol, use_container_width=True)
+
+# --- 6. Metrics row ---
 c1, c2, c3 = st.columns(3)
 c1.metric("Instruments", summary["n_assets"])
 c2.metric("Data Points", summary["data_points"])
 c3.metric("HHI", f"{summary['hhi']:.3f}")
 
-# --- Live Prices & Sectors ---
+# --- 7. Key Signals ---
+st.markdown("### Key Signals")
+from core.signals import generate_all_signals, get_signal_color  # noqa: E402
+
+# Fetch live prices (needed by signals + later sections)
 st.markdown("### Live Prices & Sectors")
 
 with st.spinner("Fetching latest prices..."):
     live_df = fetch_latest_prices(portfolio.tickers)
 
+_held = st.session_state.holdings
+_cur_prices = {}
+if _held and live_df is not None and not live_df.empty:
+    for _, _r in live_df.iterrows():
+        if pd.notna(_r.get("Price")):
+            _cur_prices[_r["Ticker"]] = _r["Price"]
+
+_signals = generate_all_signals(
+    portfolio, st.session_state.regime_df, _held, _cur_prices
+)
+_top_sigs = _signals[:3]
+if _top_sigs:
+    _sig_cols = st.columns(len(_top_sigs))
+    for _col, _sig in zip(_sig_cols, _top_sigs):
+        _color = get_signal_color(_sig.signal_type)
+        _col.markdown(
+            f'<div style="border-left:3px solid {_color};padding:8px 12px;'
+            f'background:#fff;border:1px solid #e2e5ea;border-left:3px solid {_color};'
+            f'border-radius:6px;font-size:0.8rem;">'
+            f'<span style="color:{_color};font-weight:600;font-size:0.7rem;">'
+            f'{_sig.signal_type.value.upper()}</span><br>'
+            f'<span style="color:#011f24;font-weight:500;">{_sig.title}</span>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+    st.caption("View all recommendations on the Recommendations page.")
+
+# --- 8. Live Prices table ---
 if not live_df.empty and live_df["Price"].notna().any():
     # Build styled HTML table for live prices
     def _fmt_val(val, fmt, prefix="", suffix=""):
@@ -461,7 +604,7 @@ if not live_df.empty and live_df["Price"].notna().any():
         unsafe_allow_html=True,
     )
 
-# --- Top Headlines ---
+# --- 9. Top Headlines ---
 st.markdown("### Top Headlines")
 from core.news import fetch_portfolio_news  # noqa: E402
 from datetime import datetime as _dt  # noqa: E402
@@ -480,15 +623,15 @@ else:
 
 for _item in _top_news[:5]:
     _sent = _item["sentiment"]
-    _sc = "#00b386" if _sent == "Positive" else "#d43725" if _sent == "Negative" else "#8b8b8b"
+    _sc = "#00b386" if _sent == "Positive" else "#d43725" if _sent == "Negative" else "#6b7280"
     _link = _item.get("link", "")
     _title_disp = _item["title"]
     if _link:
-        _title_disp = f'<a href="{_link}" target="_blank" style="color:#44475b;text-decoration:none;">{_item["title"]}</a>'
+        _title_disp = f'<a href="{_link}" target="_blank" style="color:#011f24;text-decoration:none;">{_item["title"]}</a>'
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:8px;padding:4px 0;'
         f'border-bottom:1px solid #f0f0f0;font-size:0.85rem;">'
-        f'<span style="background:#f0f7ff;color:#44475b;padding:1px 6px;'
+        f'<span style="background:#f0f4f8;color:#011f24;padding:1px 6px;'
         f'border-radius:3px;font-size:0.7rem;font-weight:500;">{_item["ticker"]}</span>'
         f'{_title_disp}'
         f'<span style="color:{_sc};font-size:0.7rem;font-weight:600;margin-left:auto;">'
@@ -498,43 +641,12 @@ for _item in _top_news[:5]:
 if _top_news:
     st.caption("View all news on the News page in the sidebar.")
 
-# --- Recommendations Banner ---
-st.markdown("### Key Signals")
-from core.signals import generate_all_signals, get_signal_color  # noqa: E402
-
-_held = st.session_state.holdings
-_cur_prices = {}
-if _held and live_df is not None and not live_df.empty:
-    for _, _r in live_df.iterrows():
-        if pd.notna(_r.get("Price")):
-            _cur_prices[_r["Ticker"]] = _r["Price"]
-
-_signals = generate_all_signals(
-    portfolio, st.session_state.regime_df, _held, _cur_prices
-)
-_top_sigs = _signals[:3]
-if _top_sigs:
-    _sig_cols = st.columns(len(_top_sigs))
-    for _col, _sig in zip(_sig_cols, _top_sigs):
-        _color = get_signal_color(_sig.signal_type)
-        _col.markdown(
-            f'<div style="border-left:3px solid {_color};padding:8px 12px;'
-            f'background:#fff;border:1px solid #e8e8e8;border-left:3px solid {_color};'
-            f'border-radius:6px;font-size:0.8rem;">'
-            f'<span style="color:{_color};font-weight:600;font-size:0.7rem;">'
-            f'{_sig.signal_type.value.upper()}</span><br>'
-            f'<span style="color:#44475b;font-weight:500;">{_sig.title}</span>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-    st.caption("View all recommendations on the Recommendations page.")
-
-# --- Allocation ---
+# --- 10. Allocation ---
 st.markdown("### Allocation")
 
-col_pie, col_table = st.columns([1, 1])
-
 sectors = get_sectors(portfolio.tickers)
+
+col_pie, col_table = st.columns([1, 1])
 
 with col_pie:
     fig = go.Figure(data=[go.Pie(
@@ -544,7 +656,7 @@ with col_pie:
         marker=dict(colors=COLORS[:portfolio.n_assets],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#44475b"),
+        textfont=dict(size=11, color="#011f24"),
     )])
     fig.update_layout(**kite_layout(height=340), showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
@@ -578,7 +690,7 @@ with col_table:
         unsafe_allow_html=True,
     )
 
-# --- Sector Exposure ---
+# --- 11. Sector Exposure ---
 st.markdown("### Sector Exposure")
 
 # Compute weights from holdings if available
@@ -620,7 +732,7 @@ with sec_col1:
         marker=dict(colors=COLORS[:len(_sec_names)],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#44475b"),
+        textfont=dict(size=11, color="#011f24"),
     )])
     fig_sec.update_layout(**kite_layout(height=340), showlegend=False)
     st.plotly_chart(fig_sec, use_container_width=True)
@@ -657,7 +769,7 @@ for sec, data in _sector_agg.items():
         st.warning(f"Sector '{sec}' has {pct:.1f}% concentration — "
                    "consider diversifying across sectors.")
 
-# --- My Holdings ---
+# --- 12. My Holdings ---
 st.markdown("### My Holdings")
 
 # Add Stock form — at the top so it's always visible
@@ -764,7 +876,7 @@ if holdings:
 else:
     st.info("No holdings yet. Add stocks above.")
 
-# --- Individual stock price charts ---
+# --- 13. Individual stock price charts ---
 st.markdown("### Individual Price History")
 
 fig_prices = go.Figure()
@@ -783,7 +895,7 @@ fig_prices.update_layout(
 )
 st.plotly_chart(fig_prices, use_container_width=True)
 
-# --- TradingView Analysis ---
+# --- 14. TradingView Analysis ---
 st.markdown("### TradingView Analysis")
 from core.tradingview import advanced_chart_html, technical_analysis_html  # noqa: E402
 
@@ -798,91 +910,7 @@ with _tv_chart_col:
 with _tv_ta_col:
     st.components.v1.html(technical_analysis_html(_tv_ticker, height=400), height=410)
 
-# --- Individual cumulative returns with benchmark ---
-st.markdown("### Cumulative Returns")
-
-cum_ret = (1 + returns).cumprod() - 1
-port_cum = (1 + portfolio.portfolio_returns).cumprod() - 1
-
-fig_cum = go.Figure()
-for i, ticker in enumerate(portfolio.tickers):
-    fig_cum.add_trace(go.Scatter(
-        x=cum_ret.index, y=cum_ret[ticker] * 100,
-        mode="lines", name=f"{ticker}",
-        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
-    ))
-fig_cum.add_trace(go.Scatter(
-    x=port_cum.index, y=port_cum.values * 100,
-    mode="lines", name="Portfolio",
-    line=dict(color="#1a1a2e", width=3, shape="spline", smoothing=0.3),
-))
-
-# Benchmark: S&P 500 (SPY) — if not already in portfolio
-if "SPY" not in portfolio.tickers:
-    try:
-        bench_prices = fetch_multi_asset_data(
-            ["SPY"],
-            str(portfolio.prices.index[0].date()),
-            str(portfolio.prices.index[-1].date()),
-        )
-        if not bench_prices.empty:
-            bench_ret = calculate_returns(bench_prices)
-            bench_cum = (1 + bench_ret["SPY"]).cumprod() - 1
-            fig_cum.add_trace(go.Scatter(
-                x=bench_cum.index, y=bench_cum.values * 100,
-                mode="lines", name="S&P 500 (Benchmark)",
-                line=dict(color="#999", width=2, dash="dash"),
-            ))
-    except Exception:
-        pass
-
-fig_cum.update_layout(
-    **kite_layout(height=420),
-    yaxis_title="Return %", yaxis_ticksuffix="%",
-    hovermode="x unified",
-)
-st.plotly_chart(fig_cum, use_container_width=True)
-
-# --- Individual daily returns ---
-st.markdown("### Daily Returns")
-
-fig_daily = go.Figure()
-for i, ticker in enumerate(portfolio.tickers):
-    fig_daily.add_trace(go.Scatter(
-        x=returns.index, y=returns[ticker] * 100,
-        mode="lines", name=ticker,
-        line=dict(width=1.2, color=COLORS[i % len(COLORS)]),
-        opacity=0.75,
-    ))
-fig_daily.add_hline(y=0, line_color="#d0d0d0", line_width=1)
-fig_daily.update_layout(
-    **kite_layout(height=350),
-    yaxis_title="Daily Return %", yaxis_ticksuffix="%",
-    hovermode="x unified",
-)
-st.plotly_chart(fig_daily, use_container_width=True)
-
-# --- Individual rolling volatility ---
-st.markdown("### Rolling Volatility (21-Day)")
-
-from core.regime_detector import calculate_rolling_volatility  # noqa: E402
-rolling_vol = calculate_rolling_volatility(returns, window=21)
-
-fig_vol = go.Figure()
-for i, ticker in enumerate(portfolio.tickers):
-    fig_vol.add_trace(go.Scatter(
-        x=rolling_vol.index, y=rolling_vol[ticker] * 100,
-        mode="lines", name=ticker,
-        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
-    ))
-fig_vol.update_layout(
-    **kite_layout(height=380),
-    yaxis_title="Annualized Volatility %", yaxis_ticksuffix="%",
-    hovermode="x unified",
-)
-st.plotly_chart(fig_vol, use_container_width=True)
-
-# --- Download Report ---
+# --- 15. Download Report ---
 st.markdown("### Download Report")
 
 from risk.var_cvar import var_cvar_summary  # noqa: E402

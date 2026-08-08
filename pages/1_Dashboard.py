@@ -42,7 +42,7 @@ with col_pie:
         marker=dict(colors=COLORS[:portfolio.n_assets],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=12, color="#44475b"),
+        textfont=dict(size=12, color="#011f24"),
     )])
     fig_pie.update_layout(**kite_layout(height=320), showlegend=False)
     st.plotly_chart(fig_pie, use_container_width=True)
@@ -57,7 +57,7 @@ with col_bar:
         ),
         text=[f"{w:.1f}%" for w in portfolio.weights * 100],
         textposition="outside",
-        textfont=dict(color="#44475b", size=12, family="Inter, sans-serif"),
+        textfont=dict(color="#011f24", size=12, family="Inter, sans-serif"),
     )])
     fig_bar.update_layout(
         **kite_layout(height=320),
@@ -114,7 +114,7 @@ with sec_c1:
         marker=dict(colors=COLORS[:len(_sec_names)],
                     line=dict(color="#ffffff", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#44475b"),
+        textfont=dict(size=11, color="#011f24"),
     )])
     fig_sec.update_layout(**kite_layout(height=320), showlegend=False)
     st.plotly_chart(fig_sec, use_container_width=True)
