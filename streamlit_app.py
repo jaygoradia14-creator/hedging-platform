@@ -253,21 +253,20 @@ st.markdown("""
 
     /* ========== CHART CARDS ========== */
     .chart-card {
-        background: #ffffff;
-        border: 1px solid #e2e5ea;
-        border-radius: 12px;
-        padding: 1.2rem;
+        background: #131722;
+        border: 1px solid #2d3548;
+        border-radius: 10px;
+        padding: 1rem 1rem 0.5rem 1rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 4px rgba(1,31,36,0.06);
     }
     .chart-card h4 {
         font-family: 'Inter', sans-serif;
-        color: #011f24;
-        font-size: 0.8rem;
+        color: #d1d4dc;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin: 0 0 0.8rem 0;
+        letter-spacing: 0.04em;
+        margin: 0 0 0.5rem 0;
     }
 
     /* ========== UTILITY ========== */
@@ -638,9 +637,9 @@ with col_pie:
         values=portfolio.weights,
         hole=0.55,
         marker=dict(colors=COLORS[:portfolio.n_assets],
-                    line=dict(color="#ffffff", width=2)),
+                    line=dict(color="#131722", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#011f24"),
+        textfont=dict(size=11, color="#d1d4dc"),
     )])
     fig.update_layout(**kite_layout(height=340), showlegend=False)
     st.markdown('<div class="chart-card"><h4>Allocation</h4>', unsafe_allow_html=True)
@@ -716,9 +715,9 @@ with sec_col1:
         values=_sec_weights,
         hole=0.55,
         marker=dict(colors=COLORS[:len(_sec_names)],
-                    line=dict(color="#ffffff", width=2)),
+                    line=dict(color="#131722", width=2)),
         textinfo="label+percent",
-        textfont=dict(size=11, color="#011f24"),
+        textfont=dict(size=11, color="#d1d4dc"),
     )])
     fig_sec.update_layout(**kite_layout(height=340), showlegend=False)
     st.markdown('<div class="chart-card"><h4>Sector Breakdown</h4>', unsafe_allow_html=True)

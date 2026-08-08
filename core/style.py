@@ -2,21 +2,23 @@
 Shared Wolf & Wright-inspired styling for all pages.
 """
 
-# Wolf & Wright color palette
+# Color palette — Bloomberg-inspired on dark
 NAVY = "#011f24"
 NAVY_LIGHT = "#032b32"
+CHART_BG = "#131722"
+CHART_BG_CARD = "#1c2333"
 BLUE = "#4d65ff"
 GREEN = "#00b386"
 RED = "#eb5b3c"
-ORANGE = "#f59e0b"
-PURPLE = "#8b5cf6"
-CYAN = "#06b6d4"
-PINK = "#ec4899"
-LIME = "#22c55e"
-INDIGO = "#6366f1"
-TEAL = "#14b8a6"
+ORANGE = "#ff9f0a"
+PURPLE = "#bf5af2"
+CYAN = "#64d2ff"
+PINK = "#ff6482"
+LIME = "#30d158"
+INDIGO = "#5e5ce6"
+TEAL = "#40c8e0"
 
-COLORS = [BLUE, GREEN, RED, ORANGE, PURPLE, CYAN, PINK, LIME, INDIGO, TEAL]
+COLORS = [ORANGE, CYAN, LIME, PINK, PURPLE, TEAL, BLUE, GREEN, RED, INDIGO]
 
 REGIME_COLORS = {
     "Low Volatility": GREEN,
@@ -25,34 +27,35 @@ REGIME_COLORS = {
     "Crisis": RED,
 }
 
-# Plotly layout defaults (minimal sparkline style with Inter)
+# Plotly layout defaults (Bloomberg dark, clean)
 PLOTLY_LAYOUT = dict(
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inter, -apple-system, sans-serif", color="#011f24", size=12),
-    margin=dict(l=0, r=0, t=10, b=0),
+    paper_bgcolor=CHART_BG,
+    plot_bgcolor=CHART_BG,
+    font=dict(family="Inter, -apple-system, sans-serif", color="#d1d4dc", size=12),
+    margin=dict(l=50, r=16, t=10, b=30),
     xaxis=dict(
         showgrid=False,
         showline=False,
-        showticklabels=False,
         zeroline=False,
+        tickfont=dict(size=10, color="#6b7a8d"),
     ),
     yaxis=dict(
-        showgrid=False,
+        showgrid=True,
+        gridcolor="rgba(255,255,255,0.06)",
         showline=False,
-        showticklabels=False,
         zeroline=False,
+        tickfont=dict(size=10, color="#6b7a8d"),
     ),
     legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-        font=dict(size=11, family="Inter, sans-serif", color="#011f24"),
-        bgcolor="rgba(255,255,255,0.8)",
+        font=dict(size=11, family="Inter, sans-serif", color="#d1d4dc"),
+        bgcolor="rgba(0,0,0,0)",
         bordercolor="rgba(0,0,0,0)",
     ),
     hoverlabel=dict(
-        bgcolor="#ffffff",
-        bordercolor="#e2e5ea",
-        font=dict(size=11, color="#011f24", family="Inter, sans-serif"),
+        bgcolor="#1c2333",
+        bordercolor="#2d3548",
+        font=dict(size=11, color="#ffffff", family="Inter, sans-serif"),
     ),
 )
 
@@ -76,14 +79,14 @@ def heatmap_layout(height=350):
     """Plotly layout for correlation heatmaps."""
     return dict(
         height=height,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inter, -apple-system, sans-serif", color="#011f24", size=12),
+        paper_bgcolor=CHART_BG,
+        plot_bgcolor=CHART_BG,
+        font=dict(family="Inter, -apple-system, sans-serif", color="#d1d4dc", size=12),
         margin=dict(l=60, r=60, t=15, b=60),
         hoverlabel=dict(
-            bgcolor="#ffffff",
-            bordercolor="#e2e5ea",
-            font=dict(size=11, color="#011f24", family="Inter, sans-serif"),
+            bgcolor="#1c2333",
+            bordercolor="#2d3548",
+            font=dict(size=11, color="#ffffff", family="Inter, sans-serif"),
         ),
     )
 
@@ -188,21 +191,20 @@ PAGE_CSS = """
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
     .chart-card {
-        background: #ffffff;
-        border: 1px solid #e2e5ea;
-        border-radius: 12px;
-        padding: 1.2rem;
+        background: #131722;
+        border: 1px solid #2d3548;
+        border-radius: 10px;
+        padding: 1rem 1rem 0.5rem 1rem;
         margin-bottom: 1rem;
-        box-shadow: 0 1px 4px rgba(1,31,36,0.06);
     }
     .chart-card h4 {
         font-family: 'Inter', sans-serif;
-        color: #011f24;
-        font-size: 0.8rem;
+        color: #d1d4dc;
+        font-size: 0.75rem;
         font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin: 0 0 0.8rem 0;
+        letter-spacing: 0.04em;
+        margin: 0 0 0.5rem 0;
     }
     .page-header {
         font-family: 'Inter', sans-serif;

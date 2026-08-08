@@ -58,9 +58,9 @@ class TestHeatmapLayout:
         layout = heatmap_layout(height=500)
         assert layout["height"] == 500
 
-    def test_has_transparent_background(self):
+    def test_has_dark_background(self):
         layout = heatmap_layout()
-        assert layout["paper_bgcolor"] == "rgba(0,0,0,0)"
+        assert layout["paper_bgcolor"] == "#131722"
 
 
 class TestPageCSS:
