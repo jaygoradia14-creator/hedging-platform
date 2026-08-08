@@ -451,7 +451,52 @@ for _rc, _t in zip(_ret_cols, portfolio.tickers):
     _rv = _ann_ret_quick[_t]
     _rc.metric(_t, f"{_rv:+.2%}")
 
-# --- 3. TradingView Ticker Tape ---
+# Fetch live prices early (needed by Add Stock + signals + later sections)
+with st.spinner("Fetching latest prices..."):
+    live_df = fetch_latest_prices(portfolio.tickers)
+
+# --- 3. Add Stock ---
+st.markdown("### Add Stock")
+add_col1, add_col2, add_col3, add_col4 = st.columns([2, 1.5, 1.5, 1])
+with add_col1:
+    add_ticker = st.selectbox(
+        "Ticker", options=portfolio.tickers, key="add_ticker_select",
+        label_visibility="collapsed",
+    )
+with add_col2:
+    add_shares = st.number_input(
+        "Shares", min_value=0.01, value=1.0, step=1.0, key="add_shares",
+    )
+with add_col3:
+    default_price = 0.0
+    if live_df is not None and not live_df.empty:
+        match = live_df[live_df["Ticker"] == add_ticker]
+        if not match.empty and pd.notna(match.iloc[0]["Price"]):
+            default_price = float(match.iloc[0]["Price"])
+    if default_price > 0:
+        center = round(default_price / 15) * 15
+        options = sorted(set(
+            max(15, center + i * 15) for i in range(-5, 6)
+        ))
+        closest = min(options, key=lambda x: abs(x - default_price))
+        add_price = st.selectbox(
+            "Buy Price", options=[float(o) for o in options],
+            index=options.index(closest), key="add_price_select",
+            format_func=lambda x: f"${x:,.0f}",
+        )
+    else:
+        add_price = st.number_input(
+            "Buy Price", min_value=0.01, value=0.01,
+            step=0.01, key="add_price",
+        )
+with add_col4:
+    st.markdown("<br>", unsafe_allow_html=True)
+    if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
+        add_holding(add_ticker, add_shares, add_price)
+        save_holdings()
+        st.rerun()
+
+# --- 4. TradingView Ticker Tape ---
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
@@ -465,11 +510,7 @@ c3.metric("HHI", f"{summary['hhi']:.3f}")
 st.markdown("### Key Signals")
 from core.signals import generate_all_signals, get_signal_color  # noqa: E402
 
-# Fetch live prices (needed by signals + later sections)
 st.markdown("### Live Prices & Sectors")
-
-with st.spinner("Fetching latest prices..."):
-    live_df = fetch_latest_prices(portfolio.tickers)
 
 _held = st.session_state.holdings
 _cur_prices = {}
@@ -717,49 +758,6 @@ for sec, data in _sector_agg.items():
 # --- 10. My Holdings ---
 st.markdown("### My Holdings")
 
-# Add Stock form — at the top so it's always visible
-st.markdown("#### Add Stock")
-add_col1, add_col2, add_col3, add_col4 = st.columns([2, 1.5, 1.5, 1])
-with add_col1:
-    add_ticker = st.selectbox(
-        "Ticker", options=portfolio.tickers, key="add_ticker_select",
-        label_visibility="collapsed",
-    )
-with add_col2:
-    add_shares = st.number_input(
-        "Shares", min_value=0.01, value=1.0, step=1.0, key="add_shares",
-    )
-with add_col3:
-    default_price = 0.0
-    if live_df is not None and not live_df.empty:
-        match = live_df[live_df["Ticker"] == add_ticker]
-        if not match.empty and pd.notna(match.iloc[0]["Price"]):
-            default_price = float(match.iloc[0]["Price"])
-    if default_price > 0:
-        # Build price options in steps of 15, centered around current price
-        center = round(default_price / 15) * 15
-        options = sorted(set(
-            max(15, center + i * 15) for i in range(-5, 6)
-        ))
-        # Pick the closest option to actual price as default
-        closest = min(options, key=lambda x: abs(x - default_price))
-        add_price = st.selectbox(
-            "Buy Price", options=[float(o) for o in options],
-            index=options.index(closest), key="add_price_select",
-            format_func=lambda x: f"${x:,.0f}",
-        )
-    else:
-        add_price = st.number_input(
-            "Buy Price", min_value=0.01, value=0.01,
-            step=0.01, key="add_price",
-        )
-with add_col4:
-    st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("Add", type="primary", key="add_holding_btn", use_container_width=True):
-        add_holding(add_ticker, add_shares, add_price)
-        save_holdings()
-        st.rerun()
-
 # Holdings with integrated sell buttons
 holdings = st.session_state.holdings
 if holdings:
@@ -819,7 +817,7 @@ if holdings:
                     else:
                         st.warning("Enter shares to sell")
 else:
-    st.info("No holdings yet. Add stocks above.")
+    st.info("No holdings yet. Use Add Stock at the top of the page.")
 
 # --- 11. Individual stock price charts ---
 st.markdown("### Individual Price History")
