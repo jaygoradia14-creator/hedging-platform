@@ -249,6 +249,25 @@ st.markdown("""
         overflow: hidden;
     }
 
+    /* ========== CHART CARDS ========== */
+    .chart-card {
+        background: #ffffff;
+        border: 1px solid #e2e5ea;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 4px rgba(1,31,36,0.06);
+    }
+    .chart-card h4 {
+        font-family: 'Inconsolata', monospace;
+        color: #011f24;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 0.8rem 0;
+    }
+
     /* ========== UTILITY ========== */
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
@@ -424,103 +443,105 @@ summary = portfolio.summary()
 returns = portfolio.returns
 
 import plotly.graph_objects as go  # noqa: E402
-from core.style import COLORS, kite_layout  # noqa: E402
+from core.style import COLORS, BLUE, kite_layout, color_with_alpha  # noqa: E402
 
 # --- 2. TradingView Ticker Tape ---
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
-# --- 3. Cumulative Returns (moved up from position 12) ---
-st.markdown("### Cumulative Returns")
+# --- 3. Investment Growth (hero section) ---
+st.markdown("### Investment Growth")
 
-cum_ret = (1 + returns).cumprod() - 1
-port_cum = (1 + portfolio.portfolio_returns).cumprod() - 1
+_ig_amount = 10_000
+_ig_prices = portfolio.prices
+_ig_returns = returns
 
-fig_cum = go.Figure()
+# Portfolio growth via weighted returns
+_ig_port_returns = portfolio.portfolio_returns
+_ig_port_growth = _ig_amount * (1 + _ig_port_returns).cumprod()
+# Prepend the initial investment
+_ig_first_date = _ig_prices.index[0]
+_ig_port_growth = pd.concat([pd.Series([_ig_amount], index=[_ig_first_date]), _ig_port_growth])
+
+_ig_current = float(_ig_port_growth.iloc[-1])
+_ig_gain = _ig_current - _ig_amount
+_ig_pct = (_ig_current / _ig_amount - 1) * 100
+
+mc1, mc2, mc3, mc4 = st.columns(4)
+mc1.metric("Initial Investment", f"${_ig_amount:,.0f}")
+mc2.metric("Current Value", f"${_ig_current:,.2f}")
+mc3.metric("Total Return", f"${_ig_gain:+,.2f}")
+mc4.metric("Total Return %", f"{_ig_pct:+.2f}%")
+
+# Growth chart with gradient fill
+fig_growth = go.Figure()
+
+# Individual ticker lines (semi-transparent, no fill)
 for i, ticker in enumerate(portfolio.tickers):
-    fig_cum.add_trace(go.Scatter(
-        x=cum_ret.index, y=cum_ret[ticker] * 100,
-        mode="lines", name=f"{ticker}",
-        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
+    tk_growth = _ig_amount * (_ig_prices[ticker] / _ig_prices[ticker].iloc[0])
+    fig_growth.add_trace(go.Scatter(
+        x=tk_growth.index, y=tk_growth.values,
+        mode="lines", name=ticker, opacity=0.3,
+        line=dict(width=1.5, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.5),
     ))
-fig_cum.add_trace(go.Scatter(
-    x=port_cum.index, y=port_cum.values * 100,
+
+# Portfolio line with gradient fill
+fig_growth.add_trace(go.Scatter(
+    x=_ig_port_growth.index, y=_ig_port_growth.values,
     mode="lines", name="Portfolio",
-    line=dict(color="#011f24", width=3, shape="spline", smoothing=0.3),
+    line=dict(color=BLUE, width=3, shape="spline", smoothing=0.5),
+    fill="tozeroy",
+    fillcolor=color_with_alpha(BLUE, 0.12),
 ))
 
-# Benchmark: S&P 500 (SPY) — if not already in portfolio
-if "SPY" not in portfolio.tickers:
-    try:
-        bench_prices = fetch_multi_asset_data(
-            ["SPY"],
-            str(portfolio.prices.index[0].date()),
-            str(portfolio.prices.index[-1].date()),
-        )
-        if not bench_prices.empty:
-            bench_ret = calculate_returns(bench_prices)
-            bench_cum = (1 + bench_ret["SPY"]).cumprod() - 1
-            fig_cum.add_trace(go.Scatter(
-                x=bench_cum.index, y=bench_cum.values * 100,
-                mode="lines", name="S&P 500 (Benchmark)",
-                line=dict(color="#999", width=2, dash="dash"),
-            ))
-    except Exception:
-        pass
-
-fig_cum.update_layout(
+# Horizontal dashed line at invested amount
+fig_growth.add_hline(
+    y=_ig_amount, line_dash="dash", line_color="#cccccc",
+    annotation_text=f"${_ig_amount:,.0f} invested",
+    annotation_position="bottom left",
+    annotation_font_color="#999999",
+)
+fig_growth.update_layout(
     **kite_layout(height=420),
-    yaxis_title="Return %", yaxis_ticksuffix="%",
+    yaxis_title="Portfolio Value ($)",
+    yaxis_tickprefix="$",
     hovermode="x unified",
 )
-st.plotly_chart(fig_cum, use_container_width=True)
 
-# --- 4. Daily Returns (moved up from position 13) ---
-st.markdown("### Daily Returns")
+st.markdown('<div class="chart-card"><h4>Growth of $10,000</h4>', unsafe_allow_html=True)
+st.plotly_chart(fig_growth, use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
 
-fig_daily = go.Figure()
-for i, ticker in enumerate(portfolio.tickers):
-    fig_daily.add_trace(go.Scatter(
-        x=returns.index, y=returns[ticker] * 100,
-        mode="lines", name=ticker,
-        line=dict(width=1.2, color=COLORS[i % len(COLORS)]),
-        opacity=0.75,
-    ))
-fig_daily.add_hline(y=0, line_color="#d0d0d0", line_width=1)
-fig_daily.update_layout(
-    **kite_layout(height=350),
-    yaxis_title="Daily Return %", yaxis_ticksuffix="%",
-    hovermode="x unified",
-)
-st.plotly_chart(fig_daily, use_container_width=True)
+# Stats below the chart
+_ig_n_days = (_ig_port_growth.index[-1] - _ig_port_growth.index[0]).days
+_ig_years = max(_ig_n_days / 365.25, 1 / 365.25)
+_ig_total_ret = (_ig_port_growth.iloc[-1] / _ig_port_growth.iloc[0]) - 1
+_ig_ann_ret = (1 + _ig_total_ret) ** (1 / _ig_years) - 1 if _ig_years > 0 else 0.0
+_ig_ann_vol = float(_ig_port_returns.std() * np.sqrt(252))
+_ig_sharpe = _ig_ann_ret / _ig_ann_vol if _ig_ann_vol > 0 else 0.0
+_ig_cummax = _ig_port_growth.cummax()
+_ig_drawdown = (_ig_port_growth - _ig_cummax) / _ig_cummax
+_ig_max_dd = float(_ig_drawdown.min())
+_ig_best_day = float(_ig_port_returns.max())
+_ig_worst_day = float(_ig_port_returns.min())
 
-# --- 5. Rolling Volatility (moved up from position 14) ---
-st.markdown("### Rolling Volatility (21-Day)")
+s1, s2, s3 = st.columns(3)
+s1.metric("Annualized Return", f"{_ig_ann_ret:.2%}")
+s2.metric("Annualized Volatility", f"{_ig_ann_vol:.2%}")
+s3.metric("Sharpe Ratio", f"{_ig_sharpe:.2f}")
 
-from core.regime_detector import calculate_rolling_volatility  # noqa: E402
-rolling_vol = calculate_rolling_volatility(returns, window=21)
+s4, s5, s6 = st.columns(3)
+s4.metric("Max Drawdown", f"{_ig_max_dd:.2%}")
+s5.metric("Best Day", f"{_ig_best_day:+.2%}")
+s6.metric("Worst Day", f"{_ig_worst_day:+.2%}")
 
-fig_vol = go.Figure()
-for i, ticker in enumerate(portfolio.tickers):
-    fig_vol.add_trace(go.Scatter(
-        x=rolling_vol.index, y=rolling_vol[ticker] * 100,
-        mode="lines", name=ticker,
-        line=dict(width=2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
-    ))
-fig_vol.update_layout(
-    **kite_layout(height=380),
-    yaxis_title="Annualized Volatility %", yaxis_ticksuffix="%",
-    hovermode="x unified",
-)
-st.plotly_chart(fig_vol, use_container_width=True)
-
-# --- 6. Metrics row ---
+# --- 4. Metrics row (Instruments, Data Points, HHI) ---
 c1, c2, c3 = st.columns(3)
 c1.metric("Instruments", summary["n_assets"])
 c2.metric("Data Points", summary["data_points"])
 c3.metric("HHI", f"{summary['hhi']:.3f}")
 
-# --- 7. Key Signals ---
+# --- 5. Key Signals ---
 st.markdown("### Key Signals")
 from core.signals import generate_all_signals, get_signal_color  # noqa: E402
 
@@ -557,7 +578,7 @@ if _top_sigs:
         )
     st.caption("View all recommendations on the Recommendations page.")
 
-# --- 8. Live Prices table ---
+# --- 6. Live Prices table ---
 if not live_df.empty and live_df["Price"].notna().any():
     # Build styled HTML table for live prices
     def _fmt_val(val, fmt, prefix="", suffix=""):
@@ -604,7 +625,7 @@ if not live_df.empty and live_df["Price"].notna().any():
         unsafe_allow_html=True,
     )
 
-# --- 9. Top Headlines ---
+# --- 7. Top Headlines ---
 st.markdown("### Top Headlines")
 from core.news import fetch_portfolio_news  # noqa: E402
 from datetime import datetime as _dt  # noqa: E402
@@ -641,7 +662,7 @@ for _item in _top_news[:5]:
 if _top_news:
     st.caption("View all news on the News page in the sidebar.")
 
-# --- 10. Allocation ---
+# --- 8. Allocation ---
 st.markdown("### Allocation")
 
 sectors = get_sectors(portfolio.tickers)
@@ -659,7 +680,9 @@ with col_pie:
         textfont=dict(size=11, color="#011f24"),
     )])
     fig.update_layout(**kite_layout(height=340), showlegend=False)
+    st.markdown('<div class="chart-card"><h4>Allocation</h4>', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with col_table:
     ann_ret = returns.mean() * 252
@@ -690,7 +713,7 @@ with col_table:
         unsafe_allow_html=True,
     )
 
-# --- 11. Sector Exposure ---
+# --- 9. Sector Exposure ---
 st.markdown("### Sector Exposure")
 
 # Compute weights from holdings if available
@@ -735,7 +758,9 @@ with sec_col1:
         textfont=dict(size=11, color="#011f24"),
     )])
     fig_sec.update_layout(**kite_layout(height=340), showlegend=False)
+    st.markdown('<div class="chart-card"><h4>Sector Breakdown</h4>', unsafe_allow_html=True)
     st.plotly_chart(fig_sec, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 with sec_col2:
     _sec_header = "".join(f"<th>{c}</th>" for c in ["Sector", "Weight", "# Tickers"])
@@ -769,7 +794,7 @@ for sec, data in _sector_agg.items():
         st.warning(f"Sector '{sec}' has {pct:.1f}% concentration — "
                    "consider diversifying across sectors.")
 
-# --- 12. My Holdings ---
+# --- 10. My Holdings ---
 st.markdown("### My Holdings")
 
 # Add Stock form — at the top so it's always visible
@@ -876,26 +901,32 @@ if holdings:
 else:
     st.info("No holdings yet. Add stocks above.")
 
-# --- 13. Individual stock price charts ---
+# --- 11. Individual stock price charts ---
 st.markdown("### Individual Price History")
 
 fig_prices = go.Figure()
 for i, ticker in enumerate(portfolio.tickers):
     # Normalize to 100 for comparison
+    _clr = COLORS[i % len(COLORS)]
     normalized = (portfolio.prices[ticker] / portfolio.prices[ticker].iloc[0]) * 100
     fig_prices.add_trace(go.Scatter(
         x=normalized.index, y=normalized.values,
         mode="lines", name=f"{ticker} ({sectors[ticker]})",
-        line=dict(width=2.2, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.3),
+        line=dict(width=3, color=_clr, shape="spline", smoothing=0.5),
+        fill="tozeroy",
+        fillcolor=color_with_alpha(_clr, 0.06),
     ))
 fig_prices.update_layout(
     **kite_layout(height=420),
     yaxis_title="Normalized Price (Base = 100)",
     hovermode="x unified",
 )
-st.plotly_chart(fig_prices, use_container_width=True)
 
-# --- 14. TradingView Analysis ---
+st.markdown('<div class="chart-card"><h4>Price History</h4>', unsafe_allow_html=True)
+st.plotly_chart(fig_prices, use_container_width=True)
+st.markdown('</div>', unsafe_allow_html=True)
+
+# --- 12. TradingView Analysis ---
 st.markdown("### TradingView Analysis")
 from core.tradingview import advanced_chart_html, technical_analysis_html  # noqa: E402
 
@@ -910,7 +941,7 @@ with _tv_chart_col:
 with _tv_ta_col:
     st.components.v1.html(technical_analysis_html(_tv_ticker, height=400), height=410)
 
-# --- 15. Download Report ---
+# --- 13. Download Report ---
 st.markdown("### Download Report")
 
 from risk.var_cvar import var_cvar_summary  # noqa: E402

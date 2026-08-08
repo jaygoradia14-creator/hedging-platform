@@ -29,23 +29,21 @@ REGIME_COLORS = {
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inconsolata, monospace", color="#011f24", size=12),
-    margin=dict(l=55, r=25, t=15, b=45),
+    font=dict(family="Inconsolata, monospace", color="#011f24", size=13),
+    margin=dict(l=60, r=30, t=25, b=50),
     xaxis=dict(
-        gridcolor="rgba(1,31,36,0.06)",
+        gridcolor="rgba(1,31,36,0.04)",
         zerolinecolor="#e0e0e0",
-        showgrid=True,
-        tickfont=dict(size=10, color="#6b7280"),
-        linecolor="#e2e5ea",
-        linewidth=1,
+        showgrid=False,
+        showline=False,
+        tickfont=dict(size=11, color="#6b7280"),
     ),
     yaxis=dict(
-        gridcolor="rgba(1,31,36,0.06)",
+        gridcolor="rgba(1,31,36,0.04)",
         zerolinecolor="#e0e0e0",
         showgrid=True,
-        tickfont=dict(size=10, color="#6b7280"),
-        linecolor="#e2e5ea",
-        linewidth=1,
+        showline=False,
+        tickfont=dict(size=11, color="#6b7280"),
     ),
     legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
@@ -59,6 +57,14 @@ PLOTLY_LAYOUT = dict(
         font=dict(size=12, color="#011f24", family="Inconsolata, monospace"),
     ),
 )
+
+
+def color_with_alpha(hex_color, alpha=0.10):
+    """Convert a hex color to rgba string with the given alpha."""
+    r = int(hex_color[1:3], 16)
+    g = int(hex_color[3:5], 16)
+    b = int(hex_color[5:7], 16)
+    return f"rgba({r},{g},{b},{alpha})"
 
 
 def kite_layout(height=380, **overrides):
@@ -183,6 +189,23 @@ PAGE_CSS = """
     .muted { color: #6b7280; font-size: 0.8rem; }
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
+    .chart-card {
+        background: #ffffff;
+        border: 1px solid #e2e5ea;
+        border-radius: 12px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 4px rgba(1,31,36,0.06);
+    }
+    .chart-card h4 {
+        font-family: 'Inconsolata', monospace;
+        color: #011f24;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin: 0 0 0.8rem 0;
+    }
     .page-header {
         font-family: 'Inconsolata', monospace;
         font-size: 0.9rem; font-weight: 600; color: #011f24;

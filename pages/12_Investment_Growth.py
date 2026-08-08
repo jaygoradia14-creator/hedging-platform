@@ -13,7 +13,7 @@ import plotly.graph_objects as go
 from datetime import date, timedelta
 
 from core.portfolio import init_session_state
-from core.style import page_header, kite_layout, COLORS, BLUE, GREEN, RED
+from core.style import page_header, kite_layout, COLORS, BLUE, GREEN, RED, color_with_alpha
 from core.data_fetch import fetch_multi_asset_data, POPULAR_TICKERS
 
 init_session_state()
@@ -102,12 +102,13 @@ if mode == "Single Stock":
     mc4.metric("Total Return %", f"{total_pct:+.2f}%")
 
     # Growth chart
-    st.markdown("### Growth of Investment")
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=growth.index, y=growth.values,
         mode="lines", name=ticker,
-        line=dict(color=BLUE, width=2.5),
+        line=dict(color=BLUE, width=3, shape="spline", smoothing=0.5),
+        fill="tozeroy",
+        fillcolor=color_with_alpha(BLUE, 0.12),
     ))
 
     if include_spy and "SPY" in prices.columns:
@@ -115,7 +116,7 @@ if mode == "Single Stock":
         fig.add_trace(go.Scatter(
             x=spy_growth.index, y=spy_growth.values,
             mode="lines", name="SPY (Benchmark)",
-            line=dict(color="#999999", width=1.5, dash="dot"),
+            line=dict(color="#999999", width=2, dash="dot", shape="spline", smoothing=0.5),
         ))
 
     fig.add_hline(y=amount, line_dash="dash", line_color="#cccccc",
@@ -128,7 +129,9 @@ if mode == "Single Stock":
         yaxis_tickprefix="$",
         hovermode="x unified",
     )
+    st.markdown('<div class="chart-card"><h4>Growth of Investment</h4>', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Stats
     daily_ret = prices[ticker].pct_change().dropna()
@@ -208,21 +211,22 @@ else:
     mc4.metric("Total Return %", f"{total_pct:+.2f}%")
 
     # Growth chart: per-ticker lines (transparent) + bold portfolio line
-    st.markdown("### Growth of Investment")
     fig = go.Figure()
 
     for i, ticker in enumerate(portfolio.tickers):
         tk_growth = amount * (price_slice[ticker] / price_slice[ticker].iloc[0])
         fig.add_trace(go.Scatter(
             x=tk_growth.index, y=tk_growth.values,
-            mode="lines", name=ticker, opacity=0.4,
-            line=dict(width=1.5, color=COLORS[i % len(COLORS)]),
+            mode="lines", name=ticker, opacity=0.3,
+            line=dict(width=1.5, color=COLORS[i % len(COLORS)], shape="spline", smoothing=0.5),
         ))
 
     fig.add_trace(go.Scatter(
         x=port_growth.index, y=port_growth.values,
         mode="lines", name="Portfolio",
-        line=dict(color=BLUE, width=2.5),
+        line=dict(color=BLUE, width=3, shape="spline", smoothing=0.5),
+        fill="tozeroy",
+        fillcolor=color_with_alpha(BLUE, 0.12),
     ))
 
     fig.add_hline(y=amount, line_dash="dash", line_color="#cccccc",
@@ -235,7 +239,9 @@ else:
         yaxis_tickprefix="$",
         hovermode="x unified",
     )
+    st.markdown('<div class="chart-card"><h4>Growth of Investment</h4>', unsafe_allow_html=True)
     st.plotly_chart(fig, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     # Portfolio stats
     n_days = (port_growth.index[-1] - port_growth.index[0]).days
