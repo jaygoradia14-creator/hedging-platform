@@ -25,36 +25,34 @@ REGIME_COLORS = {
     "Crisis": RED,
 }
 
-# Plotly layout defaults (clean, modern light theme with Inconsolata)
+# Plotly layout defaults (minimal sparkline style with Inter)
 PLOTLY_LAYOUT = dict(
     paper_bgcolor="rgba(0,0,0,0)",
     plot_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Inconsolata, monospace", color="#011f24", size=13),
-    margin=dict(l=60, r=30, t=25, b=50),
+    font=dict(family="Inter, -apple-system, sans-serif", color="#011f24", size=12),
+    margin=dict(l=0, r=0, t=10, b=0),
     xaxis=dict(
-        gridcolor="rgba(1,31,36,0.04)",
-        zerolinecolor="#e0e0e0",
         showgrid=False,
         showline=False,
-        tickfont=dict(size=11, color="#6b7280"),
+        showticklabels=False,
+        zeroline=False,
     ),
     yaxis=dict(
-        gridcolor="rgba(1,31,36,0.04)",
-        zerolinecolor="#e0e0e0",
-        showgrid=True,
+        showgrid=False,
         showline=False,
-        tickfont=dict(size=11, color="#6b7280"),
+        showticklabels=False,
+        zeroline=False,
     ),
     legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5,
-        font=dict(size=11, color="#011f24"),
+        font=dict(size=11, family="Inter, sans-serif", color="#011f24"),
         bgcolor="rgba(255,255,255,0.8)",
         bordercolor="rgba(0,0,0,0)",
     ),
     hoverlabel=dict(
         bgcolor="#ffffff",
         bordercolor="#e2e5ea",
-        font=dict(size=12, color="#011f24", family="Inconsolata, monospace"),
+        font=dict(size=11, color="#011f24", family="Inter, sans-serif"),
     ),
 )
 
@@ -80,26 +78,26 @@ def heatmap_layout(height=350):
         height=height,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="Inconsolata, monospace", color="#011f24", size=12),
+        font=dict(family="Inter, -apple-system, sans-serif", color="#011f24", size=12),
         margin=dict(l=60, r=60, t=15, b=60),
         hoverlabel=dict(
             bgcolor="#ffffff",
             bordercolor="#e2e5ea",
-            font=dict(size=12, color="#011f24"),
+            font=dict(size=11, color="#011f24", family="Inter, sans-serif"),
         ),
     )
 
 
 PAGE_CSS = """
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
     .stApp { background-color: #ffffff; }
     .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #011f24; font-weight: 600; font-size: 0.85rem;
         text-transform: uppercase; letter-spacing: 0.05em;
         border-bottom: 1px solid #e2e5ea; padding-bottom: 0.5rem; margin-top: 2rem;
@@ -118,7 +116,7 @@ PAGE_CSS = """
         display: flex; flex-direction: column; align-items: center;
     }
     [data-testid="stMetric"] label {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #6b7280 !important; font-size: 0.68rem !important;
         text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600 !important;
         text-align: center !important; width: 100%;
@@ -141,7 +139,7 @@ PAGE_CSS = """
     .styled-table thead th {
         background: #f4f5f7;
         color: #6b7280;
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-weight: 600;
         font-size: 0.7rem;
         text-transform: uppercase;
@@ -165,7 +163,7 @@ PAGE_CSS = """
         background: #f0f4f8;
     }
     .styled-table .ticker-cell {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-weight: 600;
         color: #4d65ff;
         text-align: left;
@@ -198,7 +196,7 @@ PAGE_CSS = """
         box-shadow: 0 1px 4px rgba(1,31,36,0.06);
     }
     .chart-card h4 {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #011f24;
         font-size: 0.8rem;
         font-weight: 600;
@@ -207,7 +205,7 @@ PAGE_CSS = """
         margin: 0 0 0.8rem 0;
     }
     .page-header {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-size: 0.9rem; font-weight: 600; color: #011f24;
         text-transform: uppercase; letter-spacing: 0.06em;
         border-bottom: 2px solid #4d65ff; padding-bottom: 0.5rem;

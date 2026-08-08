@@ -20,7 +20,7 @@ st.set_page_config(
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;500;600;700&family=Cardo:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
@@ -42,7 +42,7 @@ st.markdown("""
         text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600;
     }
     [data-testid="stSidebar"] .stMarkdown h2 {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #ffffff !important; font-size: 0.75rem; text-transform: uppercase;
         letter-spacing: 0.08em; font-weight: 700;
         border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.5rem;
@@ -143,7 +143,7 @@ st.markdown("""
         border-radius: 0 0 10px 10px;
     }
     .ww-logo {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-size: 1.4rem; font-weight: 700; color: #ffffff;
         letter-spacing: -0.02em;
     }
@@ -151,10 +151,12 @@ st.markdown("""
         color: rgba(255,255,255,0.5); font-weight: 400; font-size: 0.85rem; margin-left: 0.5rem;
     }
     .ww-tagline {
-        font-family: 'Cardo', serif;
-        font-style: italic;
+        font-family: 'Inter', sans-serif;
+        font-style: normal;
         color: rgba(255,255,255,0.6);
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        font-weight: 400;
+        letter-spacing: 0.02em;
     }
 
     /* ========== METRICS ========== */
@@ -172,7 +174,7 @@ st.markdown("""
         display: flex; flex-direction: column; align-items: center;
     }
     [data-testid="stMetric"] label {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #6b7280 !important; font-size: 0.68rem !important;
         text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600 !important;
         text-align: center !important; width: 100%;
@@ -185,7 +187,7 @@ st.markdown("""
     /* ========== HEADINGS ========== */
     .stApp h1 { display: none; }
     .stApp h2, .stApp h3 {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #011f24; font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
         letter-spacing: 0.05em; border-bottom: 1px solid #e2e5ea;
         padding-bottom: 0.5rem; margin-top: 2rem;
@@ -204,7 +206,7 @@ st.markdown("""
     .styled-table thead th {
         background: #f4f5f7;
         color: #6b7280;
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-weight: 600;
         font-size: 0.7rem;
         text-transform: uppercase;
@@ -228,7 +230,7 @@ st.markdown("""
         background: #f0f4f8;
     }
     .styled-table .ticker-cell {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         font-weight: 600;
         color: #4d65ff;
         text-align: left;
@@ -259,7 +261,7 @@ st.markdown("""
         box-shadow: 0 1px 4px rgba(1,31,36,0.06);
     }
     .chart-card h4 {
-        font-family: 'Inconsolata', monospace;
+        font-family: 'Inter', sans-serif;
         color: #011f24;
         font-size: 0.8rem;
         font-weight: 600;
