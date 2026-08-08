@@ -144,14 +144,20 @@ st.markdown("""
     /* ========== METRICS ========== */
     [data-testid="stMetric"] {
         background: #fff; border: 1px solid #e8e8e8;
-        border-radius: 8px; padding: 1rem 1.2rem;
+        border-radius: 10px; padding: 1.2rem 1rem;
+        text-align: center;
+    }
+    [data-testid="stMetric"] > div {
+        display: flex; flex-direction: column; align-items: center;
     }
     [data-testid="stMetric"] label {
-        color: #8b8b8b !important; font-size: 0.7rem !important;
-        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600 !important;
+        color: #8b8b8b !important; font-size: 0.68rem !important;
+        text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600 !important;
+        text-align: center !important; width: 100%;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #44475b !important; font-size: 1.4rem !important; font-weight: 600 !important;
+        color: #44475b !important; font-size: 1.5rem !important; font-weight: 700 !important;
+        text-align: center !important; width: 100%;
     }
 
     /* ========== HEADINGS ========== */

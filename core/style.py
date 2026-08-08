@@ -97,15 +97,78 @@ PAGE_CSS = """
     }
     [data-testid="stMetric"] {
         background: #fff; border: 1px solid #e8e8e8;
-        border-radius: 8px; padding: 1rem 1.2rem;
+        border-radius: 10px; padding: 1.2rem 1rem;
+        text-align: center;
+    }
+    [data-testid="stMetric"] > div {
+        display: flex; flex-direction: column; align-items: center;
     }
     [data-testid="stMetric"] label {
-        color: #8b8b8b !important; font-size: 0.7rem !important;
-        text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600 !important;
+        color: #8b8b8b !important; font-size: 0.68rem !important;
+        text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600 !important;
+        text-align: center !important; width: 100%;
     }
     [data-testid="stMetric"] [data-testid="stMetricValue"] {
-        color: #44475b !important; font-size: 1.4rem !important; font-weight: 600 !important;
+        color: #44475b !important; font-size: 1.5rem !important; font-weight: 700 !important;
+        text-align: center !important; width: 100%;
     }
+
+    /* Styled tables */
+    .styled-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+        font-size: 0.82rem;
+    }
+    .styled-table thead th {
+        background: #f7f8fa;
+        color: #8b8b8b;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        text-align: center;
+        border-bottom: 2px solid #e8e8e8;
+        white-space: nowrap;
+    }
+    .styled-table tbody td {
+        padding: 9px 12px;
+        text-align: center;
+        color: #44475b;
+        border-bottom: 1px solid #f0f0f0;
+        white-space: nowrap;
+    }
+    .styled-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    .styled-table tbody tr:hover {
+        background: #f8faff;
+    }
+    .styled-table .ticker-cell {
+        font-weight: 600;
+        color: #5367ff;
+        text-align: left;
+    }
+    .styled-table .sector-cell {
+        text-align: left;
+        color: #8b8b8b;
+        font-size: 0.75rem;
+    }
+    .styled-table .positive { color: #00b386; font-weight: 600; }
+    .styled-table .negative { color: #eb5b3c; font-weight: 600; }
+    .styled-table .na-cell { color: #c0c0c0; }
+
+    /* Dataframe overrides */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #e8e8e8;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
     .muted { color: #8b8b8b; font-size: 0.8rem; }
     .profit { color: #00b386; font-weight: 600; }
     .loss { color: #eb5b3c; font-weight: 600; }
