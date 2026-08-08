@@ -337,64 +337,9 @@ from core.regime_detector import detect_regime  # noqa: E402
 init_session_state()
 
 # ---------------------------------------------------------------------------
-# Sidebar
+# Sidebar (Advisor chat only)
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.markdown("## Portfolio")
-
-    tickers = st.multiselect(
-        "INSTRUMENTS",
-        options=POPULAR_TICKERS,
-        default=st.session_state.portfolio.tickers,
-        help="Search and select 2-8 ticker symbols",
-    )
-
-    period = st.selectbox(
-        "PERIOD",
-        options=[1, 2, 3, 5, 10],
-        index=2,
-        format_func=lambda x: f"{x}Y",
-    )
-
-    load_clicked = st.button("Load Data", type="primary", use_container_width=True)
-
-    # Auto-load on first visit
-    if not st.session_state.data_loaded and not load_clicked:
-        load_clicked = True
-
-    if load_clicked and len(tickers) >= 2:
-        with st.spinner("Fetching market data..."):
-            end = datetime.now()
-            start = end - timedelta(days=365 * period)
-            try:
-                prices = fetch_multi_asset_data(
-                    tickers, str(start.date()), str(end.date())
-                )
-                if prices.empty or prices.shape[1] < 2:
-                    st.error("Could not fetch data for these tickers. Check symbols.")
-                else:
-                    returns = calculate_returns(prices)
-                    regime_df = detect_regime(returns)
-
-                    actual_tickers = list(prices.columns)
-                    portfolio = Portfolio(
-                        tickers=actual_tickers,
-                        weights=np.ones(len(actual_tickers)) / len(actual_tickers),
-                        prices=prices,
-                    )
-                    portfolio.returns = returns
-                    st.session_state.portfolio = portfolio
-                    st.session_state.regime_df = regime_df
-                    st.session_state.data_loaded = True
-                    st.success(f"{len(actual_tickers)} instruments loaded")
-            except Exception as exc:
-                st.error(f"Failed: {exc}")
-    elif load_clicked and len(tickers) < 2:
-        st.error("Enter at least 2 tickers.")
-
-    st.markdown("---")
-
-    # Chat
     st.markdown("## Advisor")
 
     from chat.engine import get_active_provider  # noqa: E402
@@ -434,6 +379,60 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# --- 2. Portfolio Controls (inline in dashboard) ---
+_ctrl_left, _ctrl_mid, _ctrl_right = st.columns([4, 1, 1])
+with _ctrl_left:
+    tickers = st.multiselect(
+        "INSTRUMENTS",
+        options=POPULAR_TICKERS,
+        default=st.session_state.portfolio.tickers,
+        help="Search and select 2-8 ticker symbols",
+    )
+with _ctrl_mid:
+    period = st.selectbox(
+        "PERIOD",
+        options=[1, 2, 3, 5, 10],
+        index=2,
+        format_func=lambda x: f"{x}Y",
+    )
+with _ctrl_right:
+    st.markdown("<br>", unsafe_allow_html=True)
+    load_clicked = st.button("Load Data", type="primary", use_container_width=True)
+
+# Auto-load on first visit
+if not st.session_state.data_loaded and not load_clicked:
+    load_clicked = True
+
+if load_clicked and len(tickers) >= 2:
+    with st.spinner("Fetching market data..."):
+        end = datetime.now()
+        start = end - timedelta(days=365 * period)
+        try:
+            prices = fetch_multi_asset_data(
+                tickers, str(start.date()), str(end.date())
+            )
+            if prices.empty or prices.shape[1] < 2:
+                st.error("Could not fetch data for these tickers. Check symbols.")
+            else:
+                returns = calculate_returns(prices)
+                regime_df = detect_regime(returns)
+
+                actual_tickers = list(prices.columns)
+                portfolio = Portfolio(
+                    tickers=actual_tickers,
+                    weights=np.ones(len(actual_tickers)) / len(actual_tickers),
+                    prices=prices,
+                )
+                portfolio.returns = returns
+                st.session_state.portfolio = portfolio
+                st.session_state.regime_df = regime_df
+                st.session_state.data_loaded = True
+                st.success(f"{len(actual_tickers)} instruments loaded")
+        except Exception as exc:
+            st.error(f"Failed: {exc}")
+elif load_clicked and len(tickers) < 2:
+    st.error("Enter at least 2 tickers.")
+
 if not st.session_state.data_loaded:
     st.info("Loading default portfolio (SPY, TLT, GLD)...")
     st.stop()
@@ -445,7 +444,14 @@ returns = portfolio.returns
 import plotly.graph_objects as go  # noqa: E402
 from core.style import COLORS, BLUE, kite_layout, color_with_alpha  # noqa: E402
 
-# --- 2. TradingView Ticker Tape ---
+# Per-ticker returns summary next to controls
+_ann_ret_quick = returns.mean() * 252
+_ret_cols = st.columns(len(portfolio.tickers))
+for _rc, _t in zip(_ret_cols, portfolio.tickers):
+    _rv = _ann_ret_quick[_t]
+    _rc.metric(_t, f"{_rv:+.2%}")
+
+# --- 3. TradingView Ticker Tape ---
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
@@ -494,13 +500,6 @@ fig_growth.add_trace(go.Scatter(
     fillcolor=color_with_alpha(BLUE, 0.12),
 ))
 
-# Horizontal dashed line at invested amount
-fig_growth.add_hline(
-    y=_ig_amount, line_dash="dash", line_color="#cccccc",
-    annotation_text=f"${_ig_amount:,.0f} invested",
-    annotation_position="bottom left",
-    annotation_font_color="#999999",
-)
 fig_growth.update_layout(
     **kite_layout(height=420),
     yaxis_title="Portfolio Value ($)",
