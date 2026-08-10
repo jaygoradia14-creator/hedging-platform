@@ -514,32 +514,20 @@ with add_col4:
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
-# --- 4b. Performance Snapshot ---
+# --- 4b. Performance Snapshot (computed from already-loaded price data) ---
 st.markdown("### Performance Snapshot")
-_perf_cache_time = st.session_state.get("perf_cache_time")
-_perf_valid = (
-    _perf_cache_time is not None
-    and (datetime.now() - _perf_cache_time).total_seconds() < 300
-)
-if not _perf_valid:
-    with st.spinner("Loading performance data..."):
-        from core.data_fetch import fetch_multi_period_returns  # noqa: E402
-        _perf_data = fetch_multi_period_returns(portfolio.tickers)
-    st.session_state.perf_cache = _perf_data
-    st.session_state.perf_cache_time = datetime.now()
-else:
-    _perf_data = st.session_state.perf_cache
-
-if _perf_data:
-    _perf_periods = ["1W", "1M", "3M", "6M", "1Y"]
+_perf_lookbacks = {"1W": 5, "1M": 21, "3M": 63, "6M": 126, "1Y": 252}
+_perf_periods = [p for p, d in _perf_lookbacks.items() if d <= len(portfolio.prices)]
+if _perf_periods:
     _perf_header = "".join(f"<th>{p}</th>" for p in ["Ticker"] + _perf_periods)
     _perf_rows = ""
     for _pt in portfolio.tickers:
-        _row_data = _perf_data.get(_pt, {})
         _perf_rows += f'<tr><td class="ticker-cell">{_pt}</td>'
+        _series = portfolio.prices[_pt].dropna()
         for _pp in _perf_periods:
-            _pv = _row_data.get(_pp)
-            if _pv is not None:
+            _days = _perf_lookbacks[_pp]
+            if len(_series) > _days:
+                _pv = round((_series.iloc[-1] / _series.iloc[-_days] - 1) * 100, 2)
                 _pcls = "positive" if _pv >= 0 else "negative"
                 _intensity = min(abs(_pv) / 30, 1.0)
                 if _pv >= 0:
