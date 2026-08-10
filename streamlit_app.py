@@ -519,13 +519,13 @@ st.markdown("### Performance Snapshot")
 _perf_cache_time = st.session_state.get("perf_cache_time")
 _perf_valid = (
     _perf_cache_time is not None
-    and (_dt.now() - _perf_cache_time).seconds < 300
+    and (datetime.now() - _perf_cache_time).seconds < 300
 )
 if not _perf_valid:
     from core.data_fetch import fetch_multi_period_returns  # noqa: E402
     _perf_data = fetch_multi_period_returns(portfolio.tickers)
     st.session_state.perf_cache = _perf_data
-    st.session_state.perf_cache_time = _dt.now()
+    st.session_state.perf_cache_time = datetime.now()
 else:
     _perf_data = st.session_state.perf_cache
 
