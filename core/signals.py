@@ -26,6 +26,7 @@ class Signal:
     indicator_value: Optional[float] = None
     action: str = ""
     priority: int = 5
+    reasoning: str = ""  # Plain-English explanation for common investor
 
 
 def calculate_rsi(prices, period=14):
@@ -72,6 +73,11 @@ def regime_signals(regime_df):
             source="Regime",
             action="Increase defensive allocation (bonds, gold). Reduce equity exposure.",
             priority=9,
+            reasoning=(
+                "Markets are showing signs of extreme stress — prices are swinging wildly "
+                "and stocks that normally move independently are all dropping together. "
+                "During times like these, safer assets (bonds, gold) tend to protect your money better."
+            ),
         ))
     elif current == "High Volatility":
         signals.append(Signal(
@@ -85,6 +91,12 @@ def regime_signals(regime_df):
             source="Regime",
             action="Tighten stop-losses. Monitor positions closely.",
             priority=6,
+            reasoning=(
+                "The market is experiencing bigger-than-usual price swings right now. "
+                "Think of it like choppy waters — it's not a crisis, but you should be more "
+                "careful. Keep a closer eye on your investments and avoid making big new bets "
+                "until things calm down."
+            ),
         ))
     elif current == "Low Volatility":
         signals.append(Signal(
@@ -98,6 +110,11 @@ def regime_signals(regime_df):
             source="Regime",
             action="Consider adding equity exposure. Good time to DCA.",
             priority=3,
+            reasoning=(
+                "Markets are calm and steady right now — prices aren't swinging much. "
+                "This is often a good time to invest gradually (buying a little each week or month) "
+                "because you're less likely to buy at a wild peak or valley."
+            ),
         ))
     else:
         signals.append(Signal(
@@ -108,6 +125,11 @@ def regime_signals(regime_df):
             source="Regime",
             action="Maintain current allocations. Rebalance if needed.",
             priority=2,
+            reasoning=(
+                "Markets are behaving normally — nothing unusual happening. "
+                "This is a good time to review your portfolio and make sure your investments "
+                "are still aligned with your goals."
+            ),
         ))
 
     return signals
@@ -162,6 +184,11 @@ def technical_signals(portfolio):
                         indicator_value=float(prices.iloc[-1]),
                         action="Bullish trend confirmed. Consider adding.",
                         priority=7,
+                        reasoning=(
+                            f"The short-term trend for {ticker} just crossed above its long-term trend "
+                            f"— this pattern (called a 'golden cross') has historically meant prices "
+                            f"continue rising. It could be a good time to consider buying."
+                        ),
                     ))
                 elif prev_diff >= 0 and curr_diff < 0:
                     signals.append(Signal(
@@ -176,6 +203,11 @@ def technical_signals(portfolio):
                         indicator_value=float(prices.iloc[-1]),
                         action="Bearish trend signal. Consider reducing.",
                         priority=7,
+                        reasoning=(
+                            f"The short-term trend for {ticker} just dropped below its long-term trend "
+                            f"— this pattern (called a 'death cross') has historically meant prices "
+                            f"may keep falling. Consider reducing your position or waiting before buying more."
+                        ),
                     ))
 
         # RSI signals
@@ -195,6 +227,11 @@ def technical_signals(portfolio):
                     indicator_value=rsi_val,
                     action="Consider taking partial profits.",
                     priority=5,
+                    reasoning=(
+                        f"Traders are buying {ticker} aggressively right now (RSI is {rsi_val:.0f}, "
+                        f"above the 70 'overheated' level). When everyone rushes to buy, prices often "
+                        f"pull back. It might be wise to wait before buying more or take some profit."
+                    ),
                 ))
             elif rsi_val < 30:
                 signals.append(Signal(
@@ -209,6 +246,12 @@ def technical_signals(portfolio):
                     indicator_value=rsi_val,
                     action="Potential buying opportunity on recovery.",
                     priority=5,
+                    reasoning=(
+                        f"Traders have been selling {ticker} heavily (RSI is {rsi_val:.0f}, "
+                        f"below the 30 'oversold' level). When selling gets this extreme, prices "
+                        f"often bounce back. If you believe in this company long-term, this could "
+                        f"be a chance to buy at a discount."
+                    ),
                 ))
 
     return signals
@@ -256,6 +299,12 @@ def portfolio_signals(portfolio, regime_df):
                     indicator_value=pct,
                     action=f"Diversify away from {sec}. Target <40%.",
                     priority=8,
+                    reasoning=(
+                        f"Over {pct:.0f}% of your money is in {sec} stocks. If something bad "
+                        f"happens to that industry (regulation, recession, etc.), most of your "
+                        f"portfolio would be hurt at once. Spreading your money across different "
+                        f"sectors helps protect you."
+                    ),
                 ))
             elif pct > 40:
                 signals.append(Signal(
@@ -269,6 +318,11 @@ def portfolio_signals(portfolio, regime_df):
                     indicator_value=pct,
                     action=f"Consider reducing {sec} exposure.",
                     priority=5,
+                    reasoning=(
+                        f"About {pct:.0f}% of your money is in {sec} stocks. That's a lot of eggs "
+                        f"in one basket. Consider adding stocks from other industries so a downturn "
+                        f"in {sec} doesn't hurt your whole portfolio."
+                    ),
                 ))
     except Exception:
         pass
@@ -285,6 +339,12 @@ def portfolio_signals(portfolio, regime_df):
             indicator_value=hhi,
             action="Add more assets to improve diversification.",
             priority=7,
+            reasoning=(
+                "Most of your money is concentrated in just a few investments. "
+                "If one of them drops sharply, your whole portfolio takes a big hit. "
+                "Adding more different stocks or funds spreads your risk so no single "
+                "bad event can wipe out your gains."
+            ),
         ))
 
     # VaR check
@@ -305,6 +365,12 @@ def portfolio_signals(portfolio, regime_df):
                 indicator_value=var_pct,
                 action="Reduce risk or add hedging instruments.",
                 priority=8,
+                reasoning=(
+                    f"Based on historical data, your portfolio could lose as much as "
+                    f"{var_pct:.1f}% in a single bad day. That's higher than average. "
+                    f"Consider adding safer investments like bonds or gold to cushion "
+                    f"against big drops."
+                ),
             ))
         elif var_pct > 3:
             signals.append(Signal(
@@ -316,6 +382,12 @@ def portfolio_signals(portfolio, regime_df):
                 indicator_value=var_pct,
                 action="Monitor closely. Consider hedging.",
                 priority=5,
+                reasoning=(
+                    f"Your portfolio's risk level is moderately high — it could lose "
+                    f"about {var_pct:.1f}% on a bad day. That's not alarming, but worth "
+                    f"keeping an eye on. Adding some bonds or gold could help smooth out "
+                    f"the bumps."
+                ),
             ))
     except Exception:
         pass
@@ -346,6 +418,12 @@ def portfolio_signals(portfolio, regime_df):
                     indicator_value=spike,
                     action="True diversifiers (gold, treasuries) may help.",
                     priority=6,
+                    reasoning=(
+                        "Your stocks tend to all drop together during market crashes — the "
+                        "diversification you think you have disappears when you need it most. "
+                        "Adding truly different assets like government bonds or gold can help "
+                        "because they often go up when stocks go down."
+                    ),
                 ))
     except Exception:
         pass
@@ -389,6 +467,12 @@ def holdings_signals(holdings, current_prices):
                 indicator_value=pnl_pct,
                 action="Take partial profit. Sell 25-50% of position.",
                 priority=7,
+                reasoning=(
+                    f"Your {ticker} stock has grown by {pnl_pct:.0f}% since you bought it. "
+                    f"That's a great return! But big gains can disappear quickly if the market "
+                    f"turns. Consider selling some shares to lock in your profit — you can "
+                    f"always buy back later."
+                ),
             ))
         elif pnl_pct > 20:
             signals.append(Signal(
@@ -403,6 +487,11 @@ def holdings_signals(holdings, current_prices):
                 indicator_value=pnl_pct,
                 action="Consider selling 20-30% to lock in gains.",
                 priority=4,
+                reasoning=(
+                    f"Your {ticker} stock is up {pnl_pct:.0f}% — that's a solid gain. "
+                    f"You might want to sell a portion (say 20-30%) to secure some profit "
+                    f"while keeping the rest invested in case it keeps going up."
+                ),
             ))
         elif pnl_pct < -15:
             signals.append(Signal(
@@ -417,6 +506,12 @@ def holdings_signals(holdings, current_prices):
                 indicator_value=pnl_pct,
                 action="Re-evaluate thesis. Cut if fundamentals changed.",
                 priority=8,
+                reasoning=(
+                    f"Your {ticker} stock has dropped {abs(pnl_pct):.0f}% from what you paid. "
+                    f"Ask yourself: has something changed about this company? If the reason you "
+                    f"bought it no longer holds, it may be better to sell now and invest elsewhere "
+                    f"rather than hope for recovery."
+                ),
             ))
         elif pnl_pct < -10:
             signals.append(Signal(
@@ -430,6 +525,11 @@ def holdings_signals(holdings, current_prices):
                 indicator_value=pnl_pct,
                 action="Monitor closely. Set stop-loss if not already.",
                 priority=5,
+                reasoning=(
+                    f"Your {ticker} stock is down {abs(pnl_pct):.0f}% from your buy price. "
+                    f"It's not a huge loss yet, but keep watching. Consider setting a 'stop-loss' "
+                    f"— a price at which you'd automatically sell to prevent further losses."
+                ),
             ))
 
     return signals

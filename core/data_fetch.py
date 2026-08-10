@@ -196,3 +196,38 @@ def get_default_tickers() -> List[str]:
     for category in ASSET_UNIVERSE.values():
         tickers.extend(category)
     return tickers
+
+
+def fetch_institutional_holders(ticker: str, top_n: int = 5) -> List[Dict]:
+    """Fetch top institutional holders from yfinance."""
+    import yfinance as yf
+    try:
+        tk = yf.Ticker(ticker)
+        holders = tk.institutional_holders
+        if holders is not None and not holders.empty:
+            return holders.head(top_n).to_dict("records")
+    except Exception:
+        pass
+    return []
+
+
+def fetch_multi_period_returns(tickers: List[str]) -> Dict:
+    """Compute returns over multiple lookback periods using yfinance."""
+    import yfinance as yf
+    periods = {"1W": "5d", "1M": "1mo", "3M": "3mo", "6M": "6mo", "1Y": "1y"}
+    results = {}
+    for ticker in tickers:
+        try:
+            tk = yf.Ticker(ticker)
+            row = {}
+            for label, yf_period in periods.items():
+                hist = tk.history(period=yf_period)
+                if len(hist) >= 2:
+                    ret = (hist["Close"].iloc[-1] / hist["Close"].iloc[0] - 1) * 100
+                    row[label] = round(float(ret), 2)
+                else:
+                    row[label] = None
+            results[ticker] = row
+        except Exception:
+            results[ticker] = {k: None for k in periods}
+    return results

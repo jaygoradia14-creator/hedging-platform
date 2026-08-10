@@ -380,6 +380,19 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# --- 1b. How does this app help you? ---
+with st.expander("How does this app help you?"):
+    st.markdown("""
+    **This app helps you make smarter investment decisions by:**
+    - Tracking all your stocks in one place with live prices
+    - Warning you when your portfolio is too risky (too many eggs in one basket)
+    - Showing you when to consider selling (big gains) or cutting losses
+    - Analyzing market conditions so you know if it's a calm or volatile time
+    - Reading the news for you and telling you if overall sentiment is positive or negative
+    - Showing you which big institutions own the same stocks as you
+    - Explaining everything in plain English — no finance degree needed
+    """)
+
 # --- 2. Portfolio Controls (inline in dashboard) ---
 _ctrl_left, _ctrl_mid, _ctrl_right = st.columns([4, 1, 1])
 with _ctrl_left:
@@ -389,12 +402,12 @@ with _ctrl_left:
         default=st.session_state.portfolio.tickers,
         help="Search and select 2-8 ticker symbols",
     )
+PERIOD_MAP = {"1W": 7, "1M": 30, "3M": 90, "6M": 180, "1Y": 365, "3Y": 1095, "5Y": 1825}
 with _ctrl_mid:
-    period = st.selectbox(
+    period_label = st.selectbox(
         "PERIOD",
-        options=[1, 2, 3, 5, 10],
-        index=2,
-        format_func=lambda x: f"{x}Y",
+        options=list(PERIOD_MAP.keys()),
+        index=4,  # default 1Y
     )
 with _ctrl_right:
     st.markdown("<br>", unsafe_allow_html=True)
@@ -407,7 +420,7 @@ if not st.session_state.data_loaded and not load_clicked:
 if load_clicked and len(tickers) >= 2:
     with st.spinner("Fetching market data..."):
         end = datetime.now()
-        start = end - timedelta(days=365 * period)
+        start = end - timedelta(days=PERIOD_MAP[period_label])
         try:
             prices = fetch_multi_asset_data(
                 tickers, str(start.date()), str(end.date())
@@ -501,6 +514,51 @@ with add_col4:
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
+# --- 4b. Performance Snapshot ---
+st.markdown("### Performance Snapshot")
+_perf_cache_time = st.session_state.get("perf_cache_time")
+_perf_valid = (
+    _perf_cache_time is not None
+    and (_dt.now() - _perf_cache_time).seconds < 300
+)
+if not _perf_valid:
+    from core.data_fetch import fetch_multi_period_returns  # noqa: E402
+    _perf_data = fetch_multi_period_returns(portfolio.tickers)
+    st.session_state.perf_cache = _perf_data
+    st.session_state.perf_cache_time = _dt.now()
+else:
+    _perf_data = st.session_state.perf_cache
+
+if _perf_data:
+    _perf_periods = ["1W", "1M", "3M", "6M", "1Y"]
+    _perf_header = "".join(f"<th>{p}</th>" for p in ["Ticker"] + _perf_periods)
+    _perf_rows = ""
+    for _pt in portfolio.tickers:
+        _row_data = _perf_data.get(_pt, {})
+        _perf_rows += f'<tr><td class="ticker-cell">{_pt}</td>'
+        for _pp in _perf_periods:
+            _pv = _row_data.get(_pp)
+            if _pv is not None:
+                _pcls = "positive" if _pv >= 0 else "negative"
+                _intensity = min(abs(_pv) / 30, 1.0)
+                if _pv >= 0:
+                    _pbg = f"rgba(0,179,134,{0.05 + _intensity * 0.2})"
+                else:
+                    _pbg = f"rgba(235,91,60,{0.05 + _intensity * 0.2})"
+                _perf_rows += (
+                    f'<td style="background:{_pbg};">'
+                    f'<span class="{_pcls}">{_pv:+.1f}%</span></td>'
+                )
+            else:
+                _perf_rows += '<td><span class="na-cell">N/A</span></td>'
+        _perf_rows += "</tr>"
+    st.markdown(
+        f'<div style="overflow-x:auto;">'
+        f'<table class="styled-table"><thead><tr>{_perf_header}</tr></thead>'
+        f'<tbody>{_perf_rows}</tbody></table></div>',
+        unsafe_allow_html=True,
+    )
+
 # --- 3. Metrics row (Instruments, Data Points, HHI) ---
 c1, c2, c3 = st.columns(3)
 c1.metric("Instruments", summary["n_assets"])
@@ -588,8 +646,7 @@ if not live_df.empty and live_df["Price"].notna().any():
     )
 
 # --- 7. Top Headlines ---
-st.markdown("### Top Headlines")
-from core.news import fetch_portfolio_news  # noqa: E402
+from core.news import fetch_portfolio_news, aggregate_sentiment, match_news_to_movers  # noqa: E402
 from datetime import datetime as _dt  # noqa: E402
 
 _news_cache_time = st.session_state.get("news_cache_time")
@@ -603,6 +660,17 @@ if not _news_valid:
     st.session_state.news_cache_time = _dt.now()
 else:
     _top_news = st.session_state.news_cache
+
+# Global sentiment label next to heading
+_agg_sent = aggregate_sentiment(_top_news)
+_sent_color = "#00b386" if _agg_sent["label"] == "Bullish" else "#d43725" if _agg_sent["label"] == "Bearish" else "#6b7280"
+st.markdown(
+    f'### Top Headlines &nbsp; '
+    f'<span style="font-size:0.8rem;color:{_sent_color};font-weight:600;'
+    f'background:#f0f4f8;padding:2px 10px;border-radius:4px;">'
+    f'Overall: {_agg_sent["label"]} ({_agg_sent["score"]:+.3f})</span>',
+    unsafe_allow_html=True,
+)
 
 for _item in _top_news[:5]:
     _sent = _item["sentiment"]
@@ -623,6 +691,43 @@ for _item in _top_news[:5]:
     )
 if _top_news:
     st.caption("View all news on the News page in the sidebar.")
+
+# --- 7b. Why Stocks Moved Today ---
+_price_changes = {}
+if live_df is not None and not live_df.empty:
+    for _, _r in live_df.iterrows():
+        if pd.notna(_r.get("Change %")):
+            _price_changes[_r["Ticker"]] = _r["Change %"]
+
+_movers = match_news_to_movers(_top_news, _price_changes)
+if _movers:
+    st.markdown("### Why Stocks Moved Today")
+    for _mv_ticker, _mv_data in _movers.items():
+        _mv_chg = _mv_data["change"]
+        _mv_border = "#00b386" if _mv_chg >= 0 else "#eb5b3c"
+        _mv_cls = "positive" if _mv_chg >= 0 else "negative"
+        _mv_reasons_html = ""
+        for _reason in _mv_data["reasons"]:
+            _r_link = _reason.get("link", "")
+            _r_title = _reason["headline"]
+            if _r_link:
+                _r_title = f'<a href="{_r_link}" target="_blank" style="color:#011f24;text-decoration:none;">{_reason["headline"]}</a>'
+            _mv_reasons_html += (
+                f'<div style="font-size:0.82rem;padding:2px 0;">'
+                f'<span style="background:#f0f4f8;padding:1px 6px;border-radius:3px;'
+                f'font-size:0.7rem;font-weight:500;color:#6b7280;">{_reason["category"]}</span> '
+                f'{_r_title}</div>'
+            )
+        st.markdown(
+            f'<div style="border-left:4px solid {_mv_border};border:1px solid #e2e5ea;'
+            f'border-left:4px solid {_mv_border};border-radius:8px;padding:12px 16px;'
+            f'margin-bottom:10px;background:#fff;">'
+            f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'
+            f'<span style="font-weight:700;color:#011f24;font-size:0.95rem;">{_mv_ticker}</span>'
+            f'<span class="{_mv_cls}" style="font-size:0.85rem;">{_mv_chg:+.2f}%</span>'
+            f'</div>{_mv_reasons_html}</div>',
+            unsafe_allow_html=True,
+        )
 
 # --- 8. Allocation ---
 st.markdown("### Allocation")

@@ -84,6 +84,9 @@ else:
         </div>
         """
         st.markdown(card_html, unsafe_allow_html=True)
+        if sig.reasoning:
+            with st.expander("Why this matters (in plain English)"):
+                st.markdown(sig.reasoning)
 
 # --- Full Signal Table ---
 st.markdown("### All Signals")
@@ -123,5 +126,7 @@ for source in sources:
                     f'**{s.title}**: {s.description}',
                     unsafe_allow_html=True,
                 )
+                if s.reasoning:
+                    st.info(s.reasoning)
         else:
             st.caption("No signals from this source.")

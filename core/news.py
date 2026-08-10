@@ -201,3 +201,63 @@ def fetch_portfolio_news(tickers, max_per_ticker=5, use_finnhub=True):
     # Sort by published date descending (most recent first)
     all_items.sort(key=lambda x: x.get("published", ""), reverse=True)
     return all_items
+
+
+def aggregate_sentiment(news_items):
+    """Compute overall portfolio sentiment summary."""
+    if not news_items:
+        return {"label": "Neutral", "score": 0.0, "positive": 0, "negative": 0, "neutral": 0, "total": 0}
+    pos = sum(1 for n in news_items if n["sentiment"] == "Positive")
+    neg = sum(1 for n in news_items if n["sentiment"] == "Negative")
+    neu = len(news_items) - pos - neg
+    avg_score = sum(n["sentiment_score"] for n in news_items) / len(news_items)
+    if avg_score > 0.05:
+        label = "Bullish"
+    elif avg_score < -0.05:
+        label = "Bearish"
+    else:
+        label = "Neutral"
+    return {"label": label, "score": round(avg_score, 3), "positive": pos, "negative": neg, "neutral": neu, "total": len(news_items)}
+
+
+MOVEMENT_KEYWORDS = {
+    "earnings": "Earnings Report", "revenue": "Revenue Results",
+    "budget": "Government Budget", "fed": "Federal Reserve",
+    "rate": "Interest Rate Change", "dividend": "Dividend News",
+    "merger": "Merger/Acquisition", "acquisition": "Merger/Acquisition",
+    "regulation": "Regulation Change", "tariff": "Trade Policy",
+    "layoff": "Workforce Changes", "launch": "Product Launch",
+    "partnership": "Partnership Deal", "upgrade": "Analyst Upgrade",
+    "downgrade": "Analyst Downgrade", "guidance": "Company Guidance",
+    "inflation": "Inflation Data", "gdp": "Economic Data",
+    "jobs": "Employment Data", "oil": "Oil/Energy Prices",
+}
+
+
+def match_news_to_movers(news_items, price_changes):
+    """Match significant price movers with relevant news headlines.
+
+    Args:
+        news_items: List of news dicts from fetch_portfolio_news()
+        price_changes: Dict of {ticker: change_pct} from live prices
+
+    Returns:
+        Dict of {ticker: {"change": pct, "reasons": [{"headline": str, "category": str}]}}
+    """
+    movers = {}
+    for ticker, change in price_changes.items():
+        if abs(change) < 1.0:  # Only flag moves > 1%
+            continue
+        ticker_news = [n for n in news_items if n["ticker"] == ticker]
+        reasons = []
+        for item in ticker_news[:3]:
+            title_lower = item["title"].lower()
+            categories = [cat for kw, cat in MOVEMENT_KEYWORDS.items() if kw in title_lower]
+            reasons.append({
+                "headline": item["title"],
+                "category": categories[0] if categories else "Market News",
+                "link": item.get("link", ""),
+            })
+        if reasons:
+            movers[ticker] = {"change": change, "reasons": reasons}
+    return movers
