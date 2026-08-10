@@ -514,6 +514,29 @@ with add_col4:
 from core.tradingview import ticker_tape_html  # noqa: E402
 st.components.v1.html(ticker_tape_html(portfolio.tickers), height=50)
 
+# --- 4a. Portfolio Value Summary ---
+_held_for_val = st.session_state.holdings
+if _held_for_val and live_df is not None and not live_df.empty:
+    _price_map = {}
+    for _, _r in live_df.iterrows():
+        if pd.notna(_r.get("Price")):
+            _price_map[_r["Ticker"]] = _r["Price"]
+    _total_invested = sum(
+        h["shares"] * h["buy_price"]
+        for h in _held_for_val.values() if h.get("shares", 0) > 0
+    )
+    _total_value = sum(
+        h["shares"] * _price_map.get(t, h["buy_price"])
+        for t, h in _held_for_val.items() if h.get("shares", 0) > 0
+    )
+    _total_pnl = _total_value - _total_invested
+    _total_pnl_pct = (_total_pnl / _total_invested * 100) if _total_invested else 0.0
+    _pv1, _pv2, _pv3, _pv4 = st.columns(4)
+    _pv1.metric("Total Invested", f"${_total_invested:,.2f}")
+    _pv2.metric("Current Value", f"${_total_value:,.2f}")
+    _pv3.metric("Total P&L", f"${_total_pnl:+,.2f}")
+    _pv4.metric("P&L %", f"{_total_pnl_pct:+.2f}%")
+
 # --- 4b. Performance Snapshot (computed from already-loaded price data) ---
 st.markdown("### Performance Snapshot")
 _perf_lookbacks = {"1W": 5, "1M": 21, "3M": 63, "6M": 126, "1Y": 252}
@@ -570,7 +593,8 @@ if _held and live_df is not None and not live_df.empty:
 _signals = generate_all_signals(
     portfolio, st.session_state.regime_df, _held, _cur_prices
 )
-_top_sigs = _signals[:3]
+# Only show signals specific to portfolio stocks, not generic market conditions
+_top_sigs = [s for s in _signals if s.source != "Regime"][:3]
 if _top_sigs:
     _sig_cols = st.columns(len(_top_sigs))
     for _col, _sig in zip(_sig_cols, _top_sigs):
