@@ -65,14 +65,23 @@ _TICKER_NAMES = {
 
 
 def _is_relevant(title, ticker):
-    """Check if a news title is relevant to the given ticker."""
+    """Check if a news title is directly about the given ticker.
+
+    Stricter filter: ticker/name must appear in the first half of the
+    headline (subjects come first) to avoid articles that only mention
+    the ticker in passing (e.g. "ISPY vs SPY" when querying SPY).
+    """
+    import re
     lower = title.lower()
-    # Direct ticker mention
-    if ticker.lower() in lower:
+    mid = len(lower) // 2 + 10  # first half with a small buffer
+    first_half = lower[:mid]
+    ticker_lower = ticker.lower()
+    # Ticker as whole word in first half of headline
+    if re.search(r'\b' + re.escape(ticker_lower) + r'\b', first_half):
         return True
-    # Company/asset name mention
+    # Company/asset name in first half
     name = _TICKER_NAMES.get(ticker.upper(), "")
-    if name and name in lower:
+    if name and name in first_half:
         return True
     return False
 
