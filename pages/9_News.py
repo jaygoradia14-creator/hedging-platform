@@ -19,11 +19,13 @@ if not st.session_state.data_loaded:
 
 portfolio = st.session_state.portfolio
 
-# --- Fetch news with 5-minute TTL cache ---
+# --- Fetch news with 5-minute TTL cache (invalidates when tickers change) ---
 cache_time = st.session_state.get("news_cache_time")
+cache_tickers = st.session_state.get("news_cache_tickers", [])
 cache_valid = (
     cache_time is not None
     and (datetime.now() - cache_time) < timedelta(minutes=5)
+    and set(cache_tickers) == set(portfolio.tickers)
 )
 
 if not cache_valid:
@@ -32,6 +34,7 @@ if not cache_valid:
         news_items = fetch_portfolio_news(portfolio.tickers, max_per_ticker=5)
         st.session_state.news_cache = news_items
         st.session_state.news_cache_time = datetime.now()
+        st.session_state.news_cache_tickers = list(portfolio.tickers)
 else:
     news_items = st.session_state.news_cache
 

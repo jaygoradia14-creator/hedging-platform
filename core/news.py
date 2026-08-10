@@ -58,6 +58,12 @@ _TICKER_NAMES = {
     "JNJ": "johnson", "WMT": "walmart", "PG": "procter",
     "XOM": "exxon", "CVX": "chevron", "BAC": "bank of america",
     "NFLX": "netflix", "AMD": "amd", "DIS": "disney",
+    "INTC": "intel", "CRM": "salesforce", "ORCL": "oracle",
+    "ADBE": "adobe", "PYPL": "paypal", "UBER": "uber",
+    "COIN": "coinbase", "PLTR": "palantir", "SHOP": "shopify",
+    "KO": "coca-cola", "PEP": "pepsi", "MCD": "mcdonald",
+    "NKE": "nike", "SBUX": "starbucks", "COST": "costco",
+    "HD": "home depot", "BA": "boeing", "CAT": "caterpillar",
     "BTC-USD": "bitcoin", "ETH-USD": "ethereum",
     "AGG": "bond", "BND": "bond", "HYG": "high yield",
     "EFA": "international", "EEM": "emerging",
@@ -65,23 +71,24 @@ _TICKER_NAMES = {
 
 
 def _is_relevant(title, ticker):
-    """Check if a news title is directly about the given ticker.
+    """Check if a news title is relevant to the given ticker.
 
-    Stricter filter: ticker/name must appear in the first half of the
-    headline (subjects come first) to avoid articles that only mention
-    the ticker in passing (e.g. "ISPY vs SPY" when querying SPY).
+    Uses whole-word matching to avoid false positives (e.g. ISPY matching SPY).
+    Falls back to True for tickers without a known name mapping, since
+    yfinance already returns per-ticker news.
     """
     import re
     lower = title.lower()
-    mid = len(lower) // 2 + 10  # first half with a small buffer
-    first_half = lower[:mid]
     ticker_lower = ticker.lower()
-    # Ticker as whole word in first half of headline
-    if re.search(r'\b' + re.escape(ticker_lower) + r'\b', first_half):
+    # Ticker as whole word anywhere in headline
+    if re.search(r'\b' + re.escape(ticker_lower) + r'\b', lower):
         return True
-    # Company/asset name in first half
+    # Company/asset name mention
     name = _TICKER_NAMES.get(ticker.upper(), "")
-    if name and name in first_half:
+    if name and name in lower:
+        return True
+    # If ticker has no name mapping, trust yfinance's per-ticker query
+    if ticker.upper() not in _TICKER_NAMES:
         return True
     return False
 

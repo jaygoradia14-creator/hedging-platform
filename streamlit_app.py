@@ -663,14 +663,17 @@ from core.news import fetch_portfolio_news, aggregate_sentiment, match_news_to_m
 from datetime import datetime as _dt  # noqa: E402
 
 _news_cache_time = st.session_state.get("news_cache_time")
+_news_cache_tickers = st.session_state.get("news_cache_tickers", [])
 _news_valid = (
     _news_cache_time is not None
-    and (_dt.now() - _news_cache_time).seconds < 300
+    and (_dt.now() - _news_cache_time).total_seconds() < 300
+    and set(_news_cache_tickers) == set(portfolio.tickers)
 )
 if not _news_valid:
     _top_news = fetch_portfolio_news(portfolio.tickers, max_per_ticker=2)
     st.session_state.news_cache = _top_news
     st.session_state.news_cache_time = _dt.now()
+    st.session_state.news_cache_tickers = list(portfolio.tickers)
 else:
     _top_news = st.session_state.news_cache
 
