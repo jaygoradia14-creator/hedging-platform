@@ -46,11 +46,42 @@ def score_sentiment(title):
     return "Neutral", round(score, 2)
 
 
+# Ticker-to-company-name mapping for relevance filtering
+_TICKER_NAMES = {
+    "SPY": "s&p 500", "QQQ": "nasdaq", "IWM": "russell",
+    "TLT": "treasury", "IEF": "treasury", "SHY": "treasury",
+    "GLD": "gold", "SLV": "silver", "USO": "oil",
+    "VNQ": "real estate", "DBC": "commodit",
+    "AAPL": "apple", "MSFT": "microsoft", "GOOGL": "google",
+    "AMZN": "amazon", "META": "meta", "NVDA": "nvidia",
+    "TSLA": "tesla", "JPM": "jpmorgan", "V": "visa",
+    "JNJ": "johnson", "WMT": "walmart", "PG": "procter",
+    "XOM": "exxon", "CVX": "chevron", "BAC": "bank of america",
+    "NFLX": "netflix", "AMD": "amd", "DIS": "disney",
+    "BTC-USD": "bitcoin", "ETH-USD": "ethereum",
+    "AGG": "bond", "BND": "bond", "HYG": "high yield",
+    "EFA": "international", "EEM": "emerging",
+}
+
+
+def _is_relevant(title, ticker):
+    """Check if a news title is relevant to the given ticker."""
+    lower = title.lower()
+    # Direct ticker mention
+    if ticker.lower() in lower:
+        return True
+    # Company/asset name mention
+    name = _TICKER_NAMES.get(ticker.upper(), "")
+    if name and name in lower:
+        return True
+    return False
+
+
 def fetch_yfinance_news(ticker, max_items=10):
     """Fetch news for a ticker using yfinance.
 
     Returns:
-        List of normalized news dicts.
+        List of normalized news dicts, filtered to be relevant to the ticker.
     """
     try:
         import yfinance as yf
@@ -60,7 +91,7 @@ def fetch_yfinance_news(ticker, max_items=10):
         return []
 
     items = []
-    for article in raw[:max_items]:
+    for article in raw[:max_items * 2]:  # Fetch more to compensate for filtering
         # Handle both old and new yfinance news API formats
         content = article.get("content", {})
         if content and isinstance(content, dict):
@@ -83,6 +114,11 @@ def fetch_yfinance_news(ticker, max_items=10):
 
         if not title:
             continue
+
+        # Filter out general news not relevant to this ticker
+        if not _is_relevant(title, ticker):
+            continue
+
         label, sc = score_sentiment(title)
 
         # Parse publish time
@@ -113,6 +149,9 @@ def fetch_yfinance_news(ticker, max_items=10):
             "sentiment": label,
             "sentiment_score": sc,
         })
+
+        if len(items) >= max_items:
+            break
 
     return items
 

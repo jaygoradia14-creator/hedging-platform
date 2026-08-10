@@ -30,44 +30,6 @@ c2.metric("HHI Concentration", f"{portfolio.hhi_concentration():.3f}")
 c3.metric("Effective N", f"{portfolio.effective_n():.1f}")
 c4.metric("Diversification Ratio", f"{div_ratio:.2f}")
 
-# --- Allocation + Stats ---
-st.markdown("### Allocation")
-col_pie, col_bar = st.columns(2)
-
-with col_pie:
-    fig_pie = go.Figure(data=[go.Pie(
-        labels=portfolio.tickers,
-        values=portfolio.weights,
-        hole=0.55,
-        marker=dict(colors=COLORS[:portfolio.n_assets],
-                    line=dict(color="#ffffff", width=2)),
-        textinfo="label+percent",
-        textfont=dict(size=12, color="#011f24"),
-    )])
-    fig_pie.update_layout(**kite_layout(height=320), showlegend=False)
-    st.plotly_chart(fig_pie, use_container_width=True)
-
-with col_bar:
-    fig_bar = go.Figure(data=[go.Bar(
-        x=portfolio.tickers,
-        y=portfolio.weights * 100,
-        marker=dict(
-            color=COLORS[:portfolio.n_assets],
-            line=dict(color="rgba(0,0,0,0)", width=0),
-        ),
-        text=[f"{w:.1f}%" for w in portfolio.weights * 100],
-        textposition="outside",
-        textfont=dict(color="#011f24", size=12, family="Inter, sans-serif"),
-    )])
-    fig_bar.update_layout(
-        **kite_layout(height=320),
-        yaxis_title="Weight %",
-        yaxis_ticksuffix="%",
-        bargap=0.35,
-        yaxis_range=[0, max(portfolio.weights * 100) * 1.25],
-    )
-    st.plotly_chart(fig_bar, use_container_width=True)
-
 # --- Sector Exposure ---
 st.markdown("### Sector Exposure")
 
