@@ -332,6 +332,7 @@ from core.portfolio import (  # noqa: E402
 )
 from core.data_fetch import (  # noqa: E402
     fetch_multi_asset_data, calculate_returns, fetch_latest_prices, get_sectors, POPULAR_TICKERS,
+    fetch_stock_fundamentals,
 )
 from core.regime_detector import detect_regime  # noqa: E402
 
@@ -392,6 +393,131 @@ with st.expander("How does this app help you?"):
     - Showing you which big institutions own the same stocks as you
     - Explaining everything in plain English — no finance degree needed
     """)
+
+# --- 1c. Research a Stock ---
+st.markdown("### Research a Stock")
+
+if "research_cache" not in st.session_state:
+    st.session_state.research_cache = {}
+
+with st.form("research_form"):
+    _research_col1, _research_col2 = st.columns([3, 1])
+    with _research_col1:
+        _research_ticker = st.text_input(
+            "Search any ticker",
+            placeholder="e.g. AAPL, MSFT, TSLA",
+            label_visibility="collapsed",
+        )
+    with _research_col2:
+        _research_btn = st.form_submit_button("Search", type="primary", use_container_width=True)
+
+if _research_btn and _research_ticker.strip():
+    _rticker = _research_ticker.strip().upper()
+    with st.spinner(f"Fetching fundamentals for {_rticker}..."):
+        _fundamentals = fetch_stock_fundamentals(_rticker)
+    if _fundamentals:
+        st.session_state.research_cache[_rticker] = _fundamentals
+        st.session_state["research_active"] = _rticker
+    else:
+        st.error(f"Could not fetch data for '{_rticker}'. Check the ticker symbol.")
+
+_active_research = st.session_state.get("research_active")
+if _active_research and _active_research in st.session_state.research_cache:
+    _fund = st.session_state.research_cache[_active_research]
+
+    # Company header
+    st.markdown(
+        f'<div style="padding:12px 16px;background:#f4f5f7;border-radius:8px;'
+        f'border:1px solid #e2e5ea;margin-bottom:12px;">'
+        f'<span style="font-size:1.1rem;font-weight:700;color:#011f24;">{_fund["name"]}</span>'
+        f' &mdash; <span style="color:#6b7280;font-size:0.85rem;">'
+        f'{_fund["sector"]} &middot; {_fund["industry"]}</span></div>',
+        unsafe_allow_html=True,
+    )
+
+    # Business summary
+    if _fund.get("summary"):
+        with st.expander("Business Summary"):
+            st.markdown(f'<p style="font-size:0.85rem;color:#333;">{_fund["summary"]}</p>',
+                        unsafe_allow_html=True)
+
+    # Fundamentals card helper — vertical key-value list
+    def _render_fund_card(title, data_dict):
+        rows_html = ""
+        for k, v in data_dict.items():
+            v = v if v is not None else "N/A"
+            rows_html += (
+                f'<tr>'
+                f'<td style="color:#6b7280;font-size:0.75rem;padding:5px 10px;border-bottom:1px solid #f0f0f0;">{k}</td>'
+                f'<td style="font-weight:600;font-size:0.82rem;padding:5px 10px;text-align:right;border-bottom:1px solid #f0f0f0;">{v}</td>'
+                f'</tr>'
+            )
+        return (
+            f'<div style="border:1px solid #e2e5ea;border-radius:8px;overflow:hidden;margin-bottom:8px;">'
+            f'<div style="background:#f4f5f7;padding:8px 10px;font-size:0.7rem;font-weight:600;'
+            f'text-transform:uppercase;letter-spacing:0.04em;color:#6b7280;border-bottom:1px solid #e2e5ea;">'
+            f'{title}</div>'
+            f'<table style="width:100%;border-collapse:collapse;">{rows_html}</table></div>'
+        )
+
+    # Row 1: Key Stats, Profitability, Balance Sheet
+    _fc1, _fc2, _fc3 = st.columns(3)
+    _fc1.markdown(_render_fund_card("Key Stats", _fund["key_stats"]), unsafe_allow_html=True)
+    _fc2.markdown(_render_fund_card("Profitability", _fund["profitability"]), unsafe_allow_html=True)
+    _fc3.markdown(_render_fund_card("Balance Sheet", _fund["balance_sheet"]), unsafe_allow_html=True)
+
+    # Row 2: Growth, Dividends
+    _fc4, _fc5 = st.columns(2)
+    _fc4.markdown(_render_fund_card("Growth", _fund["growth"]), unsafe_allow_html=True)
+    _fc5.markdown(_render_fund_card("Dividends", _fund["dividends"]), unsafe_allow_html=True)
+
+    # Quarterly Income Statement
+    if _fund.get("quarterly_income"):
+        st.markdown("#### Quarterly Income Statement")
+        _qi = _fund["quarterly_income"]
+        _qi_line_items = ["Total Revenue", "Gross Profit", "Operating Income",
+                          "Net Income", "EBITDA", "Basic EPS"]
+        _qi_header = '<th style="text-align:left;">Line Item</th>' + "".join(
+            f'<th>{q["Quarter"]}</th>' for q in _qi
+        )
+        _qi_rows = ""
+        for item in _qi_line_items:
+            _qi_rows += f'<tr><td class="ticker-cell" style="text-align:left;">{item}</td>'
+            for q in _qi:
+                val = q.get(item, "N/A")
+                _qi_rows += f'<td style="text-align:center;">{val}</td>'
+            _qi_rows += '</tr>'
+        st.markdown(
+            f'<div style="overflow-x:auto;">'
+            f'<table class="styled-table"><thead><tr>{_qi_header}</tr></thead>'
+            f'<tbody>{_qi_rows}</tbody></table></div>',
+            unsafe_allow_html=True,
+        )
+
+    # Add to Portfolio
+    with st.expander(f"Add {_active_research} to Portfolio"):
+        _add_r_col1, _add_r_col2, _add_r_col3 = st.columns([1, 1, 1])
+        with _add_r_col1:
+            _add_r_shares = st.number_input(
+                "Shares", min_value=0.01, value=1.0, step=1.0, key="research_add_shares",
+            )
+        with _add_r_col2:
+            _add_r_price = st.number_input(
+                "Buy Price", min_value=0.01, value=0.01, step=0.01, key="research_add_price",
+            )
+        with _add_r_col3:
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button("Add to Portfolio", key="research_add_btn", type="primary", use_container_width=True):
+                _rt = _active_research
+                # Add ticker to portfolio if not present
+                if _rt not in st.session_state.portfolio.tickers:
+                    _new_tickers = st.session_state.portfolio.tickers + [_rt]
+                    st.session_state.portfolio = Portfolio(tickers=_new_tickers)
+                    st.session_state.data_loaded = False
+                add_holding(_rt, _add_r_shares, _add_r_price)
+                save_holdings()
+                st.success(f"Added {_add_r_shares:.2f} shares of {_rt} at ${_add_r_price:,.2f}")
+                st.rerun()
 
 # --- 2. Portfolio Controls (inline in dashboard) ---
 _ctrl_left, _ctrl_mid, _ctrl_right = st.columns([4, 1, 1])
@@ -468,6 +594,27 @@ for _rc, _t in zip(_ret_cols, portfolio.tickers):
 # Fetch live prices early (needed by Add Stock + signals + later sections)
 with st.spinner("Fetching latest prices..."):
     live_df = fetch_latest_prices(portfolio.tickers)
+
+# Weighted vs Equal-weight portfolio return
+_holdings_for_wt = st.session_state.holdings
+if _holdings_for_wt and live_df is not None:
+    _price_map_wt = {r["Ticker"]: r["Price"] for _, r in live_df.iterrows() if pd.notna(r.get("Price"))}
+    _total_val_wt = sum(
+        h["shares"] * _price_map_wt.get(t, h["buy_price"])
+        for t, h in _holdings_for_wt.items() if h.get("shares", 0) > 0 and t in portfolio.tickers
+    )
+    if _total_val_wt > 0:
+        _wt_weights = np.array([
+            (_holdings_for_wt[t]["shares"] * _price_map_wt.get(t, _holdings_for_wt[t]["buy_price"])) / _total_val_wt
+            if t in _holdings_for_wt and _holdings_for_wt[t].get("shares", 0) > 0
+            else 0.0
+            for t in portfolio.tickers
+        ])
+        _wt_port_ret = float((_ann_ret_quick * _wt_weights).sum())
+        _eq_port_ret = float(_ann_ret_quick.mean())
+        _wc1, _wc2 = st.columns(2)
+        _wc1.metric("Portfolio Return (Weighted)", f"{_wt_port_ret:+.2%}")
+        _wc2.metric("Portfolio Return (Equal-Weight)", f"{_eq_port_ret:+.2%}")
 
 # --- 3. Add Stock ---
 st.markdown("### Add Stock")

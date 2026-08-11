@@ -70,6 +70,68 @@ def _format_market_cap(value) -> str:
         return f"${value:,.0f}"
 
 
+def _safe_round(val, decimals=2):
+    if val is None:
+        return "N/A"
+    try:
+        return f"{float(val):.{decimals}f}"
+    except (ValueError, TypeError):
+        return "N/A"
+
+
+def _safe_pct(val):
+    if val is None:
+        return "N/A"
+    try:
+        return f"{float(val) * 100:.2f}%"
+    except (ValueError, TypeError):
+        return "N/A"
+
+
+def _safe_price(val):
+    if val is None:
+        return "N/A"
+    try:
+        return f"${float(val):,.2f}"
+    except (ValueError, TypeError):
+        return "N/A"
+
+
+def _format_volume(val):
+    if val is None:
+        return "N/A"
+    try:
+        val = float(val)
+        if val >= 1e6:
+            return f"{val/1e6:.1f}M"
+        elif val >= 1e3:
+            return f"{val/1e3:.1f}K"
+        return f"{val:,.0f}"
+    except (ValueError, TypeError):
+        return "N/A"
+
+
+def _format_large_number(val):
+    """Format large numbers (revenue, income) into readable form."""
+    if val is None or pd.isna(val):
+        return "N/A"
+    try:
+        val = float(val)
+        neg = val < 0
+        val = abs(val)
+        if val >= 1e12:
+            result = f"${val/1e12:.1f}T"
+        elif val >= 1e9:
+            result = f"${val/1e9:.1f}B"
+        elif val >= 1e6:
+            result = f"${val/1e6:.1f}M"
+        else:
+            result = f"${val:,.0f}"
+        return f"-{result}" if neg else result
+    except (ValueError, TypeError):
+        return "N/A"
+
+
 def get_sector(ticker: str) -> str:
     """Get sector/category for a ticker."""
     return SECTOR_MAP.get(ticker.upper(), "Other")
@@ -209,6 +271,83 @@ def fetch_institutional_holders(ticker: str, top_n: int = 5) -> List[Dict]:
     except Exception:
         pass
     return []
+
+
+def fetch_stock_fundamentals(ticker: str) -> dict:
+    """Fetch comprehensive fundamentals for a single ticker from yfinance.
+
+    Returns dict with sections: key_stats, profitability, balance_sheet,
+    growth, dividends, quarterly_income (list of dicts).
+    """
+    import yfinance as yf
+    try:
+        tk = yf.Ticker(ticker)
+        info = tk.info or {}
+    except Exception:
+        return {}
+
+    result = {
+        "name": info.get("shortName") or info.get("longName") or ticker,
+        "sector": info.get("sector", "N/A"),
+        "industry": info.get("industry", "N/A"),
+        "summary": info.get("longBusinessSummary", ""),
+        "key_stats": {
+            "Market Cap": _format_market_cap(info.get("marketCap")),
+            "P/E Ratio": _safe_round(info.get("trailingPE")),
+            "Forward P/E": _safe_round(info.get("forwardPE")),
+            "PEG Ratio": _safe_round(info.get("pegRatio")),
+            "Beta": _safe_round(info.get("beta")),
+            "52W High": _safe_price(info.get("fiftyTwoWeekHigh")),
+            "52W Low": _safe_price(info.get("fiftyTwoWeekLow")),
+            "Avg Volume": _format_volume(info.get("averageVolume")),
+        },
+        "profitability": {
+            "Profit Margin": _safe_pct(info.get("profitMargins")),
+            "Operating Margin": _safe_pct(info.get("operatingMargins")),
+            "ROE": _safe_pct(info.get("returnOnEquity")),
+            "ROA": _safe_pct(info.get("returnOnAssets")),
+            "EPS (TTM)": _safe_round(info.get("trailingEps")),
+            "Forward EPS": _safe_round(info.get("forwardEps")),
+        },
+        "balance_sheet": {
+            "Total Cash": _format_market_cap(info.get("totalCash")),
+            "Total Debt": _format_market_cap(info.get("totalDebt")),
+            "Debt/Equity": _safe_round(info.get("debtToEquity")),
+            "Current Ratio": _safe_round(info.get("currentRatio")),
+            "Book Value": _safe_round(info.get("bookValue")),
+        },
+        "growth": {
+            "Revenue Growth": _safe_pct(info.get("revenueGrowth")),
+            "Earnings Growth": _safe_pct(info.get("earningsGrowth")),
+            "Revenue Per Share": _safe_round(info.get("revenuePerShare")),
+        },
+        "dividends": {
+            "Dividend Rate": _safe_price(info.get("dividendRate")),
+            "Dividend Yield": _safe_pct(info.get("dividendYield")),
+            "Payout Ratio": _safe_pct(info.get("payoutRatio")),
+            "Ex-Dividend Date": info.get("exDividendDate", "N/A"),
+        },
+        "quarterly_income": [],
+    }
+
+    # Quarterly income statement
+    try:
+        qi = tk.quarterly_income_stmt
+        if qi is not None and not qi.empty:
+            for col in qi.columns[:4]:
+                quarter = {"Quarter": col.strftime("%Y-%m") if hasattr(col, 'strftime') else str(col)}
+                for row_name in ["Total Revenue", "Gross Profit", "Operating Income",
+                                 "Net Income", "EBITDA", "Basic EPS"]:
+                    if row_name in qi.index:
+                        val = qi.loc[row_name, col]
+                        quarter[row_name] = _format_large_number(val) if row_name != "Basic EPS" else _safe_round(val)
+                    else:
+                        quarter[row_name] = "N/A"
+                result["quarterly_income"].append(quarter)
+    except Exception:
+        pass
+
+    return result
 
 
 def fetch_multi_period_returns(tickers: List[str]) -> Dict:
