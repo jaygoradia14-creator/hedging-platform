@@ -1113,21 +1113,6 @@ st.markdown('<div class="chart-card"><h4>Price History</h4>', unsafe_allow_html=
 st.plotly_chart(fig_prices, use_container_width=True)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# --- 12. TradingView Analysis ---
-st.markdown("### TradingView Analysis")
-from core.tradingview import advanced_chart_html, technical_analysis_html  # noqa: E402
-
-_tv_ticker = st.selectbox(
-    "Select instrument for TradingView analysis",
-    options=portfolio.tickers,
-    key="tv_ticker_select",
-)
-_tv_chart_col, _tv_ta_col = st.columns([2, 1])
-with _tv_chart_col:
-    st.components.v1.html(advanced_chart_html(_tv_ticker, height=450), height=460)
-with _tv_ta_col:
-    st.components.v1.html(technical_analysis_html(_tv_ticker, height=400), height=410)
-
 # --- 13. Download Report ---
 st.markdown("### Download Report")
 
