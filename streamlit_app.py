@@ -400,26 +400,36 @@ st.markdown("### Research a Stock")
 if "research_cache" not in st.session_state:
     st.session_state.research_cache = {}
 
-with st.form("research_form"):
-    _research_col1, _research_col2 = st.columns([3, 1])
-    with _research_col1:
-        _research_ticker = st.text_input(
-            "Search any ticker",
-            placeholder="e.g. AAPL, MSFT, TSLA",
-            label_visibility="collapsed",
-        )
-    with _research_col2:
-        _research_btn = st.form_submit_button("Search", type="primary", use_container_width=True)
 
-if _research_btn and _research_ticker.strip():
-    _rticker = _research_ticker.strip().upper()
-    with st.spinner(f"Fetching fundamentals for {_rticker}..."):
-        _fundamentals = fetch_stock_fundamentals(_rticker)
-    if _fundamentals:
-        st.session_state.research_cache[_rticker] = _fundamentals
-        st.session_state["research_active"] = _rticker
+def _run_research():
+    """Callback: fetch fundamentals before rerun so data is ready for display."""
+    ticker = st.session_state.get("research_ticker_input", "").strip().upper()
+    if not ticker:
+        return
+    fundamentals = fetch_stock_fundamentals(ticker)
+    if fundamentals:
+        st.session_state.research_cache[ticker] = fundamentals
+        st.session_state["research_active"] = ticker
+        st.session_state["research_error"] = ""
     else:
-        st.error(f"Could not fetch data for '{_rticker}'. Check the ticker symbol.")
+        st.session_state["research_error"] = ticker
+
+
+_research_col1, _research_col2 = st.columns([3, 1])
+with _research_col1:
+    st.text_input(
+        "Search any ticker",
+        key="research_ticker_input",
+        placeholder="e.g. AAPL, MSFT, TSLA",
+        label_visibility="collapsed",
+        on_change=_run_research,
+    )
+with _research_col2:
+    st.button("Search", key="research_btn", type="primary",
+              use_container_width=True, on_click=_run_research)
+
+if st.session_state.get("research_error"):
+    st.error(f"Could not fetch data for '{st.session_state['research_error']}'. Check the ticker symbol.")
 
 _active_research = st.session_state.get("research_active")
 if _active_research and _active_research in st.session_state.research_cache:
